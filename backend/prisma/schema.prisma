@@ -1,0 +1,217 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  KITCHEN
+  SERVER
+}
+
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+}
+
+enum SessionStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum OrderStatus {
+  PLACED
+  ACCEPTED
+  PREPARING
+  READY
+  DELIVERED
+  PAID
+  CANCELLED
+}
+
+enum OrderItemStatus {
+  ACTIVE
+  REJECTED
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+}
+
+enum AssistanceType {
+  WATER
+  BILL
+  GENERAL
+}
+
+enum AssistanceStatus {
+  PENDING
+  RESOLVED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  phone        String   @unique
+  passwordHash String
+  role         Role
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  paymentsVerified   Payment[]           @relation("VerifiedBy")
+  assistanceResolved AssistanceRequest[] @relation("ResolvedBy")
+
+  @@map("users")
+}
+
+model RestaurantTable {
+  id          String      @id @default(uuid())
+  tableNumber String      @unique
+  qrCodeUrl   String?
+  status      TableStatus @default(AVAILABLE)
+  createdAt   DateTime    @default(now())
+
+  sessions TableSession[]
+
+  @@map("restaurant_tables")
+}
+
+model MenuCategory {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  items MenuItem[]
+
+  @@map("menu_categories")
+}
+
+model MenuItem {
+  id          String   @id @default(uuid())
+  categoryId  String
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String?
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  category   MenuCategory @relation(fields: [categoryId], references: [id])
+  orderItems OrderItem[]
+
+  @@map("menu_items")
+}
+
+model TableSession {
+  id       String        @id @default(uuid())
+  tableId  String
+  status   SessionStatus @default(ACTIVE)
+  openedAt DateTime      @default(now())
+  closedAt DateTime?
+
+  table              RestaurantTable     @relation(fields: [tableId], references: [id])
+  orders             Order[]
+  payment            Payment?
+  feedback           Feedback?
+  assistanceRequests AssistanceRequest[]
+
+  @@map("table_sessions")
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  sessionId   String
+  status      OrderStatus @default(PLACED)
+  placedAt    DateTime    @default(now())
+  acceptedAt  DateTime?
+  preparingAt DateTime?
+  readyAt     DateTime?
+  deliveredAt DateTime?
+  paidAt      DateTime?
+
+  session TableSession @relation(fields: [sessionId], references: [id])
+  items   OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id                  String          @id @default(uuid())
+  orderId             String
+  menuItemId          String
+  quantity            Int
+  unitPrice           Decimal         @db.Decimal(10, 2)
+  specialInstructions String?
+  status              OrderItemStatus @default(ACTIVE)
+  createdAt           DateTime        @default(now())
+
+  order    Order    @relation(fields: [orderId], references: [id])
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@map("order_items")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  sessionId     String        @unique
+  verifiedById  String?
+  totalAmount   Decimal       @db.Decimal(10, 2)
+  paymentMethod PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  verifiedAt    DateTime?
+
+  session    TableSession @relation(fields: [sessionId], references: [id])
+  verifiedBy User?        @relation("VerifiedBy", fields: [verifiedById], references: [id])
+
+  @@map("payments")
+}
+
+model AssistanceRequest {
+  id           String           @id @default(uuid())
+  sessionId    String
+  resolvedById String?
+  requestType  AssistanceType
+  status       AssistanceStatus @default(PENDING)
+  createdAt    DateTime         @default(now())
+  resolvedAt   DateTime?
+
+  session    TableSession @relation(fields: [sessionId], references: [id])
+  resolvedBy User?        @relation("ResolvedBy", fields: [resolvedById], references: [id])
+
+  @@map("assistance_requests")
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  sessionId String   @unique
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  session TableSession @relation(fields: [sessionId], references: [id])
+
+  @@map("feedback")
+}
+
+model Settings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@map("settings")
+}

@@ -1,0 +1,120 @@
+import { AssistanceType } from "@prisma/client";
+import { NextFunction, Request, Response } from "express";
+import { z } from "zod";
+import { serverService } from "../services/server.service";
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const assistanceTypeSchema = z.enum(
+  [AssistanceType.WATER, AssistanceType.BILL, AssistanceType.GENERAL] as const,
+  { error: `requestType must be one of: ${Object.values(AssistanceType).join(", ")}` },
+);
+
+const param = (request: Request, key: string) => {
+  const value = request.params[key];
+  return Array.isArray(value) ? value[0] : value;
+};
+
+export class ServerController {
+  async getReadyOrders(_request: Request, response: Response, next: NextFunction) {
+    try {
+      const orders = await serverService.getReadyOrders();
+      return response.status(200).json({
+        success: true,
+        data: { orders, count: orders.length },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async markDelivered(request: Request, response: Response, next: NextFunction) {
+    try {
+      const order = await serverService.markDelivered(
+        param(request, "orderId"),
+        request.user!.userId,
+      );
+      return response.status(200).json({
+        success: true,
+        message: "Order marked as delivered",
+        data: { order },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getAssistanceRequests(_request: Request, response: Response, next: NextFunction) {
+    try {
+      const requests = await serverService.getAssistanceRequests();
+      return response.status(200).json({
+        success: true,
+        data: { requests, count: requests.length },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async resolveAssistanceRequest(request: Request, response: Response, next: NextFunction) {
+    try {
+      const requestId = param(request, "requestId");
+
+      if (!UUID_REGEX.test(requestId)) {
+        return response.status(400).json({ success: false, message: "Invalid request ID format." });
+      }
+
+      const resolvedRequest = await serverService.resolveAssistanceRequest(
+        requestId,
+        request.user!.userId,
+      );
+      return response.status(200).json({
+        success: true,
+        message: "Request resolved",
+        data: { request: resolvedRequest },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async createAssistanceRequest(request: Request, response: Response, next: NextFunction) {
+    try {
+      // SEC-01: Validate requestType against enum before calling service
+      const parsed = assistanceTypeSchema.safeParse(request.body.requestType);
+      if (!parsed.success) {
+        return response.status(400).json({
+          success: false,
+          message: parsed.error.issues[0]?.message ?? "Invalid requestType.",
+        });
+      }
+
+      const createdRequest = await serverService.createAssistanceRequest(
+        request.session!.sessionId,
+        parsed.data,
+      );
+      return response.status(201).json({
+        success: true,
+        message: "Request sent to staff",
+        data: { request: createdRequest },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getSessionBillSummary(request: Request, response: Response, next: NextFunction) {
+    try {
+      const sessionId = request.session?.sessionId ?? param(request, "sessionId");
+      const billSummary = await serverService.getSessionBillSummary(sessionId);
+      return response.status(200).json({
+        success: true,
+        data: billSummary,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+}
+
+export const serverController = new ServerController();

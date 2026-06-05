@@ -1,0 +1,20 @@
+import { Role } from "@prisma/client";
+import { Router } from "express";
+import { serverController } from "../controllers/server.controller";
+import { authenticate } from "../middlewares/authenticate";
+import { authorize } from "../middlewares/authorize";
+
+const router = Router();
+
+router.use(authenticate, authorize(Role.SERVER, Role.ADMIN));
+
+router.get("/orders/ready", serverController.getReadyOrders.bind(serverController));
+router.patch("/orders/:orderId/deliver", serverController.markDelivered.bind(serverController));
+router.get("/assistance", serverController.getAssistanceRequests.bind(serverController));
+router.patch(
+  "/assistance/:requestId/resolve",
+  serverController.resolveAssistanceRequest.bind(serverController),
+);
+router.get("/sessions/:sessionId/bill", serverController.getSessionBillSummary.bind(serverController));
+
+export default router;
