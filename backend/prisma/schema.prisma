@@ -79,6 +79,8 @@ model User {
   paymentsVerified   Payment[]           @relation("VerifiedBy")
   assistanceResolved AssistanceRequest[] @relation("ResolvedBy")
   refreshTokens      RefreshToken[]
+  dailyMenuAdded     DailyMenu[]         @relation("DailyMenuAddedBy")
+  dailyMenuRemoved   DailyMenu[]         @relation("DailyMenuRemovedBy")
 
   @@map("users")
 }
@@ -138,6 +140,7 @@ model MenuItem {
 
   category   MenuCategory @relation(fields: [categoryId], references: [id])
   orderItems OrderItem[]
+  dailyMenuEntries DailyMenu[]
 
   @@index([categoryId])
   @@index([isAvailable])
@@ -287,3 +290,24 @@ model Settings {
 
   @@map("settings")
 }
+
+model DailyMenu {
+  id          String    @id @default(uuid())
+  menuItemId  String
+  menuDate    DateTime  @db.Date
+  addedById   String
+  addedAt     DateTime  @default(now())
+  removedAt   DateTime?
+  removedById String?
+
+  menuItem    MenuItem  @relation(fields: [menuItemId], references: [id])
+  addedBy     User      @relation("DailyMenuAddedBy", fields: [addedById], references: [id])
+  removedBy   User?     @relation("DailyMenuRemovedBy", fields: [removedById], references: [id])
+
+  @@unique([menuItemId, menuDate])
+  @@index([menuDate])
+  @@index([menuItemId, menuDate])
+  @@index([menuDate, removedAt])
+  @@map("daily_menu")
+}
+

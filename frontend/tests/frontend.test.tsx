@@ -80,7 +80,7 @@ const apiGetResponse = (url: string) => {
       },
     });
   }
-  if (url === "/catering/leads") {
+  if (url === "/catering/enquiries") {
     return Promise.resolve({
       data: {
         data: {
@@ -211,7 +211,7 @@ describe("frontend critical screens", () => {
 
     const AdminCateringPage = (await import("@/app/(dashboards)/admin/catering/page")).default;
     render(<AdminCateringPage />);
-    await waitFor(() => expect(screen.getByText("Catering Leads")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Catering Enquiries")).toBeInTheDocument());
     expect(screen.getByText("Ravi")).toBeInTheDocument();
   });
 });

@@ -153,7 +153,29 @@ export class MenuService {
         throw new AppError("Menu item not found", 404);
       }
 
-      await prisma.menuItem.delete({ where: { id } });
+      try {
+        await prisma.menuItem.delete({ where: { id } });
+      } catch (error: any) {
+        const isFkViolation =
+          error.code === "P2003" ||
+          (error.message && (
+            error.message.includes("foreign key constraint") ||
+            error.message.includes("violates RESTRICT") ||
+            error.message.includes("23001")
+          ));
+
+        if (isFkViolation) {
+          await prisma.menuItem.update({
+            where: { id },
+            data: { isAvailable: false },
+          });
+          throw new AppError(
+            "This menu item is referenced in order history or daily menu records and cannot be deleted. It has been marked unavailable instead.",
+            400
+          );
+        }
+        throw error;
+      }
     } catch (error) {
       throw error;
     }

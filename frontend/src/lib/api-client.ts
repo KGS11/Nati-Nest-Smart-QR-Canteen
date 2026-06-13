@@ -19,6 +19,7 @@ const isCustomerPath = (config: InternalAxiosRequestConfig): boolean => {
   if (url.startsWith("/feedback") && !url.includes("analytics")) return true;
   if (url.startsWith("/payments") && !url.includes("pending")) return true;
   if (url === "/catering/leads" && config.method?.toLowerCase() === "post") return true;
+  if (url === "/catering/enquiries" && config.method?.toLowerCase() === "post") return true;
   return false;
 };
 

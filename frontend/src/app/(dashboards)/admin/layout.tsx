@@ -2,7 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { Toast } from '@/components/common/Toast'
 import { AuthGuard } from '@/components/guards/AuthGuard'
+import { useSocket } from '@/hooks/useSocket'
 import { useAuthStore } from '@/stores/authStore'
 import { Role } from '@/types'
 
@@ -10,6 +13,7 @@ const navLinks = [
   { href: '/admin', label: 'Dashboard', icon: 'D' },
   { href: '/admin/menu/categories', label: 'Categories', icon: 'C' },
   { href: '/admin/menu/items', label: 'Menu Items', icon: 'M' },
+  { href: '/admin/daily-menu', label: "Today's Menu", icon: '📅' },
   { href: '/admin/tables', label: 'Tables', icon: 'T' },
   { href: '/admin/staff', label: 'Staff', icon: 'S' },
   { href: '/admin/reports', label: 'Reports', icon: 'R' },
@@ -20,6 +24,22 @@ const navLinks = [
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { user, logout } = useAuthStore()
+  const { socket } = useSocket()
+  const [cateringToast, setCateringToast] = useState<{ name: string } | null>(null)
+
+  useEffect(() => {
+    if (!socket) return
+
+    const handleNewLead = (payload: { name?: string }) => {
+      setCateringToast({ name: payload.name ?? 'a guest' })
+      window.setTimeout(() => setCateringToast(null), 6000)
+    }
+
+    socket.on('catering:new', handleNewLead)
+    return () => {
+      socket.off('catering:new', handleNewLead)
+    }
+  }, [socket])
 
   const isLinkActive = (href: string) => {
     if (href === '/admin') {
@@ -31,6 +51,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <AuthGuard allowedRoles={[Role.ADMIN]}>
       <div className="flex h-screen w-screen overflow-hidden bg-zinc-950 text-zinc-100">
+        {cateringToast ? (
+          <div className="fixed right-4 top-4 z-[90] w-[min(360px,calc(100vw-2rem))]">
+            <Toast
+              title={`New catering enquiry from ${cateringToast.name}`}
+              message="Open Catering to follow up."
+              tone="warning"
+            />
+          </div>
+        ) : null}
         <aside className="w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col justify-between h-full shrink-0">
           <div className="flex flex-col flex-1 overflow-y-auto">
             <div className="p-6 border-b border-zinc-800">

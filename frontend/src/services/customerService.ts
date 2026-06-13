@@ -157,7 +157,7 @@ export const customerService = {
 
   async createCateringLead(payload: CateringLeadPayload) {
     const response = await apiClient.post<ApiResponse<{ lead: unknown }>>(
-      "/catering/leads",
+      "/catering/enquiries",
       payload,
     );
     return response.data.data.lead;

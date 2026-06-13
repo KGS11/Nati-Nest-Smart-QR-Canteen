@@ -47,7 +47,7 @@ export class CateringService {
       },
     });
 
-    getIo().to(ROOMS.kitchen).emit("lead:new", {
+    const eventPayload = {
       leadId: lead.id,
       name: lead.name,
       phone: lead.phone,
@@ -55,7 +55,10 @@ export class CateringService {
       eventDate: lead.eventDate,
       guestCount: lead.guestCount,
       tableNumber: session.table.tableNumber,
-    });
+    };
+
+    getIo().to(ROOMS.kitchen).emit("lead:new", eventPayload);
+    getIo().to(ROOMS.kitchen).emit("catering:new", eventPayload);
 
     return serializeLead(lead);
   }
@@ -63,6 +66,14 @@ export class CateringService {
   async getLeads(query: ListCateringLeadsInput) {
     const where: Prisma.CateringLeadWhereInput = {
       ...(query.status ? { status: query.status } : {}),
+      ...(query.search
+        ? {
+            OR: [
+              { name: { contains: query.search, mode: "insensitive" } },
+              { phone: { contains: query.search } },
+            ],
+          }
+        : {}),
       ...(query.startDate || query.endDate
         ? {
             createdAt: {

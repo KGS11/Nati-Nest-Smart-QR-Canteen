@@ -21,6 +21,7 @@ export const createCateringLeadSchema = z.object({
 
 export const listCateringLeadsSchema = z.object({
   status: z.nativeEnum(CateringLeadStatus).optional(),
+  search: z.string().trim().max(100).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   startDate: z.string().optional(),

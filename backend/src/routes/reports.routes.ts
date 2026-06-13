@@ -15,6 +15,7 @@ const router = Router();
 router.use(authenticate, authorize(Role.ADMIN));
 
 router.get("/dashboard", reportsController.getDashboardSummary.bind(reportsController));
+router.get("/export/:type", reportsController.exportReport.bind(reportsController));
 router.get(
   "/revenue",
   validateZodQuery(groupBySchema),

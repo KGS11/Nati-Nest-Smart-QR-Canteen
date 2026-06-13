@@ -101,6 +101,36 @@ export class OrderService {
         throw new AppError(`${unavailableItem.name} is currently unavailable.`, 409);
       }
 
+      const getTodayDate = () => {
+        const today = new Date();
+        const todayStr = new Intl.DateTimeFormat("en-CA", {
+          timeZone: process.env.APP_TIMEZONE ?? "Asia/Kolkata",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        }).format(today);
+        return new Date(`${todayStr}T00:00:00.000Z`);
+      };
+
+      const today = getTodayDate();
+      const activeDailyEntries = await prisma.dailyMenu.findMany({
+        where: {
+          menuDate: today,
+          removedAt: null,
+          menuItemId: { in: uniqueMenuItemIds },
+        },
+        select: {
+          menuItemId: true,
+        },
+      });
+      const activeMenuItemIds = new Set(activeDailyEntries.map(entry => entry.menuItemId));
+
+      for (const item of menuItems) {
+        if (!activeMenuItemIds.has(item.id)) {
+          throw new AppError(`${item.name} is no longer available today.`, 400);
+        }
+      }
+
       const createdOrder = await prisma.$transaction(async (tx) => {
         const order = await tx.order.create({
           data: {

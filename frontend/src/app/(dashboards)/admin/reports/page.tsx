@@ -5,6 +5,7 @@ import PageHeader from "@/components/admin/shared/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Loader from "@/components/ui/Loader";
+import { ExportFormat, ExportType, useExport } from "@/hooks/useExport";
 import apiClient from "@/lib/api-client";
 import { ApiResponse, ClientApiError } from "@/types/api";
 import { DashboardSummary, PopularItem } from "@/types/domain";
@@ -155,6 +156,7 @@ export default function AdminReportsPage() {
   const [feedback, setFeedback] = useState<FeedbackReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { downloadExport, isExporting, error: exportError } = useExport();
 
   const groupBy: GroupBy = preset === "month" ? "day" : "day";
 
@@ -214,6 +216,17 @@ export default function AdminReportsPage() {
     }
   };
 
+  const exportFilter = preset === "today" ? "today" : preset === "month" ? "this_month" : preset === "week" ? "this_week" : "custom";
+  const runExport = (type: ExportType, format: ExportFormat) => {
+    void downloadExport({
+      type,
+      format,
+      filter: exportFilter,
+      startDate: preset === "custom" ? range.startDate : undefined,
+      endDate: preset === "custom" ? range.endDate : undefined,
+    });
+  };
+
   return (
     <div className="flex h-full flex-col overflow-y-auto bg-zinc-950 p-6 text-zinc-100">
       <PageHeader title="Reports" subtitle={`${range.startDate} to ${range.endDate}`} />
@@ -258,6 +271,44 @@ export default function AdminReportsPage() {
         <Button type="button" onClick={() => void loadReports()}>
           Refresh
         </Button>
+      </div>
+
+      <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-bold text-zinc-100">Export Reports</h2>
+            <p className="text-xs text-zinc-500">Download the current report range as CSV or Excel.</p>
+          </div>
+          {isExporting ? <span className="text-xs font-semibold text-amber-400">Exporting...</span> : null}
+        </div>
+        {exportError ? (
+          <p role="alert" className="mb-3 text-xs font-semibold text-red-400">{exportError}</p>
+        ) : null}
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          {(["revenue", "orders", "payments", "tables", "feedback"] as ExportType[]).map((type) => (
+            <div key={type} className="flex min-w-0 gap-2 rounded-lg bg-zinc-950 p-2">
+              <span className="flex-1 truncate px-2 py-2 text-xs font-bold capitalize text-zinc-300">
+                {type}
+              </span>
+              <button
+                type="button"
+                disabled={isExporting}
+                onClick={() => runExport(type, "csv")}
+                className="min-h-10 rounded-md border border-zinc-800 px-2 text-xs font-semibold text-zinc-300 disabled:opacity-50"
+              >
+                CSV
+              </button>
+              <button
+                type="button"
+                disabled={isExporting}
+                onClick={() => runExport(type, "xlsx")}
+                className="min-h-10 rounded-md bg-amber-500 px-2 text-xs font-bold text-zinc-950 disabled:opacity-50"
+              >
+                XLSX
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
       {isLoading ? (

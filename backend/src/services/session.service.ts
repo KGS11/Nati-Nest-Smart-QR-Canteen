@@ -131,25 +131,55 @@ export class SessionService {
         throw new AppError("Session has ended. Please scan QR again.", 401);
       }
 
+      const getTodayDate = () => {
+        const today = new Date();
+        const todayStr = new Intl.DateTimeFormat("en-CA", {
+          timeZone: process.env.APP_TIMEZONE ?? "Asia/Kolkata",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit"
+        }).format(today);
+        return new Date(`${todayStr}T00:00:00.000Z`);
+      };
+
+      const today = getTodayDate();
+      const activeDailyEntries = await prisma.dailyMenu.findMany({
+        where: {
+          menuDate: today,
+          removedAt: null,
+        },
+        select: {
+          menuItemId: true,
+        },
+      });
+      const activeMenuItemIds = new Set(activeDailyEntries.map(entry => entry.menuItemId));
+
       const categories = await prisma.menuCategory.findMany({
         where: { isActive: true },
         orderBy: { sortOrder: "asc" },
         include: {
           items: {
-            where: { isAvailable: true },
+            where: {
+              isAvailable: true,
+              id: { in: Array.from(activeMenuItemIds) },
+            },
             orderBy: { name: "asc" },
           },
         },
       });
 
-      return {
-        categories: categories.map((category) => ({
+      const mappedCategories = categories
+        .map((category) => ({
           ...category,
           items: category.items.map((item) => ({
             ...item,
             price: item.price.toNumber(),
           })),
-        })),
+        }))
+        .filter((category) => category.items.length > 0);
+
+      return {
+        categories: mappedCategories,
       };
     } catch (error) {
       throw error;

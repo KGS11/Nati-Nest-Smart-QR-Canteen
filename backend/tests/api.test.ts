@@ -87,6 +87,14 @@ const cateringService = {
   updateStatus: vi.fn(),
   exportCsv: vi.fn(),
 };
+const dailyMenuService = {
+  getTodayMenu: vi.fn(),
+  getFullMenuWithStatus: vi.fn(),
+  addItemToToday: vi.fn(),
+  removeItemFromToday: vi.fn(),
+  copyYesterdayMenu: vi.fn(),
+  getHistoryMenu: vi.fn(),
+};
 
 vi.mock("../src/config/db", () => ({ prisma: mockPrisma }));
 vi.mock("../src/services/auth.service", () => ({
@@ -106,6 +114,7 @@ vi.mock("../src/services/server.service", () => ({ serverService }));
 vi.mock("../src/services/payment.service", () => ({ paymentService }));
 vi.mock("../src/services/reports.service", () => ({ reportsService }));
 vi.mock("../src/services/catering.service", () => ({ cateringService }));
+vi.mock("../src/services/daily-menu.service", () => ({ dailyMenuService }));
 
 const { app } = await import("../src/index");
 
@@ -428,5 +437,45 @@ describe("Nati Nest backend API", () => {
       .set("Authorization", auth(adminToken))
       .expect(200)
       .expect((response) => expect(response.text).toContain("Ravi"));
+  });
+
+  it("manages daily menu configuration and session history", async () => {
+    dailyMenuService.getTodayMenu.mockResolvedValue({ date: "2026-06-13", items: [], count: 0 });
+    dailyMenuService.getFullMenuWithStatus.mockResolvedValue({ date: "2026-06-13", categories: [] });
+    dailyMenuService.addItemToToday.mockResolvedValue({ id, name: "Special Rice", addedAt: new Date() });
+    dailyMenuService.removeItemFromToday.mockResolvedValue({ id, name: "Special Rice", removedAt: new Date() });
+    dailyMenuService.copyYesterdayMenu.mockResolvedValue({ copied: 5, skipped: 0, items: [] });
+    dailyMenuService.getHistoryMenu.mockResolvedValue({ date: "2026-06-12", items: [], count: 0 });
+
+    await request(app)
+      .get("/api/daily-menu/today")
+      .set("Authorization", auth(adminToken))
+      .expect(200);
+
+    await request(app)
+      .get("/api/daily-menu/full")
+      .set("Authorization", auth(adminToken))
+      .expect(200);
+
+    await request(app)
+      .post("/api/daily-menu/add")
+      .set("Authorization", auth(adminToken))
+      .send({ menuItemId: id })
+      .expect(201);
+
+    await request(app)
+      .delete(`/api/daily-menu/remove/${id}`)
+      .set("Authorization", auth(adminToken))
+      .expect(200);
+
+    await request(app)
+      .post("/api/daily-menu/copy-yesterday")
+      .set("Authorization", auth(adminToken))
+      .expect(200);
+
+    await request(app)
+      .get("/api/daily-menu/history/2026-06-12")
+      .set("Authorization", auth(adminToken))
+      .expect(200);
   });
 });

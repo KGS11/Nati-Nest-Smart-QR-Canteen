@@ -19,6 +19,7 @@ import { PopularItemsSection } from "@/components/customer/menu/PopularItemsSect
 import { SearchOverlay } from "@/components/customer/menu/SearchOverlay";
 import { FloatingCartButton } from "@/components/customer/FloatingCartButton";
 import { CartDrawer } from "@/components/customer/CartDrawer";
+import { CateringEnquiryForm } from "@/components/customer/CateringEnquiryForm";
 import { MenuItemCard } from "@/components/modules/customer/MenuItemCard";
 import { useCart } from "@/hooks/useCart";
 import { MenuItemSkeleton } from "@/components/ui/Skeleton";
@@ -45,6 +46,7 @@ export default function CustomerMenuPage() {
   const [serviceMessage, setServiceMessage] = useState<string | null>(null);
   const [serviceBusy, setServiceBusy] = useState<AssistanceType | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCateringFormOpen, setIsCateringFormOpen] = useState(false);
 
   useEffect(() => {
     const loadMenu = async () => {
@@ -375,6 +377,15 @@ export default function CustomerMenuPage() {
       </main>
 
       {/* Floating Action Button */}
+      <button
+        type="button"
+        onClick={() => setIsCateringFormOpen(true)}
+        className="fixed bottom-24 right-4 z-20 flex min-h-12 items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-semibold text-zinc-300 shadow-lg active:scale-95"
+        aria-label="Open catering enquiry form"
+      >
+        <MaterialIcon name="event" className="text-amber-400" />
+        Catering?
+      </button>
       <FloatingCartButton />
 
       {/* Search Overlay */}
@@ -387,6 +398,11 @@ export default function CustomerMenuPage() {
 
       {/* Cart Drawer */}
       {isCartOpen && <CartDrawer />}
+
+      <CateringEnquiryForm
+        isOpen={isCateringFormOpen}
+        onClose={() => setIsCateringFormOpen(false)}
+      />
     </div>
   );
 }

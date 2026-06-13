@@ -22,9 +22,22 @@ router.post(
   validateBody(createCateringLeadSchema),
   cateringController.create.bind(cateringController),
 );
+router.post(
+  "/enquiries",
+  authenticateFeedbackSession,
+  validateBody(createCateringLeadSchema),
+  cateringController.create.bind(cateringController),
+);
 router.get("/leads/export", adminOnly, cateringController.exportCsv.bind(cateringController));
+router.get("/enquiries/export", adminOnly, cateringController.exportCsv.bind(cateringController));
 router.get(
   "/leads",
+  adminOnly,
+  validateQuery(listCateringLeadsSchema),
+  cateringController.getAll.bind(cateringController),
+);
+router.get(
+  "/enquiries",
   adminOnly,
   validateQuery(listCateringLeadsSchema),
   cateringController.getAll.bind(cateringController),
@@ -35,8 +48,21 @@ router.get(
   validateParams(cateringLeadIdSchema),
   cateringController.getOne.bind(cateringController),
 );
+router.get(
+  "/enquiries/:id",
+  adminOnly,
+  validateParams(cateringLeadIdSchema),
+  cateringController.getOne.bind(cateringController),
+);
 router.patch(
   "/leads/:id/status",
+  adminOnly,
+  validateParams(cateringLeadIdSchema),
+  validateBody(updateCateringLeadStatusSchema),
+  cateringController.updateStatus.bind(cateringController),
+);
+router.patch(
+  "/enquiries/:id/status",
   adminOnly,
   validateParams(cateringLeadIdSchema),
   validateBody(updateCateringLeadStatusSchema),

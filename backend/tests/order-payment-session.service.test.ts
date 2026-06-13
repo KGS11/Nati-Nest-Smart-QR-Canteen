@@ -46,6 +46,9 @@ const mocks = vi.hoisted(() => {
     menuItem: {
       findMany: vi.fn(),
     },
+    dailyMenu: {
+      findMany: vi.fn(),
+    },
     order: {
       create: vi.fn(),
       findUnique: vi.fn(),
@@ -136,6 +139,10 @@ describe("order, payment, and session services", () => {
     vi.clearAllMocks();
     process.env.JWT_SECRET = "test-jwt-secret-with-more-than-32-characters";
     mocks.prisma.tableSession.findUnique.mockResolvedValue(activeSession);
+    mocks.prisma.dailyMenu.findMany.mockResolvedValue([
+      { menuItemId: "item-1" },
+      { menuItemId: "item-2" },
+    ]);
   });
 
   it("creates an order transaction using database prices and emits order:new", async () => {

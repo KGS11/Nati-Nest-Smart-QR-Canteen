@@ -24,6 +24,7 @@ import serverRouter from "./routes/server.routes";
 import settingsRouter from "./routes/settings.routes";
 import staffRouter from "./routes/staff.routes";
 import tableRouter from "./routes/table.routes";
+import dailyMenuRouter from "./routes/daily-menu.routes";
 import { registerSocketHandlers } from "./sockets";
 import { logger } from "./config/logger";
 
@@ -157,6 +158,7 @@ app.use("/api/staff", staffRouter);
 app.use("/api/feedback", feedbackRouter);
 app.use("/api/reports", reportsRouter);
 app.use("/api/protected", protectedExampleRouter);
+app.use("/api/daily-menu", dailyMenuRouter);
 
 registerSocketHandlers(io);
 
