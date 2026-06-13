@@ -13,9 +13,16 @@ export function SessionGuard({ children }: SessionGuardProps) {
   const { sessionToken, sessionId } = useSessionStore();
   const router = useRouter();
   const pathname = usePathname();
+  const [hasHydrated, setHasHydrated] = useState(false);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
+    setHasHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydrated) return;
+
     if (!sessionToken || !sessionId) {
       if (!pathname.startsWith("/scan")) {
         router.replace("/");
@@ -23,9 +30,9 @@ export function SessionGuard({ children }: SessionGuardProps) {
     } else {
       setChecking(false);
     }
-  }, [sessionToken, sessionId, pathname, router]);
+  }, [hasHydrated, sessionToken, sessionId, pathname, router]);
 
-  if (checking && !pathname.startsWith("/scan")) {
+  if ((!hasHydrated || checking) && !pathname.startsWith("/scan")) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-zinc-950 text-amber-50">
         <Loader label="Validating table session..." />

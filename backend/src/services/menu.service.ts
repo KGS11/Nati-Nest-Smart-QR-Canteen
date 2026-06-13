@@ -158,6 +158,26 @@ export class MenuService {
       throw error;
     }
   }
+
+  async togglePopular(id: string) {
+    try {
+      const item = await prisma.menuItem.findUnique({ where: { id } });
+
+      if (!item) {
+        throw new AppError("Menu item not found", 404);
+      }
+
+      const updatedItem = await prisma.menuItem.update({
+        where: { id },
+        data: { isPopular: !item.isPopular },
+        include: { category: true },
+      });
+
+      return serializeItem(updatedItem);
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export const menuService = new MenuService();

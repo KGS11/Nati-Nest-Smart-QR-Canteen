@@ -1,9 +1,59 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import jwt, { SignOptions } from "jsonwebtoken";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../config/db";
 import { AppError } from "../utils/AppError";
 
+const refreshTokenDays = 30;
+
+const hashToken = (token: string) => crypto.createHash("sha256").update(token).digest("hex");
+
+const createOpaqueToken = () => crypto.randomBytes(48).toString("base64url");
+
+const isPrismaDatabaseError = (error: unknown) =>
+  error instanceof Prisma.PrismaClientInitializationError ||
+  error instanceof Prisma.PrismaClientKnownRequestError ||
+  error instanceof Prisma.PrismaClientUnknownRequestError ||
+  error instanceof Prisma.PrismaClientRustPanicError ||
+  error instanceof Prisma.PrismaClientValidationError;
+
 export class AuthService {
+  private createAccessToken(user: { id: string; role: string; name: string }) {
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      throw new AppError("JWT secret is not configured", 500);
+    }
+
+    const expiresIn = (process.env.JWT_EXPIRES_IN ?? "15m") as SignOptions["expiresIn"];
+    return jwt.sign(
+      {
+        userId: user.id,
+        role: user.role,
+        name: user.name,
+      },
+      jwtSecret,
+      { expiresIn, jwtid: createOpaqueToken() },
+    );
+  }
+
+  private async createRefreshToken(userId: string, familyId = crypto.randomUUID()) {
+    const refreshToken = createOpaqueToken();
+    const expiresAt = new Date(Date.now() + refreshTokenDays * 24 * 60 * 60 * 1000);
+
+    await prisma.refreshToken.create({
+      data: {
+        userId,
+        tokenHash: hashToken(refreshToken),
+        familyId,
+        expiresAt,
+      },
+    });
+
+    return refreshToken;
+  }
+
   async login(phone: string, password: string) {
     try {
       const user = await prisma.user.findUnique({
@@ -11,38 +61,25 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new AppError("Invalid phone number or password", 401);
+        throw new AppError("Invalid credentials", 401);
       }
 
       if (!user.isActive) {
-        throw new AppError("Account is deactivated. Contact admin.", 401);
+        throw new AppError("Account inactive", 401);
       }
 
       const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
       if (!isPasswordValid) {
-        throw new AppError("Invalid phone number or password", 401);
+        throw new AppError("Invalid credentials", 401);
       }
 
-      const jwtSecret = process.env.JWT_SECRET;
-
-      if (!jwtSecret) {
-        throw new AppError("JWT secret is not configured", 500);
-      }
-
-      const expiresIn = (process.env.JWT_EXPIRES_IN ?? "7d") as SignOptions["expiresIn"];
-      const token = jwt.sign(
-        {
-          userId: user.id,
-          role: user.role,
-          name: user.name,
-        },
-        jwtSecret,
-        { expiresIn },
-      );
+      const token = this.createAccessToken(user);
+      const refreshToken = await this.createRefreshToken(user.id);
 
       return {
         token,
+        refreshToken,
         user: {
           id: user.id,
           name: user.name,
@@ -53,6 +90,92 @@ export class AuthService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async refresh(refreshToken: string) {
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { tokenHash: hashToken(refreshToken) },
+      include: {
+        user: {
+          select: { id: true, name: true, phone: true, role: true, isActive: true },
+        },
+      },
+    });
+
+    if (!storedToken || storedToken.revokedAt || storedToken.expiresAt <= new Date()) {
+      if (storedToken) {
+        await prisma.refreshToken.updateMany({
+          where: { familyId: storedToken.familyId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+      }
+      throw new AppError("Invalid refresh token", 401);
+    }
+
+    if (!storedToken.user.isActive) {
+      throw new AppError("Account inactive", 401);
+    }
+
+    const rotatedRefreshToken = await prisma.$transaction(async (tx) => {
+      await tx.refreshToken.update({
+        where: { id: storedToken.id },
+        data: { revokedAt: new Date() },
+      });
+
+      const nextToken = createOpaqueToken();
+      await tx.refreshToken.create({
+        data: {
+          userId: storedToken.userId,
+          tokenHash: hashToken(nextToken),
+          familyId: storedToken.familyId,
+          expiresAt: new Date(Date.now() + refreshTokenDays * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      return nextToken;
+    });
+
+    return {
+      token: this.createAccessToken(storedToken.user),
+      refreshToken: rotatedRefreshToken,
+      user: {
+        id: storedToken.user.id,
+        name: storedToken.user.name,
+        phone: storedToken.user.phone,
+        role: storedToken.user.role,
+      },
+    };
+  }
+
+  async logout(refreshToken: string) {
+    await prisma.refreshToken.updateMany({
+      where: {
+        tokenHash: hashToken(refreshToken),
+        revokedAt: null,
+      },
+      data: { revokedAt: new Date() },
+    });
+
+    return { revoked: true };
+  }
+
+  async me(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        role: true,
+        isActive: true,
+      },
+    });
+
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+
+    return user;
   }
 }
 

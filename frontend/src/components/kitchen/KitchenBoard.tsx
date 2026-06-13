@@ -1,0 +1,480 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/common/Button";
+import Loader from "@/components/common/Loader";
+import { useSocketContext } from "@/context/SocketContext";
+import { apiClient } from "@/lib/api-client";
+import { useAuthStore } from "@/stores/authStore";
+import { useKitchenStore } from "@/stores/kitchenStore";
+import { ApiResponse, ClientApiError } from "@/types/api";
+import { Order } from "@/types/domain";
+import {
+  KitchenOrder,
+  KitchenOrderItem,
+  OrderCancelledPayload,
+  OrderNewSocketPayload,
+  OrderStatusUpdatedPayload,
+} from "@/types/kitchen.types";
+import { KitchenColumn } from "./KitchenColumn";
+import { KitchenConnectionStatus } from "./KitchenConnectionStatus";
+import { NewOrderToast } from "./NewOrderToast";
+
+// New imports
+import { useAudioAlert } from "@/hooks/useAudioAlert";
+import { AudioAlert } from "./AudioAlert";
+import { SummaryBar } from "./SummaryBar";
+import { cn } from "@/utils/cn";
+import { OrderCardSkeleton } from "@/components/ui/Skeleton";
+
+interface KitchenOrdersResponse {
+  orders: Order[];
+  counts: {
+    placed: number;
+    accepted: number;
+    preparing: number;
+    total: number;
+  };
+}
+
+interface SocketErrorPayload {
+  message?: string;
+}
+
+const toKitchenItem = (item: Order["items"][number]): KitchenOrderItem => ({
+  id: item.id,
+  menuItemId: item.menuItem.id,
+  name: item.menuItem.name,
+  quantity: item.quantity,
+  unitPrice: item.unitPrice,
+  specialInstructions: item.specialInstructions ?? item.notes ?? null,
+  status: item.status === "REJECTED" ? "REJECTED" : "ACTIVE",
+});
+
+const toKitchenOrder = (order: Order): KitchenOrder | null => {
+  if (
+    order.status !== "PLACED" &&
+    order.status !== "ACCEPTED" &&
+    order.status !== "PREPARING" &&
+    order.status !== "READY"
+  ) {
+    return null;
+  }
+
+  const items = order.items.map(toKitchenItem);
+
+  return {
+    id: order.id,
+    status: order.status,
+    tableNumber: order.session.table.tableNumber,
+    placedAt: order.placedAt,
+    acceptedAt: order.acceptedAt ?? null,
+    preparingAt: order.preparingAt ?? null,
+    readyAt: order.readyAt ?? null,
+    items,
+    subtotal:
+      order.subtotal ??
+      items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
+  };
+};
+
+const normalizeOrders = (orders: Order[]) =>
+  orders.map(toKitchenOrder).filter((order): order is KitchenOrder => order !== null);
+
+export function KitchenBoard() {
+  const { socket, isConnected } = useSocketContext();
+  const { user, token, logout } = useAuthStore();
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  // Audio & flash state
+  const { isEnabled, setEnabled, playNewOrderAlert } = useAudioAlert();
+  const [flashIncoming, setFlashIncoming] = useState(false);
+  const [activeTab, setActiveTab] = useState<"PLACED" | "PREPARING" | "READY">("PLACED");
+
+  const isConnectedStore = useKitchenStore((s) => s.isConnected);
+  const isLoading = useKitchenStore((s) => s.isLoading);
+  const error = useKitchenStore((s) => s.error);
+  const newOrderAlert = useKitchenStore((s) => s.newOrderAlert);
+
+  const setConnected = useKitchenStore((s) => s.setConnected);
+  const setLoading = useKitchenStore((s) => s.setLoading);
+  const setError = useKitchenStore((s) => s.setError);
+  const setOrders = useKitchenStore((s) => s.setOrders);
+  const removeOrder = useKitchenStore((s) => s.removeOrder);
+  const updateOrderStatus = useKitchenStore((s) => s.updateOrderStatus);
+  const setNewOrderAlert = useKitchenStore((s) => s.setNewOrderAlert);
+  const getOrdersByStatus = useKitchenStore((s) => s.getOrdersByStatus);
+
+  const fetchOrders = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await apiClient.get<ApiResponse<KitchenOrdersResponse>>("/kitchen/orders");
+      setOrders(normalizeOrders(response.data.data.orders));
+    } catch (error) {
+      const clientError = error as ClientApiError;
+      setError(clientError.message || "Unable to load kitchen orders.");
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, setError, setOrders]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  useEffect(() => {
+    setConnected(isConnected);
+  }, [isConnected, setConnected]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const joinKitchen = () => {
+      if (token) {
+        socket.emit("kitchen:join", { staffToken: token });
+      }
+    };
+
+    const handleJoined = () => setConnected(true);
+    const handleError = (payload: SocketErrorPayload) => {
+      setConnected(false);
+      setActionError(payload.message || "Kitchen socket error.");
+    };
+    const handleNewOrder = (payload: OrderNewSocketPayload) => {
+      setNewOrderAlert({ orderId: payload.orderId, tableNumber: payload.tableNumber });
+      playNewOrderAlert();
+      setFlashIncoming(true);
+      setTimeout(() => setFlashIncoming(false), 500);
+      fetchOrders();
+    };
+    const handleStatusUpdated = (payload: OrderStatusUpdatedPayload) => {
+      if (
+        payload.status === "DELIVERED" ||
+        payload.status === "PAID" ||
+        payload.status === "CANCELLED"
+      ) {
+        removeOrder(payload.orderId);
+        return;
+      }
+
+      updateOrderStatus(payload.orderId, payload.status, {
+        acceptedAt: payload.acceptedAt,
+        preparingAt: payload.preparingAt,
+        readyAt: payload.readyAt,
+      });
+    };
+    const handleCancelled = (payload: OrderCancelledPayload) => {
+      removeOrder(payload.orderId);
+    };
+    const handleConnect = () => {
+      setConnected(true);
+      joinKitchen();
+      fetchOrders();
+    };
+    const handleDisconnect = () => setConnected(false);
+
+    joinKitchen();
+    socket.on("kitchen:joined", handleJoined);
+    socket.on("error", handleError);
+    socket.on("order:new", handleNewOrder);
+    socket.on("order:status_updated", handleStatusUpdated);
+    socket.on("order:cancelled", handleCancelled);
+    socket.on("order:auto_cancelled", handleCancelled);
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+
+    return () => {
+      socket.off("kitchen:joined", handleJoined);
+      socket.off("error", handleError);
+      socket.off("order:new", handleNewOrder);
+      socket.off("order:status_updated", handleStatusUpdated);
+      socket.off("order:cancelled", handleCancelled);
+      socket.off("order:auto_cancelled", handleCancelled);
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+    };
+  }, [fetchOrders, socket, token, setConnected, setNewOrderAlert, removeOrder, updateOrderStatus]);
+
+  useEffect(() => {
+    if (!newOrderAlert) return;
+    const timeoutId = window.setTimeout(() => setNewOrderAlert(null), 4000);
+    return () => window.clearTimeout(timeoutId);
+  }, [newOrderAlert, setNewOrderAlert]);
+
+  useEffect(() => {
+    if (!actionError) return;
+    const timeoutId = window.setTimeout(() => setActionError(null), 4000);
+    return () => window.clearTimeout(timeoutId);
+  }, [actionError]);
+
+  const incoming = getOrdersByStatus(["PLACED"]);
+  const preparing = getOrdersByStatus(["ACCEPTED", "PREPARING"]);
+  const ready = getOrdersByStatus(["READY"]);
+
+  // Browser tab title update
+  useEffect(() => {
+    const totalPending = incoming.length + preparing.length;
+    document.title = totalPending > 0
+      ? `(${totalPending}) Kitchen — Nati Nest`
+      : "Kitchen — Nati Nest";
+  }, [incoming.length, preparing.length]);
+
+  const updateWithOptimism = async (
+    orderId: string,
+    status: KitchenOrder["status"],
+    timestamps: Partial<Pick<KitchenOrder, "acceptedAt" | "preparingAt" | "readyAt">>,
+    request: () => Promise<unknown>,
+    errorMessage: string,
+  ) => {
+    const previousOrders = useKitchenStore.getState().orders;
+
+    try {
+      updateOrderStatus(orderId, status, timestamps);
+      await request();
+    } catch (error) {
+      const clientError = error as ClientApiError;
+      setOrders(previousOrders);
+      setActionError(clientError.message || errorMessage);
+    }
+  };
+
+  const handleAccept = (orderId: string) =>
+    updateWithOptimism(
+      orderId,
+      "ACCEPTED",
+      { acceptedAt: new Date().toISOString() },
+      () => apiClient.patch(`/kitchen/orders/${orderId}/accept`),
+      "Failed to accept order.",
+    );
+
+  const handlePreparing = (orderId: string) =>
+    updateWithOptimism(
+      orderId,
+      "PREPARING",
+      { preparingAt: new Date().toISOString() },
+      () => apiClient.patch(`/kitchen/orders/${orderId}/preparing`),
+      "Failed to start preparing order.",
+    );
+
+  const handleReady = (orderId: string) =>
+    updateWithOptimism(
+      orderId,
+      "READY",
+      { readyAt: new Date().toISOString() },
+      () => apiClient.patch(`/kitchen/orders/${orderId}/ready`),
+      "Failed to mark order ready.",
+    );
+
+  const columns = useMemo(
+    () => [
+      {
+        title: "Incoming",
+        orders: incoming,
+        accentColor: "amber" as const,
+        emptyMessage: "No new orders",
+        onAccept: handleAccept,
+      },
+      {
+        title: "Preparing",
+        orders: preparing,
+        accentColor: "blue" as const,
+        emptyMessage: "Nothing cooking",
+        onPreparing: handlePreparing,
+        onReady: handleReady,
+      },
+      {
+        title: "Ready",
+        orders: ready,
+        accentColor: "green" as const,
+        emptyMessage: "All delivered",
+      },
+    ],
+    [incoming, preparing, ready],
+  );
+
+  return (
+    <div className="min-h-screen bg-zinc-955 text-zinc-100">
+      {/* Mobile/Tablet Portrait Layout */}
+      <div className="flex h-screen flex-col md:hidden">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-800 bg-zinc-900 px-4">
+          <h1 className="text-lg font-bold text-zinc-100">Kitchen</h1>
+          <div className="flex items-center gap-3">
+            <AudioAlert isEnabled={isEnabled} onToggle={setEnabled} />
+            <Button type="button" variant="secondary" onClick={logout} className="min-h-10 text-xs px-3 py-1">
+              Logout
+            </Button>
+          </div>
+        </header>
+
+        {/* Horizontal Tab Bar */}
+        <div className="grid grid-cols-3 bg-zinc-900 border-b border-zinc-850 shrink-0 text-center text-sm font-semibold relative z-10">
+          <button
+            onClick={() => setActiveTab("PLACED")}
+            className={cn(
+              "py-3 border-b-2 transition-colors focus:outline-none",
+              activeTab === "PLACED" ? "border-amber-500 text-amber-400" : "border-transparent text-zinc-500"
+            )}
+          >
+            Incoming ({incoming.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("PREPARING")}
+            className={cn(
+              "py-3 border-b-2 transition-colors focus:outline-none",
+              activeTab === "PREPARING" ? "border-amber-500 text-amber-400" : "border-transparent text-zinc-500"
+            )}
+          >
+            Preparing ({preparing.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("READY")}
+            className={cn(
+              "py-3 border-b-2 transition-colors focus:outline-none",
+              activeTab === "READY" ? "border-amber-500 text-amber-400" : "border-transparent text-zinc-500"
+            )}
+          >
+            Ready ({ready.length})
+          </button>
+        </div>
+
+        {/* Active Column */}
+        <div className="flex-1 overflow-hidden p-3 flex flex-col">
+          {isLoading ? (
+            <div className="flex-1 space-y-4 overflow-y-auto">
+              <OrderCardSkeleton />
+              <OrderCardSkeleton />
+              <OrderCardSkeleton />
+            </div>
+          ) : error ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-4">
+              <p className="text-red-450 text-sm text-center">{error}</p>
+              <Button type="button" onClick={fetchOrders} className="mt-4 min-h-10">
+                Retry
+              </Button>
+            </div>
+          ) : (
+            <div className="flex-1 min-h-0 flex flex-col">
+              {activeTab === "PLACED" && (
+                <KitchenColumn
+                  title="Incoming"
+                  orders={incoming}
+                  accentColor="amber"
+                  emptyMessage="No new orders"
+                  onAccept={handleAccept}
+                  flash={flashIncoming}
+                />
+              )}
+              {activeTab === "PREPARING" && (
+                <KitchenColumn
+                  title="Preparing"
+                  orders={preparing}
+                  accentColor="blue"
+                  emptyMessage="Nothing cooking"
+                  onPreparing={handlePreparing}
+                  onReady={handleReady}
+                />
+              )}
+              {activeTab === "READY" && (
+                <KitchenColumn
+                  title="Ready"
+                  orders={ready}
+                  accentColor="green"
+                  emptyMessage="All delivered"
+                />
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Desktop/Landscape Tablet Layout */}
+      <div className="hidden md:flex h-screen flex-col">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-800 bg-zinc-900 px-6">
+          <h1 className="text-xl font-bold text-zinc-100">Kitchen Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <AudioAlert isEnabled={isEnabled} onToggle={setEnabled} />
+            <KitchenConnectionStatus isConnected={isConnectedStore} />
+            <span className="text-sm font-medium text-zinc-400">{user?.name ?? "Kitchen Staff"}</span>
+            <Button type="button" variant="secondary" onClick={logout} className="min-h-12">
+              Logout
+            </Button>
+          </div>
+        </header>
+
+        <SummaryBar
+          placedCount={incoming.length}
+          preparingCount={preparing.length}
+          readyCount={ready.length}
+          totalCount={incoming.length + preparing.length + ready.length}
+        />
+
+        {isLoading ? (
+          <main className="flex min-h-0 flex-1 gap-4 overflow-hidden p-4">
+            <div className="flex-1 space-y-4">
+              <div className="h-6 w-24 bg-zinc-800 rounded animate-pulse mb-3" />
+              <OrderCardSkeleton />
+              <OrderCardSkeleton />
+            </div>
+            <div className="flex-1 space-y-4">
+              <div className="h-6 w-24 bg-zinc-800 rounded animate-pulse mb-3" />
+              <OrderCardSkeleton />
+              <OrderCardSkeleton />
+            </div>
+            <div className="flex-1 space-y-4">
+              <div className="h-6 w-24 bg-zinc-800 rounded animate-pulse mb-3" />
+              <OrderCardSkeleton />
+              <OrderCardSkeleton />
+            </div>
+          </main>
+        ) : null}
+
+        {!isLoading && error ? (
+          <div className="flex flex-1 items-center justify-center p-6">
+            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6 text-center">
+              <p className="text-red-450">{error}</p>
+              <Button type="button" onClick={fetchOrders} className="mt-4 min-h-12">
+                Retry
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {!isLoading && !error ? (
+          <main className="flex min-h-0 flex-1 gap-4 overflow-hidden p-4">
+            {columns.map((column) => (
+              <KitchenColumn
+                key={column.title}
+                title={column.title}
+                orders={column.orders}
+                accentColor={column.accentColor}
+                emptyMessage={column.emptyMessage}
+                onAccept={column.onAccept}
+                onPreparing={column.onPreparing}
+                onReady={column.onReady}
+                flash={column.title === "Incoming" ? flashIncoming : undefined}
+              />
+            ))}
+          </main>
+        ) : null}
+      </div>
+
+      {newOrderAlert ? (
+        <NewOrderToast
+          tableNumber={newOrderAlert.tableNumber}
+          onDismiss={() => setNewOrderAlert(null)}
+        />
+      ) : null}
+
+      {actionError ? (
+        <button
+          type="button"
+          onClick={() => setActionError(null)}
+          className="fixed bottom-4 left-1/2 z-50 min-h-12 -translate-x-1/2 rounded-lg border border-red-500/30 bg-red-950 px-4 text-sm font-semibold text-red-300 shadow-xl"
+        >
+          {actionError}
+        </button>
+      ) : null}
+    </div>
+  );
+}

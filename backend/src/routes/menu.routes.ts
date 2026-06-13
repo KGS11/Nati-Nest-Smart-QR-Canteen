@@ -23,6 +23,7 @@ router.patch(
   validate(updateAvailabilitySchema),
   menuController.updateAvailability.bind(menuController),
 );
+router.patch("/admin/items/:id/popular", adminOnly, menuController.togglePopular.bind(menuController));
 router.delete("/:id", adminOnly, menuController.delete.bind(menuController));
 
 export default router;

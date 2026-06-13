@@ -59,6 +59,14 @@ enum AssistanceStatus {
   RESOLVED
 }
 
+enum CateringLeadStatus {
+  NEW
+  CONTACTED
+  QUOTED
+  WON
+  LOST
+}
+
 model User {
   id           String   @id @default(uuid())
   name         String
@@ -70,8 +78,26 @@ model User {
 
   paymentsVerified   Payment[]           @relation("VerifiedBy")
   assistanceResolved AssistanceRequest[] @relation("ResolvedBy")
+  refreshTokens      RefreshToken[]
 
   @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  familyId  String
+  revokedAt DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, revokedAt])
+  @@index([familyId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
 }
 
 model RestaurantTable {
@@ -83,6 +109,7 @@ model RestaurantTable {
 
   sessions TableSession[]
 
+  @@index([status])
   @@map("restaurant_tables")
 }
 
@@ -106,11 +133,14 @@ model MenuItem {
   price       Decimal  @db.Decimal(10, 2)
   imageUrl    String?
   isAvailable Boolean  @default(true)
+  isPopular   Boolean  @default(false)
   createdAt   DateTime @default(now())
 
   category   MenuCategory @relation(fields: [categoryId], references: [id])
   orderItems OrderItem[]
 
+  @@index([categoryId])
+  @@index([isAvailable])
   @@map("menu_items")
 }
 
@@ -126,7 +156,11 @@ model TableSession {
   payment            Payment?
   feedback           Feedback?
   assistanceRequests AssistanceRequest[]
+  cateringLeads      CateringLead[]
 
+  @@index([tableId, status])
+  @@index([openedAt])
+  @@index([closedAt])
   @@map("table_sessions")
 }
 
@@ -144,6 +178,10 @@ model Order {
   session TableSession @relation(fields: [sessionId], references: [id])
   items   OrderItem[]
 
+  @@index([sessionId, status])
+  @@index([status, placedAt])
+  @@index([placedAt])
+  @@index([readyAt])
   @@map("orders")
 }
 
@@ -160,6 +198,9 @@ model OrderItem {
   order    Order    @relation(fields: [orderId], references: [id])
   menuItem MenuItem @relation(fields: [menuItemId], references: [id])
 
+  @@index([orderId])
+  @@index([menuItemId])
+  @@index([status, createdAt])
   @@map("order_items")
 }
 
@@ -176,6 +217,9 @@ model Payment {
   session    TableSession @relation(fields: [sessionId], references: [id])
   verifiedBy User?        @relation("VerifiedBy", fields: [verifiedById], references: [id])
 
+  @@index([status, createdAt])
+  @@index([status, verifiedAt])
+  @@index([verifiedAt])
   @@map("payments")
 }
 
@@ -191,6 +235,8 @@ model AssistanceRequest {
   session    TableSession @relation(fields: [sessionId], references: [id])
   resolvedBy User?        @relation("ResolvedBy", fields: [resolvedById], references: [id])
 
+  @@index([sessionId, status])
+  @@index([status, createdAt])
   @@map("assistance_requests")
 }
 
@@ -203,7 +249,33 @@ model Feedback {
 
   session TableSession @relation(fields: [sessionId], references: [id])
 
+  @@index([createdAt])
+  @@index([rating])
   @@map("feedback")
+}
+
+model CateringLead {
+  id                   String             @id @default(uuid())
+  sessionId            String?
+  name                 String
+  phone                String
+  eventType            String
+  eventDate            DateTime
+  guestCount           Int
+  location             String
+  notes                String?
+  preferredContactTime String?
+  status               CateringLeadStatus @default(NEW)
+  adminNotes           String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  session TableSession? @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId])
+  @@index([status, createdAt])
+  @@index([eventDate])
+  @@map("catering_leads")
 }
 
 model Settings {

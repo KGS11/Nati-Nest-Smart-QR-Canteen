@@ -63,6 +63,15 @@ export class MenuController {
       return next(error);
     }
   }
+
+  async togglePopular(request: Request, response: Response, next: NextFunction) {
+    try {
+      const data = await menuService.togglePopular(param(request, "id"));
+      return response.status(200).json({ success: true, data });
+    } catch (error) {
+      return next(error);
+    }
+  }
 }
 
 export const menuController = new MenuController();

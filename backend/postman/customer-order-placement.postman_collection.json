@@ -1,0 +1,103 @@
+{
+  "info": {
+    "name": "Nati Nest - Customer Order Placement",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Examples for placing, viewing, and cancelling customer orders. Set customerSessionToken from POST /api/customer/scan/:tableId before running these requests."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "customerSessionToken",
+      "value": ""
+    },
+    {
+      "key": "menuItemId",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Place Customer Order",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{customerSessionToken}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/customer/orders",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "customer", "orders"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"items\": [\n    {\n      \"menuItemId\": \"{{menuItemId}}\",\n      \"quantity\": 2,\n      \"specialInstructions\": \"Less spicy\"\n    }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "List Current Session Orders",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{customerSessionToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/customer/orders",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "customer", "orders"]
+        }
+      }
+    },
+    {
+      "name": "Get Customer Order Details",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{customerSessionToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/customer/orders/{{orderId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "customer", "orders", "{{orderId}}"]
+        }
+      }
+    },
+    {
+      "name": "Cancel Placed Customer Order",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{customerSessionToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/customer/orders/{{orderId}}/cancel",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "customer", "orders", "{{orderId}}", "cancel"]
+        }
+      }
+    }
+  ]
+}

@@ -1,11 +1,40 @@
 import { UploadApiResponse } from "cloudinary";
 import { cloudinary } from "../config/cloudinary";
 import { AppError } from "./AppError";
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
 
 export const uploadImageBuffer = async (
   buffer: Buffer,
   folder = "nati-nest-canteen",
 ): Promise<string> => {
+  const isCloudinaryConfigured =
+    process.env.CLOUDINARY_CLOUD_NAME &&
+    process.env.CLOUDINARY_CLOUD_NAME !== "your_cloud_name" &&
+    process.env.CLOUDINARY_API_KEY &&
+    process.env.CLOUDINARY_API_KEY !== "your_api_key";
+
+  if (!isCloudinaryConfigured) {
+    try {
+      const uploadsDir = path.join(__dirname, "../../uploads");
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      const filename = `${crypto.randomUUID()}.png`;
+      const filepath = path.join(uploadsDir, filename);
+      fs.writeFileSync(filepath, buffer);
+
+      const port = process.env.PORT ?? 5000;
+      const baseUrl = process.env.BACKEND_URL ?? `http://localhost:${port}`;
+      return `${baseUrl}/uploads/${filename}`;
+    } catch (error) {
+      console.error("Local file upload failed:", error);
+      throw new AppError("Local image upload failed", 500);
+    }
+  }
+
   try {
     const result = await new Promise<UploadApiResponse>((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(

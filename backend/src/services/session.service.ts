@@ -8,16 +8,24 @@ export class SessionService {
     try {
       const result = await prisma.$transaction(
         async (tx) => {
-          const table = await tx.restaurantTable.findUnique({
+          let table = await tx.restaurantTable.findUnique({
             where: { id: tableId },
           });
+
+          if (!table) {
+            table = await tx.restaurantTable.findUnique({
+              where: { tableNumber: tableId },
+            });
+          }
 
           if (!table) {
             throw new AppError("Table not found", 404);
           }
 
+          const actualTableId = table.id;
+
           const existingSession = await tx.tableSession.findFirst({
-            where: { tableId, status: SessionStatus.ACTIVE },
+            where: { tableId: actualTableId, status: SessionStatus.ACTIVE },
           });
 
           if (existingSession) {
@@ -25,11 +33,11 @@ export class SessionService {
           }
 
           const session = await tx.tableSession.create({
-            data: { tableId, status: SessionStatus.ACTIVE },
+            data: { tableId: actualTableId, status: SessionStatus.ACTIVE },
           });
 
           await tx.restaurantTable.update({
-            where: { id: tableId },
+            where: { id: actualTableId },
             data: { status: TableStatus.OCCUPIED },
           });
 

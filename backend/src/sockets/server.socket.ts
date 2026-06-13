@@ -1,6 +1,7 @@
 import { Role } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
+import { z } from "zod";
 import { prisma } from "../config/db";
 import { ROOMS } from "./rooms";
 
@@ -11,34 +12,45 @@ type StaffJwtPayload = {
 };
 
 const serverRoles: Role[] = [Role.SERVER, Role.ADMIN];
+const joinServerSchema = z.object({
+  staffToken: z.string().min(1).optional(),
+});
 
 export const initializeServerSockets = (io: Server) => {
   io.on("connection", (socket) => {
-    socket.on("server:join", async ({ staffToken }: { staffToken?: string }) => {
+    socket.on("server:join", async (eventPayload: unknown) => {
       try {
+        const parsedPayload = joinServerSchema.safeParse(eventPayload);
+
+        if (!parsedPayload.success) {
+          socket.emit("server:error", { message: "Invalid server join payload" });
+          return;
+        }
+
         const jwtSecret = process.env.JWT_SECRET;
+        const staffToken = parsedPayload.data.staffToken ?? socket.data.auth?.token;
 
         if (!staffToken || !jwtSecret) {
           socket.emit("server:error", { message: "Invalid staff token" });
           return;
         }
 
-        let payload: StaffJwtPayload;
+        let jwtPayload: StaffJwtPayload;
 
         try {
-          payload = jwt.verify(staffToken, jwtSecret) as StaffJwtPayload;
+          jwtPayload = jwt.verify(staffToken, jwtSecret) as StaffJwtPayload;
         } catch (_error) {
           socket.emit("server:error", { message: "Invalid staff token" });
           return;
         }
 
-        if (!serverRoles.includes(payload.role)) {
+        if (!serverRoles.includes(jwtPayload.role)) {
           socket.emit("server:error", { message: "Access denied. Server staff only." });
           return;
         }
 
         const user = await prisma.user.findUnique({
-          where: { id: payload.userId },
+          where: { id: jwtPayload.userId },
           select: { name: true, isActive: true },
         });
 

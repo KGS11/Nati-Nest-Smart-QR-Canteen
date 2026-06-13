@@ -16,7 +16,7 @@ export const generateTableQRText = (tableNumber: string): string => {
   }
 
   const baseUrl = clientUrl ?? "http://localhost:3000";
-  return `${baseUrl}/table/${tableNumber}`;
+  return `${baseUrl}/scan/${tableNumber}`;
 };
 
 export const generateQRCodeDataURL = async (text: string): Promise<string> => {

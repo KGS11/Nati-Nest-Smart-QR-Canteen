@@ -104,7 +104,13 @@ export const validateZodSchema =
 export const validateZodQuery =
   (schema: ZodSchema) => (request: Request, response: Response, next: NextFunction) => {
     try {
-      request.query = schema.parse(request.query) as Request["query"];
+      const parsed = schema.parse(request.query);
+      Object.defineProperty(request, "query", {
+        value: parsed,
+        writable: true,
+        configurable: true,
+        enumerable: true,
+      });
       return next();
     } catch (error) {
       if (error instanceof ZodError) {

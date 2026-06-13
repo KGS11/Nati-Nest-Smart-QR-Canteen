@@ -231,12 +231,16 @@ export class KitchenService {
       });
       io.to(ROOMS.server).emit("order:ready", {
         orderId: updatedOrder.id,
+        sessionId: updatedOrder.session.id,
         tableNumber: updatedOrder.session.table.tableNumber,
         readyAt: updatedOrder.readyAt,
         items: activeItems.map((item) => ({
           id: item.id,
           name: item.menuItem.name,
           quantity: item.quantity,
+          unitPrice: item.unitPrice.toNumber(),
+          specialInstructions: item.specialInstructions,
+          status: item.status,
         })),
       });
       io.to(ROOMS.session(updatedOrder.session.id)).emit("order:ready", {

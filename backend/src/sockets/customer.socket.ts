@@ -1,5 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { SessionStatus } from "@prisma/client";
+import { z } from "zod";
 import { prisma } from "../config/db";
 import { ROOMS } from "./rooms";
 
@@ -7,9 +8,15 @@ type JoinSessionPayload = {
   sessionId?: string;
 };
 
+const joinSessionSchema = z.object({
+  sessionId: z.string().uuid(),
+});
+
 const joinSession = async (socket: Socket, payload: JoinSessionPayload) => {
   try {
-    if (!payload.sessionId) {
+    const parsedPayload = joinSessionSchema.safeParse(payload);
+
+    if (!parsedPayload.success) {
       socket.emit("session:error", {
         message: "Invalid session.",
       });
@@ -17,7 +24,7 @@ const joinSession = async (socket: Socket, payload: JoinSessionPayload) => {
     }
 
     const session = await prisma.tableSession.findUnique({
-      where: { id: payload.sessionId },
+      where: { id: parsedPayload.data.sessionId },
       include: {
         table: {
           select: {

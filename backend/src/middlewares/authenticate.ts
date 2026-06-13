@@ -100,7 +100,7 @@ export const authenticateSession = async (
 
     const payload = verifySessionJWT(token);
 
-    if (!payload) {
+    if (!payload || !payload.sessionId) {
       return response.status(401).json({
         success: false,
         message: "Invalid or expired session.",
@@ -149,7 +149,7 @@ export const authenticateFeedbackSession = async (
 
     const payload = verifySessionJWT(token);
 
-    if (!payload) {
+    if (!payload || !payload.sessionId) {
       return response.status(401).json({
         success: false,
         message: "Invalid or expired session.",
