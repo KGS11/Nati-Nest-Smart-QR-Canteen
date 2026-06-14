@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useServerStore } from '@/stores/serverStore'
 import apiClient from '@/lib/api-client'
 import { cn } from '@/utils/cn'
+import { serverService } from '@/services/serverService'
 
 // Components
 import { Button } from '@/components/ui/Button'
@@ -18,6 +19,7 @@ import BillSummaryModal from './BillSummaryModal'
 import PaymentVerificationModal from './PaymentVerificationModal'
 import { OrderCardSkeleton } from '@/components/ui/Skeleton'
 import { MaterialIcon } from '@/components/stitch/MaterialIcon'
+import TipsReportModal from './TipsReportModal'
 
 // Types
 import {
@@ -61,6 +63,8 @@ interface BackendReadyOrder {
     }
   }
   items: BackendOrderItem[]
+  assignedWaiterId?: string | null
+  assignedWaiterName?: string | null
 }
 
 interface BackendAssistanceRequest {
@@ -109,7 +113,9 @@ const normalizeReadyOrder = (order: BackendReadyOrder): ReadyOrder => ({
   items: order.items.map(normalizeItem),
   subtotal:
     order.subtotal ??
-    order.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
+    order.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
+  assignedWaiterId: order.assignedWaiterId,
+  assignedWaiterName: order.assignedWaiterName
 })
 
 const normalizeAssistanceRequest = (
@@ -140,6 +146,7 @@ export default function ServerBoard() {
   const store = useServerStore()
   const [toasts, setToasts] = useState<ActiveToast[]>([])
   const [activeMobileTab, setActiveMobileTab] = useState<'requests' | 'deliver' | 'payments'>('requests')
+  const [isTipsOpen, setIsTipsOpen] = useState(false)
 
   const addToast = (title: string, type: 'ready' | 'assistance' | 'payment' | 'error') => {
     const id = Math.random().toString(36).substring(2, 9)
@@ -199,7 +206,7 @@ export default function ServerBoard() {
       store.setConnected(false)
     }
 
-    const handleOrderReady = (payload: OrderReadySocketPayload) => {
+    const handleOrderReady = (payload: OrderReadySocketPayload & { assignedWaiterId?: string | null; assignedWaiterName?: string | null }) => {
       const newOrder: ReadyOrder = {
         id: payload.orderId,
         status: 'READY',
@@ -207,7 +214,9 @@ export default function ServerBoard() {
         sessionId: payload.sessionId,
         readyAt: payload.readyAt,
         items: payload.items,
-        subtotal: payload.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0)
+        subtotal: payload.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
+        assignedWaiterId: payload.assignedWaiterId ?? null,
+        assignedWaiterName: payload.assignedWaiterName ?? null
       }
       store.addReadyOrder(newOrder)
       addToast(`Order ready  Table ${payload.tableNumber}`, 'ready')
@@ -277,6 +286,28 @@ export default function ServerBoard() {
       addToast(` Payment confirmed  Table ${payload.tableNumber}`, 'payment')
     }
 
+    const handleOrderClaimedWaiter = (payload: {
+      orderId: string
+      assignedWaiterId: string
+      assignedWaiterName: string
+    }) => {
+      store.updateReadyOrder(payload.orderId, {
+        assignedWaiterId: payload.assignedWaiterId,
+        assignedWaiterName: payload.assignedWaiterName
+      })
+    }
+
+    const handleReleased = (payload: { orderId: string; role: string; status: string }) => {
+      if (payload.role === 'SERVER') {
+        store.updateReadyOrder(payload.orderId, {
+          assignedWaiterId: null,
+          assignedWaiterName: null
+        })
+      } else if (payload.role === 'KITCHEN') {
+        store.removeReadyOrder(payload.orderId)
+      }
+    }
+
     const handleConnect = () => {
       store.setConnected(true)
       joinServer()
@@ -298,6 +329,8 @@ export default function ServerBoard() {
     socket.on('assistance:resolved', handleAssistanceResolved)
     socket.on('payment:bill_requested', handlePaymentBillRequested)
     socket.on('payment:completed', handlePaymentCompleted)
+    socket.on('order:claimed:waiter', handleOrderClaimedWaiter)
+    socket.on('order:released', handleReleased)
     socket.on('connect', handleConnect)
     socket.on('disconnect', handleDisconnect)
 
@@ -310,6 +343,8 @@ export default function ServerBoard() {
       socket.off('assistance:resolved', handleAssistanceResolved)
       socket.off('payment:bill_requested', handlePaymentBillRequested)
       socket.off('payment:completed', handlePaymentCompleted)
+      socket.off('order:claimed:waiter', handleOrderClaimedWaiter)
+      socket.off('order:released', handleReleased)
       socket.off('connect', handleConnect)
       socket.off('disconnect', handleDisconnect)
     }
@@ -324,7 +359,33 @@ export default function ServerBoard() {
       await apiClient.patch(`/server/orders/${orderId}/deliver`)
     } catch (err: any) {
       store.setReadyOrders(previousOrders)
-      addToast(err?.message || 'Failed to deliver order.', 'error')
+      addToast(err?.response?.data?.message || err?.message || 'Failed to deliver order.', 'error')
+    }
+  }
+
+  const handleClaim = async (orderId: string) => {
+    try {
+      await serverService.claimDelivery(orderId)
+      store.updateReadyOrder(orderId, {
+        assignedWaiterId: user?.id,
+        assignedWaiterName: user?.name
+      })
+      addToast('Delivery claimed successfully', 'ready')
+    } catch (err: any) {
+      addToast(err?.response?.data?.message || err?.message || 'Failed to claim delivery.', 'error')
+    }
+  }
+
+  const handleRelease = async (orderId: string) => {
+    try {
+      await serverService.releaseDelivery(orderId)
+      store.updateReadyOrder(orderId, {
+        assignedWaiterId: null,
+        assignedWaiterName: null
+      })
+      addToast('Delivery released successfully', 'ready')
+    } catch (err: any) {
+      addToast(err?.response?.data?.message || err?.message || 'Failed to release delivery.', 'error')
     }
   }
 
@@ -372,14 +433,22 @@ export default function ServerBoard() {
   }
 
   return (
-    <div className="h-screen w-screen bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden">
+    <div className="h-screen w-screen bg-zinc-955 text-zinc-100 flex flex-col overflow-hidden">
       {/* Top Bar */}
       <header className="h-16 shrink-0 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-6 z-10">
-        <h1 className="text-xl font-bold text-zinc-100">Server Dashboard</h1>
+        <h1 className="text-xl font-bold text-zinc-100">Waiter Dashboard</h1>
         <div className="flex items-center gap-4">
           <ServerConnectionStatus isConnected={store.isConnected} />
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setIsTipsOpen(true)}
+            className="min-h-10 text-xs bg-amber-500 hover:bg-amber-400 text-zinc-950 border-0 font-bold"
+          >
+            Tips Report
+          </Button>
           <span className="text-sm font-medium text-zinc-400">
-            {user?.name ?? 'Server Staff'}
+            {user?.name ?? 'Waiter Staff'}
           </span>
           <Button type="button" variant="secondary" onClick={logout} className="min-h-10 text-xs">
             Logout
@@ -428,6 +497,8 @@ export default function ServerBoard() {
                   orders={store.readyOrders}
                   onDeliver={handleDeliver}
                   onViewBill={handleOpenBill}
+                  onClaim={handleClaim}
+                  onRelease={handleRelease}
                 />
               </div>
 
@@ -441,6 +512,8 @@ export default function ServerBoard() {
                   pendingPayments={store.pendingPayments}
                   onDeliver={handleDeliver}
                   onVerifyPayment={handleOpenPaymentVerification}
+                  onClaim={handleClaim}
+                  onRelease={handleRelease}
                 />
               </div>
 
@@ -468,34 +541,38 @@ export default function ServerBoard() {
         ) : (
           /* Content Area */
           <div className="flex-1 overflow-y-auto pb-24">
-          {activeMobileTab === 'requests' && (
-            <AssistancePanel
-              requests={store.assistanceRequests}
-              onResolve={handleResolveAssistance}
-              onViewBill={handleOpenBill}
-              readyOrders={store.readyOrders}
-              pendingPayments={store.pendingPayments}
-              onDeliver={handleDeliver}
-              onVerifyPayment={handleOpenPaymentVerification}
-            />
-          )}
-          {activeMobileTab === 'deliver' && (
-            <ReadyOrdersPanel
-              orders={store.readyOrders}
-              onDeliver={handleDeliver}
-              onViewBill={handleOpenBill}
-            />
-          )}
-          {activeMobileTab === 'payments' && (
-            <div className="p-4">
-              <PendingPaymentsPanel
-                payments={store.pendingPayments}
+            {activeMobileTab === 'requests' && (
+              <AssistancePanel
+                requests={store.assistanceRequests}
+                onResolve={handleResolveAssistance}
+                onViewBill={handleOpenBill}
+                readyOrders={store.readyOrders}
+                pendingPayments={store.pendingPayments}
+                onDeliver={handleDeliver}
                 onVerifyPayment={handleOpenPaymentVerification}
+                onClaim={handleClaim}
+                onRelease={handleRelease}
               />
-            </div>
-          )}
-        </div>
-      )}
+            )}
+            {activeMobileTab === 'deliver' && (
+              <ReadyOrdersPanel
+                orders={store.readyOrders}
+                onDeliver={handleDeliver}
+                onViewBill={handleOpenBill}
+                onClaim={handleClaim}
+                onRelease={handleRelease}
+              />
+            )}
+            {activeMobileTab === 'payments' && (
+              <div className="p-4">
+                <PendingPaymentsPanel
+                  payments={store.pendingPayments}
+                  onVerifyPayment={handleOpenPaymentVerification}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Mobile Tab Bar */}
         <nav className="fixed bottom-0 left-0 right-0 h-16 bg-zinc-900 border-t border-zinc-800 grid grid-cols-3 pb-safe z-30">
@@ -569,6 +646,10 @@ export default function ServerBoard() {
           onVerified={handlePaymentVerified}
           onError={(msg) => addToast(msg, 'error')}
         />
+      )}
+
+      {isTipsOpen && (
+        <TipsReportModal onClose={() => setIsTipsOpen(false)} />
       )}
 
       {/* Stacking Toasts Notification Container */}

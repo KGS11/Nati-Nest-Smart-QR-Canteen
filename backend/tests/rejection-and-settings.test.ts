@@ -23,6 +23,9 @@ const mocks = vi.hoisted(() => {
       tableSession: {
         findUnique: vi.fn(),
       },
+      payment: {
+        findUnique: vi.fn(),
+      },
       settings: {
         findMany: vi.fn(),
         findUnique: vi.fn(),
@@ -167,6 +170,7 @@ describe("Kitchen Rejection Flow", () => {
 describe("Dynamic UPI QR Settings Flow", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.prisma.payment.findUnique.mockResolvedValue(null);
   });
 
   it("generates a dynamic UPI QR Code when upi_id is configured", async () => {

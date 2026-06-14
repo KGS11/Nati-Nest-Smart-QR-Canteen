@@ -18,6 +18,9 @@ export interface KitchenOrder {
   readyAt: string | null;
   items: KitchenOrderItem[];
   subtotal: number;
+  specialNotes?: string | null;
+  assignedKitchenId?: string | null;
+  assignedKitchenName?: string | null;
 }
 
 export interface KitchenColumnData {

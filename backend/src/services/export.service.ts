@@ -38,7 +38,10 @@ const money = (value: Prisma.Decimal | number | null | undefined) =>
 
 const shortId = (id: string) => id.slice(-8).toUpperCase();
 
-const dateKey = (date: Date) => date.toISOString().slice(0, 10);
+const dateKey = (date: Date) => {
+  const tz = process.env.APP_TIMEZONE ?? "Asia/Kolkata";
+  return new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(date);
+};
 
 const sendSheet = async (
   type: ExportType,
@@ -66,7 +69,7 @@ export class ExportService {
     const orders = await prisma.order.findMany({
       where: { placedAt: { gte: from, lte: to } },
       include: {
-        session: { include: { table: true } },
+        session: { include: { table: true, payment: true } },
         items: { include: { menuItem: true } },
       },
       orderBy: { placedAt: "desc" },
@@ -75,11 +78,20 @@ export class ExportService {
     const columns: ExcelColumn[] = [
       { header: "Order ID", key: "orderId", width: 12 },
       { header: "Table", key: "tableNumber", width: 10 },
-      { header: "Session", key: "sessionId", width: 12 },
+      { header: "Customer Session", key: "sessionId", width: 12 },
       { header: "Item Name", key: "itemName", width: 25 },
       { header: "Qty", key: "quantity", width: 8 },
       { header: "Unit Price Rs", key: "unitPrice", width: 14 },
       { header: "Line Total Rs", key: "lineTotal", width: 14 },
+      { header: "Assigned Kitchen", key: "assignedKitchen", width: 18 },
+      { header: "Assigned Waiter", key: "assignedWaiter", width: 18 },
+      { header: "Accepted Time", key: "acceptedAt", width: 18 },
+      { header: "Ready Time", key: "readyAt", width: 18 },
+      { header: "Delivered Time", key: "deliveredAt", width: 18 },
+      { header: "Delivery Duration (min)", key: "deliveryDuration", width: 18 },
+      { header: "Payment Status", key: "paymentStatus", width: 14 },
+      { header: "Amount", key: "amount", width: 14 },
+      { header: "Tips", key: "tips", width: 12 },
       { header: "Order Status", key: "status", width: 14 },
       { header: "Item Status", key: "itemStatus", width: 12 },
       { header: "Date", key: "placedAt", width: 18 },
@@ -88,6 +100,11 @@ export class ExportService {
     const rows = orders.flatMap((order) =>
       order.items.map<Record<string, ExcelCellValue>>((item) => {
         const unitPrice = money(item.unitPrice);
+        let deliveryDuration: ExcelCellValue = "";
+        if (order.readyAt && order.deliveredAt) {
+          deliveryDuration = Math.round((order.deliveredAt.getTime() - order.readyAt.getTime()) / 60000);
+        }
+
         return {
           orderId: shortId(order.id),
           tableNumber: order.session.table.tableNumber,
@@ -96,6 +113,15 @@ export class ExportService {
           quantity: item.quantity,
           unitPrice,
           lineTotal: money(unitPrice * item.quantity),
+          assignedKitchen: order.assignedKitchenName ?? "Unassigned",
+          assignedWaiter: order.assignedWaiterName ?? "Unassigned",
+          acceptedAt: order.acceptedAt ?? "",
+          readyAt: order.readyAt ?? "",
+          deliveredAt: order.deliveredAt ?? "",
+          deliveryDuration,
+          paymentStatus: order.session.payment?.status ?? "N/A",
+          amount: order.session.payment ? money(order.session.payment.totalAmount) : 0,
+          tips: order.session.payment ? money(order.session.payment.tipAmount) : 0,
           status: order.status,
           itemStatus: item.status,
           placedAt: order.placedAt,
@@ -131,6 +157,7 @@ export class ExportService {
       { header: "Table", key: "tableNumber", width: 10 },
       { header: "Session", key: "sessionId", width: 12 },
       { header: "Amount Rs", key: "totalAmount", width: 14 },
+      { header: "Tip Amount Rs", key: "tipAmount", width: 14 },
       { header: "Method", key: "paymentMethod", width: 10 },
       { header: "Status", key: "status", width: 12 },
       { header: "Verified By", key: "verifiedBy", width: 18 },
@@ -143,6 +170,7 @@ export class ExportService {
       tableNumber: payment.session.table.tableNumber,
       sessionId: shortId(payment.sessionId),
       totalAmount: money(payment.totalAmount),
+      tipAmount: money(payment.tipAmount),
       paymentMethod: payment.paymentMethod,
       status: payment.status,
       verifiedBy: payment.verifiedBy?.name ?? "Pending",
@@ -158,6 +186,9 @@ export class ExportService {
         totalAmount: payments
           .filter((payment) => payment.status === PaymentStatus.COMPLETED)
           .reduce((sum, payment) => sum + money(payment.totalAmount), 0),
+        tipAmount: payments
+          .filter((payment) => payment.status === PaymentStatus.COMPLETED)
+          .reduce((sum, payment) => sum + money(payment.tipAmount), 0),
       },
     });
   }
@@ -175,7 +206,7 @@ export class ExportService {
 
     const grouped = new Map<
       string,
-      { date: string; cashRevenue: number; upiRevenue: number; totalRevenue: number; transactionCount: number }
+      { date: string; cashRevenue: number; upiRevenue: number; totalRevenue: number; tips: number; transactionCount: number }
     >();
 
     payments.forEach((payment) => {
@@ -186,10 +217,13 @@ export class ExportService {
         cashRevenue: 0,
         upiRevenue: 0,
         totalRevenue: 0,
+        tips: 0,
         transactionCount: 0,
       };
       const amount = money(payment.totalAmount);
+      const tip = money(payment.tipAmount);
       row.totalRevenue = money(row.totalRevenue + amount);
+      row.tips = money(row.tips + tip);
       row.transactionCount += 1;
       if (payment.paymentMethod === PaymentMethod.CASH) row.cashRevenue = money(row.cashRevenue + amount);
       if (payment.paymentMethod === PaymentMethod.UPI) row.upiRevenue = money(row.upiRevenue + amount);
@@ -202,6 +236,7 @@ export class ExportService {
       { header: "Cash Revenue Rs", key: "cashRevenue", width: 16 },
       { header: "UPI Revenue Rs", key: "upiRevenue", width: 16 },
       { header: "Total Revenue Rs", key: "totalRevenue", width: 16 },
+      { header: "Tips Rs", key: "tips", width: 16 },
       { header: "Transactions", key: "transactionCount", width: 14 },
     ];
 
@@ -213,6 +248,7 @@ export class ExportService {
         cashRevenue: rows.reduce((sum, row) => sum + row.cashRevenue, 0),
         upiRevenue: rows.reduce((sum, row) => sum + row.upiRevenue, 0),
         totalRevenue: rows.reduce((sum, row) => sum + row.totalRevenue, 0),
+        tips: rows.reduce((sum, row) => sum + row.tips, 0),
         transactionCount: rows.reduce((sum, row) => sum + row.transactionCount, 0),
       },
     });
@@ -368,6 +404,7 @@ export class ExportService {
       { header: "Role", key: "role", width: 12 },
       { header: "Payments Verified", key: "paymentsVerifiedCount", width: 18 },
       { header: "Verified Amount Rs", key: "paymentsVerifiedAmount", width: 20 },
+      { header: "Tips Received Rs", key: "tipsReceived", width: 18 },
       { header: "Assistance Resolved", key: "assistanceResolvedCount", width: 20 },
       { header: "Daily Menu Added", key: "dailyMenuAddedCount", width: 18 },
       { header: "Daily Menu Removed", key: "dailyMenuRemovedCount", width: 20 },
@@ -375,12 +412,14 @@ export class ExportService {
 
     const rows = users.map<Record<string, ExcelCellValue>>((u) => {
       const verifiedAmount = u.paymentsVerified.reduce((sum, p) => sum + money(p.totalAmount), 0);
+      const verifiedTips = u.paymentsVerified.reduce((sum, p) => sum + money(p.tipAmount), 0);
       return {
         name: u.name,
         phone: u.phone,
         role: u.role,
         paymentsVerifiedCount: u.paymentsVerified.length,
         paymentsVerifiedAmount: money(verifiedAmount),
+        tipsReceived: money(verifiedTips),
         assistanceResolvedCount: u.assistanceResolved.length,
         dailyMenuAddedCount: u.dailyMenuAdded.length,
         dailyMenuRemovedCount: u.dailyMenuRemoved.length,
@@ -394,6 +433,7 @@ export class ExportService {
       totals: {
         paymentsVerifiedCount: rows.reduce((sum, r) => sum + Number(r.paymentsVerifiedCount), 0),
         paymentsVerifiedAmount: rows.reduce((sum, r) => sum + Number(r.paymentsVerifiedAmount), 0),
+        tipsReceived: rows.reduce((sum, r) => sum + Number(r.tipsReceived), 0),
         assistanceResolvedCount: rows.reduce((sum, r) => sum + Number(r.assistanceResolvedCount), 0),
         dailyMenuAddedCount: rows.reduce((sum, r) => sum + Number(r.dailyMenuAddedCount), 0),
         dailyMenuRemovedCount: rows.reduce((sum, r) => sum + Number(r.dailyMenuRemovedCount), 0),

@@ -35,7 +35,7 @@ export function CashPaymentConfirmation({
       }, 2000);
     } catch (err) {
       const clientError = err as ClientApiError;
-      setError(clientError.message || "Failed to notify server. Please try again.");
+      setError(clientError.message || "Failed to notify waiter. Please try again.");
     } finally {
       setIsRequesting(false);
     }
@@ -45,7 +45,7 @@ export function CashPaymentConfirmation({
     return (
       <div className="flex flex-col items-center justify-center text-center py-8 px-4 animate-fade-in">
         <div className="mb-4 rounded-full bg-green-500/10 px-5 py-3 text-2xl font-bold text-green-400">Sent</div>
-        <h3 className="text-xl font-bold text-zinc-100">Server has been notified!</h3>
+        <h3 className="text-xl font-bold text-zinc-100">Waiter has been notified!</h3>
         <p className="text-sm text-zinc-400 mt-2">They will be at your table shortly.</p>
         <p className="text-lg font-semibold text-amber-400 mt-4">
           Your bill total: Rs {totalAmount.toFixed(2)}
@@ -62,7 +62,7 @@ export function CashPaymentConfirmation({
         Rs {totalAmount.toFixed(2)}
       </p>
       <p className="text-sm text-zinc-400 text-center mt-3 max-w-xs leading-relaxed">
-        Tap the button below to notify your server. They will come to collect your payment.
+        Tap the button below to notify your waiter. They will come to collect your payment.
       </p>
 
       {error && (
@@ -78,7 +78,7 @@ export function CashPaymentConfirmation({
         onClick={handleNotify}
         className="h-14 w-full bg-amber-500 text-zinc-950 hover:bg-amber-400 font-semibold text-base mt-8 rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2"
       >
-        {isRequesting ? <Loader label="" /> : "Notify Server"}
+        {isRequesting ? <Loader label="" /> : "Notify Waiter"}
       </Button>
 
       <button

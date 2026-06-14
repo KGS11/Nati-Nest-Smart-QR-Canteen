@@ -125,6 +125,37 @@ export class ReportsController {
       return next(error);
     }
   }
+
+  async getTipsReport(request: Request, response: Response, next: NextFunction) {
+    try {
+      const { startDate, endDate } = request.query as unknown as {
+        startDate: string;
+        endDate: string;
+      };
+      const result = await reportsService.getTipsReport({ startDate, endDate });
+      return response.status(200).json({ success: true, data: result });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getWaiterPerformanceReport(request: Request, response: Response, next: NextFunction) {
+    try {
+      const result = await reportsService.getWaiterPerformanceReport();
+      return response.status(200).json({ success: true, data: result });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getKitchenPerformanceReport(request: Request, response: Response, next: NextFunction) {
+    try {
+      const result = await reportsService.getKitchenPerformanceReport();
+      return response.status(200).json({ success: true, data: result });
+    } catch (error) {
+      return next(error);
+    }
+  }
 }
 
 export const reportsController = new ReportsController();

@@ -43,6 +43,7 @@ export interface PaymentStatusPayload {
   payment: {
     id: string;
     totalAmount: number;
+    tipAmount?: number;
     status: string;
     paymentMethod?: string;
     verifiedAt?: string | null;
@@ -133,6 +134,20 @@ export const customerService = {
 
   async getPaymentStatus() {
     const response = await apiClient.get<ApiResponse<PaymentStatusPayload>>("/payments/status");
+    return response.data.data.payment;
+  },
+
+  async setTip(tipAmount: number) {
+    const response = await apiClient.post<
+      ApiResponse<{
+        payment: {
+          id: string;
+          totalAmount: number;
+          tipAmount: number;
+          status: string;
+        };
+      }>
+    >("/payments/tip", { tipAmount });
     return response.data.data.payment;
   },
 

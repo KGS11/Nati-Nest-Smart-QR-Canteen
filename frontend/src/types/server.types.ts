@@ -15,6 +15,8 @@ export interface ReadyOrder {
   readyAt: string
   items: ReadyOrderItem[]
   subtotal: number
+  assignedWaiterId?: string | null
+  assignedWaiterName?: string | null
 }
 
 export type AssistanceType = 'WATER' | 'BILL' | 'GENERAL'

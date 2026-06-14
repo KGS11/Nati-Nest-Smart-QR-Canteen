@@ -9,7 +9,10 @@ const router = Router();
 router.use(authenticate, authorize(Role.SERVER, Role.ADMIN));
 
 router.get("/orders/ready", serverController.getReadyOrders.bind(serverController));
+router.patch("/orders/:orderId/claim", serverController.claimDelivery.bind(serverController));
+router.patch("/orders/:orderId/release", serverController.releaseDelivery.bind(serverController));
 router.patch("/orders/:orderId/deliver", serverController.markDelivered.bind(serverController));
+router.patch("/orders/:orderId/notes", serverController.updateOrderNotes.bind(serverController));
 router.get("/assistance", serverController.getAssistanceRequests.bind(serverController));
 router.patch(
   "/assistance/:requestId/resolve",

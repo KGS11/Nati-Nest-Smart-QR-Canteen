@@ -34,15 +34,16 @@ export function UpiPaymentDisplay({
       setQrError(null);
       try {
         const response = await apiClient.get<{ success: boolean; data: { qrDataUrl: string } }>(
-          `/settings/upi-qr-dynamic?sessionId=${sessionId}`
+          `/settings/upi-qr-dynamic?sessionId=${sessionId}&t=${Date.now()}`
         );
         if (response.data?.success && response.data?.data?.qrDataUrl) {
           setUpiQrUrl(response.data.data.qrDataUrl);
         } else {
-          setQrError("UPI QR Code is not configured by the admin.");
+          setQrError("Unable to generate payment. Please try again.");
         }
       } catch (err) {
-        setQrError("Unable to load UPI QR code.");
+        const clientError = err as ClientApiError;
+        setQrError(clientError.message || "Unable to generate payment. Please try again.");
       } finally {
         setIsLoadingQr(false);
       }
@@ -72,7 +73,7 @@ export function UpiPaymentDisplay({
       setPaymentRequested(true);
     } catch (err) {
       const clientError = err as ClientApiError;
-      alert(clientError.message || "Failed to notify server of payment.");
+      alert(clientError.message || "Failed to notify waiter of payment.");
     } finally {
       setIsRequestingPayment(false);
     }
@@ -95,7 +96,7 @@ export function UpiPaymentDisplay({
         <div className="mb-4 rounded-full bg-blue-500/10 px-5 py-3 text-2xl font-bold text-blue-400 animate-pulse">Sent</div>
         <h3 className="text-xl font-bold text-zinc-100">Payment notification sent!</h3>
         <p className="text-sm text-zinc-400 mt-2 max-w-xs leading-relaxed">
-          Server will verify and confirm shortly. You will receive a confirmation here.
+          Waiter will verify and confirm shortly. You will receive a confirmation here.
         </p>
         <div className="flex items-center gap-2 mt-6 justify-center">
           <Loader label="Waiting for confirmation..." />
@@ -118,7 +119,7 @@ export function UpiPaymentDisplay({
           <div className="text-zinc-800 text-xs text-center p-2 max-w-[180px]">
             <p className="font-semibold text-red-500 mb-2">Error Loading QR</p>
             <p className="text-[10px] text-zinc-500">{qrError}</p>
-            <p className="text-[10px] text-zinc-500 mt-2 font-medium">Contact server for assistance</p>
+            <p className="text-[10px] text-zinc-500 mt-2 font-medium">Contact waiter for assistance</p>
           </div>
         ) : upiQrUrl ? (
           <img

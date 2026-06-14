@@ -12,21 +12,22 @@ import {
 
 const router = Router();
 const adminOnly = [authenticate, authorize(Role.ADMIN)];
+const staffAllowed = [authenticate, authorize(Role.ADMIN, Role.KITCHEN)];
 
-router.get("/today", adminOnly, dailyMenuController.getTodayMenu.bind(dailyMenuController));
-router.get("/full", adminOnly, dailyMenuController.getFullMenu.bind(dailyMenuController));
-router.post("/add", adminOnly, validate(addDailyMenuItemSchema), dailyMenuController.addItem.bind(dailyMenuController));
+router.get("/today", staffAllowed, dailyMenuController.getTodayMenu.bind(dailyMenuController));
+router.get("/full", staffAllowed, dailyMenuController.getFullMenu.bind(dailyMenuController));
+router.post("/add", staffAllowed, validate(addDailyMenuItemSchema), dailyMenuController.addItem.bind(dailyMenuController));
 router.delete(
   "/remove/:menuItemId",
-  adminOnly,
+  staffAllowed,
   validateUUID("menuItemId"),
   validate(removeDailyMenuItemSchema),
   dailyMenuController.removeItem.bind(dailyMenuController)
 );
-router.get("/removed", adminOnly, dailyMenuController.getRemoved.bind(dailyMenuController));
+router.get("/removed", staffAllowed, dailyMenuController.getRemoved.bind(dailyMenuController));
 router.post(
   "/restore/:dailyMenuId",
-  adminOnly,
+  staffAllowed,
   validateUUID("dailyMenuId"),
   dailyMenuController.restore.bind(dailyMenuController)
 );
@@ -34,3 +35,4 @@ router.post("/copy-yesterday", adminOnly, dailyMenuController.copyYesterday.bind
 router.get("/history/:date", adminOnly, dailyMenuController.getHistory.bind(dailyMenuController));
 
 export default router;
+

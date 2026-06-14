@@ -57,7 +57,10 @@ export class KitchenController {
       const orderId = param(request, "orderId");
       if (!validateOrderId(orderId, response)) return;
 
-      const order = await kitchenService.acceptOrder(orderId);
+      const staffId = request.user!.userId;
+      const staffName = request.user!.name;
+
+      const order = await kitchenService.acceptOrder(orderId, staffId, staffName);
       return response.status(200).json({
         success: true,
         message: "Order accepted",
@@ -73,7 +76,8 @@ export class KitchenController {
       const orderId = param(request, "orderId");
       if (!validateOrderId(orderId, response)) return;
 
-      const order = await kitchenService.startPreparing(orderId);
+      const user = request.user!;
+      const order = await kitchenService.startPreparing(orderId, user.userId, user.role);
       return response.status(200).json({
         success: true,
         message: "Order is being prepared",
@@ -89,7 +93,8 @@ export class KitchenController {
       const orderId = param(request, "orderId");
       if (!validateOrderId(orderId, response)) return;
 
-      const order = await kitchenService.markReady(orderId);
+      const user = request.user!;
+      const order = await kitchenService.markReady(orderId, user.userId, user.role);
       return response.status(200).json({
         success: true,
         message: "Order is ready for delivery",
@@ -113,7 +118,8 @@ export class KitchenController {
         });
       }
 
-      const order = await kitchenService.rejectOrder(orderId, reason);
+      const user = request.user!;
+      const order = await kitchenService.rejectOrder(orderId, reason, user.userId, user.role);
       return response.status(200).json({
         success: true,
         message: "Order rejected successfully.",
@@ -138,10 +144,28 @@ export class KitchenController {
         });
       }
 
-      const order = await kitchenService.rejectOrderItem(orderId, itemId, reason);
+      const user = request.user!;
+      const order = await kitchenService.rejectOrderItem(orderId, itemId, reason, user.userId, user.role);
       return response.status(200).json({
         success: true,
         message: "Order item rejected successfully.",
+        data: { order },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async releaseOrder(request: Request, response: Response, next: NextFunction) {
+    try {
+      const orderId = param(request, "orderId");
+      if (!validateOrderId(orderId, response)) return;
+
+      const user = request.user!;
+      const order = await kitchenService.releaseOrder(orderId, user.userId, user.role);
+      return response.status(200).json({
+        success: true,
+        message: "Order released back to unassigned queue.",
         data: { order },
       });
     } catch (error) {

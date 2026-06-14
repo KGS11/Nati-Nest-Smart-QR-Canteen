@@ -177,13 +177,24 @@ export class SettingsService {
       orders.forEach((order) => {
         order.items.forEach((item) => {
           if (item.status === OrderItemStatus.ACTIVE) {
-            totalAmount += Number(item.unitPrice) * item.quantity;
+            const price = Number(item.unitPrice) || 0;
+            const qty = Number(item.quantity) || 0;
+            totalAmount += price * qty;
           }
         });
       });
 
-      const amount = Math.round(totalAmount * 100) / 100;
-      if (amount <= 0) {
+      const payment = await prisma.payment.findUnique({
+        where: { sessionId },
+      });
+
+      const rawTip = payment ? Number(payment.tipAmount) : 0;
+      const tipAmount = isNaN(rawTip) || rawTip < 0 ? 0 : rawTip;
+
+      const baseAmount = Math.round(totalAmount * 100) / 100;
+      const amount = Math.round((baseAmount + tipAmount) * 100) / 100;
+
+      if (isNaN(amount) || amount <= 0) {
         throw new AppError("No items to bill. Place an order first.", 400);
       }
 
@@ -209,17 +220,24 @@ export class SettingsService {
         };
       }
 
-      const upiLink = `upi://pay?pa=${upiId.trim()}&pn=${encodeURIComponent(businessName.trim())}&am=${amount}&cu=INR`;
-      const qrDataUrl = await QRCode.toDataURL(upiLink);
+      try {
+        const upiLink = `upi://pay?pa=${upiId.trim()}&pn=${encodeURIComponent(businessName.trim())}&am=${amount.toFixed(2)}&cu=INR`;
+        const qrDataUrl = await QRCode.toDataURL(upiLink);
 
-      return {
-        qrType: "dynamic",
-        qrDataUrl,
-        amount,
-        upiLink,
-      };
+        return {
+          qrType: "dynamic",
+          qrDataUrl,
+          amount,
+          upiLink,
+        };
+      } catch (qrError) {
+        throw new AppError("Unable to generate payment. Please try again.", 500);
+      }
     } catch (error) {
-      throw error;
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError("Unable to generate payment. Please try again.", 500);
     }
   }
 

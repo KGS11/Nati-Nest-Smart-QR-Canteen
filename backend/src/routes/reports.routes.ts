@@ -12,9 +12,19 @@ import {
 
 const router = Router();
 
+router.get(
+  "/tips",
+  authenticate,
+  authorize(Role.ADMIN, Role.SERVER),
+  validateZodQuery(dateRangeSchema),
+  reportsController.getTipsReport.bind(reportsController),
+);
+
 router.use(authenticate, authorize(Role.ADMIN));
 
 router.get("/dashboard", reportsController.getDashboardSummary.bind(reportsController));
+router.get("/waiter-performance", reportsController.getWaiterPerformanceReport.bind(reportsController));
+router.get("/kitchen-performance", reportsController.getKitchenPerformanceReport.bind(reportsController));
 router.get("/export/:type", reportsController.exportReport.bind(reportsController));
 router.get(
   "/revenue",
@@ -43,3 +53,5 @@ router.get(
 );
 
 export default router;
+
+

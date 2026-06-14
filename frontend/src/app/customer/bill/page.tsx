@@ -66,7 +66,7 @@ export default function CustomerBillPage() {
       const result = await customerService.requestBill();
       setBill(result.billSummary);
       setPayment(result.payment);
-      setMessage("Bill requested. A server will attend your table shortly.");
+      setMessage("Bill requested. A waiter will attend your table shortly.");
     } catch (err) {
       const clientError = err as ClientApiError;
       setError(clientError.message || "Unable to request bill.");
@@ -153,6 +153,7 @@ export default function CustomerBillPage() {
             sessionId={sessionId || ""}
             totalAmount={bill.totalAmount}
             onPaymentRequested={loadBill}
+            payment={payment}
           />
         ) : payment?.status === "PENDING" ? (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center shadow-stitch">
@@ -160,7 +161,7 @@ export default function CustomerBillPage() {
               Payment Pending Verification
             </p>
             <p className="text-sm text-zinc-400">
-              The server has been notified. Please wait for verification.
+              The waiter has been notified. Please wait for verification.
             </p>
             <div className="flex justify-center mt-6">
               <Loader label="Waiting..." />

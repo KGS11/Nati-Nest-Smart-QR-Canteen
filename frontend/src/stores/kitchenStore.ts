@@ -15,7 +15,7 @@ interface KitchenState {
   updateOrderStatus: (
     orderId: string,
     status: KitchenOrder["status"],
-    timestamps: Partial<Pick<KitchenOrder, "acceptedAt" | "preparingAt" | "readyAt">>,
+    fields?: Partial<KitchenOrder>,
   ) => void;
   removeOrder: (orderId: string) => void;
   setLoading: (loading: boolean) => void;
@@ -39,10 +39,10 @@ export const useKitchenStore = create<KitchenState>()((set, get) => ({
       orders: [order, ...state.orders.filter((existing) => existing.id !== order.id)],
     })),
 
-  updateOrderStatus: (orderId, status, timestamps) =>
+  updateOrderStatus: (orderId, status, fields) =>
     set((state) => ({
       orders: state.orders.map((order) =>
-        order.id === orderId ? { ...order, status, ...timestamps } : order,
+        order.id === orderId ? { ...order, status, ...fields } : order,
       ),
     })),
 

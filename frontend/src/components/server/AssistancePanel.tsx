@@ -13,6 +13,8 @@ interface AssistancePanelProps {
   pendingPayments?: PendingPayment[]
   onDeliver?: (orderId: string) => Promise<void>
   onVerifyPayment?: (paymentId: string, tableNumber: string) => void
+  onClaim?: (orderId: string) => Promise<void>
+  onRelease?: (orderId: string) => Promise<void>
 }
 
 function getElapsedTime(dateStr: string): string {
@@ -32,7 +34,9 @@ export default function AssistancePanel({
   readyOrders = [],
   pendingPayments = [],
   onDeliver,
-  onVerifyPayment
+  onVerifyPayment,
+  onClaim,
+  onRelease
 }: AssistancePanelProps) {
   // Sort utility
   const sortByTime = (a: { createdAt?: string; readyAt?: string }, b: { createdAt?: string; readyAt?: string }) => {
@@ -178,6 +182,8 @@ export default function AssistancePanel({
                     order={order}
                     onDeliver={onDeliver || (async () => {})}
                     onViewBill={onViewBill}
+                    onClaim={onClaim}
+                    onRelease={onRelease}
                   />
                 ))}
               </div>

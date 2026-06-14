@@ -29,7 +29,7 @@ export function GlobalHelpModal({ isOpen, onClose }: GlobalHelpModalProps) {
 
     try {
       const response = await customerService.requestAssistance(type);
-      setStatusMessage(response.message || "Request sent. A server will assist you shortly.");
+      setStatusMessage(response.message || "Request sent. A waiter will assist you shortly.");
       
       if (type === AssistanceType.BILL) {
         setTimeout(() => {
@@ -123,7 +123,7 @@ export function GlobalHelpModal({ isOpen, onClose }: GlobalHelpModalProps) {
             <div className="flex items-center gap-3">
               <MaterialIcon name="support_agent" className="text-amber-400 text-2xl" />
               <div>
-                <h4 className="font-semibold text-zinc-100">Call Server</h4>
+                <h4 className="font-semibold text-zinc-100">Call Waiter</h4>
                 <p className="text-xs text-zinc-400">General assistance or order help</p>
               </div>
             </div>

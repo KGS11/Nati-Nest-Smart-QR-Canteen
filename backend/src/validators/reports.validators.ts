@@ -81,14 +81,12 @@ export const popularItemsSchema = withValidDateOrder(
   }),
 );
 
+import { getStartOfDayInTimezone, getEndOfDayInTimezone } from "../utils/date.utils";
+
 export const getStartOfDay = (dateString: string): Date => {
-  const date = new Date(dateString);
-  date.setHours(0, 0, 0, 0);
-  return date;
+  return getStartOfDayInTimezone(dateString, process.env.APP_TIMEZONE ?? "Asia/Kolkata");
 };
 
 export const getEndOfDay = (dateString: string): Date => {
-  const date = new Date(dateString);
-  date.setHours(23, 59, 59, 999);
-  return date;
+  return getEndOfDayInTimezone(dateString, process.env.APP_TIMEZONE ?? "Asia/Kolkata");
 };

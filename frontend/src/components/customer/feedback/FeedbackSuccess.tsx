@@ -49,12 +49,21 @@ export function FeedbackSuccess({ rating, onContinue }: FeedbackSuccessProps) {
       >
         Finish
       </Button>
-      <Link
-        href="/customer/catering"
-        className="mt-4 min-h-12 rounded-full border border-amber-500/30 px-6 py-3 text-sm font-semibold text-amber-300"
-      >
-        Plan a catering event
-      </Link>
+
+      {rating >= 4 && (
+        <div className="mt-8 p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl max-w-sm flex flex-col items-center animate-fade-in">
+          <p className="text-sm text-amber-400 font-semibold mb-2">Hosting an Event?</p>
+          <p className="text-xs text-zinc-400 mb-3 text-center">
+            We provide premium catering services for birthdays, corporate events, and weddings.
+          </p>
+          <Link
+            href="/customer/catering"
+            className="w-full text-center py-2.5 rounded-xl border border-amber-500/30 text-xs font-semibold text-amber-300 hover:bg-amber-500/10 transition-colors"
+          >
+            Get a Catering Quote
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

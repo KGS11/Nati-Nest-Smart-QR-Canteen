@@ -50,6 +50,12 @@ export interface Order {
   };
   items: OrderItem[];
   rejectionReason?: string | null;
+  assignedKitchenId?: string | null;
+  assignedKitchenName?: string | null;
+  assignedWaiterId?: string | null;
+  assignedWaiterName?: string | null;
+  assignedAt?: string | null;
+  deliveredBy?: string | null;
 }
 
 export interface DashboardSummary {

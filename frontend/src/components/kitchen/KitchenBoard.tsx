@@ -19,6 +19,7 @@ import {
 import { KitchenColumn } from "./KitchenColumn";
 import { KitchenConnectionStatus } from "./KitchenConnectionStatus";
 import { NewOrderToast } from "./NewOrderToast";
+import KitchenMenuModal from "./KitchenMenuModal";
 
 // New imports
 import { useAudioAlert } from "@/hooks/useAudioAlert";
@@ -75,6 +76,9 @@ const toKitchenOrder = (order: Order): KitchenOrder | null => {
     subtotal:
       order.subtotal ??
       items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
+    specialNotes: (order as any).specialNotes ?? null,
+    assignedKitchenId: order.assignedKitchenId ?? null,
+    assignedKitchenName: order.assignedKitchenName ?? null,
   };
 };
 
@@ -90,11 +94,14 @@ export function KitchenBoard() {
   const { isEnabled, setEnabled, playNewOrderAlert } = useAudioAlert();
   const [flashIncoming, setFlashIncoming] = useState(false);
   const [activeTab, setActiveTab] = useState<"PLACED" | "PREPARING" | "READY">("PLACED");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"available" | "my-orders">("available");
 
   const isConnectedStore = useKitchenStore((s) => s.isConnected);
   const isLoading = useKitchenStore((s) => s.isLoading);
   const error = useKitchenStore((s) => s.error);
   const newOrderAlert = useKitchenStore((s) => s.newOrderAlert);
+  const orders = useKitchenStore((s) => s.orders);
 
   const setConnected = useKitchenStore((s) => s.setConnected);
   const setLoading = useKitchenStore((s) => s.setLoading);
@@ -148,7 +155,7 @@ export function KitchenBoard() {
       setTimeout(() => setFlashIncoming(false), 500);
       fetchOrders();
     };
-    const handleStatusUpdated = (payload: OrderStatusUpdatedPayload) => {
+    const handleStatusUpdated = (payload: OrderStatusUpdatedPayload & { assignedKitchenId?: string | null; assignedKitchenName?: string | null }) => {
       if (
         payload.status === "DELIVERED" ||
         payload.status === "PAID" ||
@@ -162,10 +169,37 @@ export function KitchenBoard() {
         acceptedAt: payload.acceptedAt,
         preparingAt: payload.preparingAt,
         readyAt: payload.readyAt,
+        assignedKitchenId: payload.assignedKitchenId,
+        assignedKitchenName: payload.assignedKitchenName,
       });
     };
     const handleCancelled = (payload: OrderCancelledPayload) => {
       removeOrder(payload.orderId);
+    };
+    const handleClaimedKitchen = (payload: {
+      orderId: string;
+      assignedKitchenId: string;
+      assignedKitchenName: string;
+      status: KitchenOrder["status"];
+    }) => {
+      updateOrderStatus(payload.orderId, payload.status, {
+        assignedKitchenId: payload.assignedKitchenId,
+        assignedKitchenName: payload.assignedKitchenName,
+      });
+    };
+    const handleReleased = (payload: {
+      orderId: string;
+      role: string;
+      status: KitchenOrder["status"];
+    }) => {
+      if (payload.role === "KITCHEN") {
+        updateOrderStatus(payload.orderId, payload.status, {
+          assignedKitchenId: null,
+          assignedKitchenName: null,
+          acceptedAt: null,
+          preparingAt: null,
+        });
+      }
     };
     const handleConnect = () => {
       setConnected(true);
@@ -174,6 +208,10 @@ export function KitchenBoard() {
     };
     const handleDisconnect = () => setConnected(false);
 
+    const handleNotesUpdated = () => {
+      fetchOrders();
+    };
+
     joinKitchen();
     socket.on("kitchen:joined", handleJoined);
     socket.on("error", handleError);
@@ -181,6 +219,9 @@ export function KitchenBoard() {
     socket.on("order:status_updated", handleStatusUpdated);
     socket.on("order:cancelled", handleCancelled);
     socket.on("order:auto_cancelled", handleCancelled);
+    socket.on("order:notes_updated", handleNotesUpdated);
+    socket.on("order:claimed:kitchen", handleClaimedKitchen);
+    socket.on("order:released", handleReleased);
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
 
@@ -191,6 +232,9 @@ export function KitchenBoard() {
       socket.off("order:status_updated", handleStatusUpdated);
       socket.off("order:cancelled", handleCancelled);
       socket.off("order:auto_cancelled", handleCancelled);
+      socket.off("order:notes_updated", handleNotesUpdated);
+      socket.off("order:claimed:kitchen", handleClaimedKitchen);
+      socket.off("order:released", handleReleased);
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
     };
@@ -208,22 +252,34 @@ export function KitchenBoard() {
     return () => window.clearTimeout(timeoutId);
   }, [actionError]);
 
-  const incoming = getOrdersByStatus(["PLACED"]);
-  const preparing = getOrdersByStatus(["ACCEPTED", "PREPARING"]);
-  const ready = getOrdersByStatus(["READY"]);
+  const allIncoming = getOrdersByStatus(["PLACED"]);
+  const allPreparing = getOrdersByStatus(["ACCEPTED", "PREPARING"]);
+  const allReady = getOrdersByStatus(["READY"]);
+
+  const incoming = viewMode === "available" ? allIncoming : [];
+  const preparing = viewMode === "available"
+    ? allPreparing
+    : allPreparing.filter((o) => o.assignedKitchenId === user?.id);
+  const ready = viewMode === "available"
+    ? allReady
+    : allReady.filter((o) => o.assignedKitchenId === user?.id);
+
+  const myActiveClaimsCount = useMemo(() => {
+    return allPreparing.filter((o) => o.assignedKitchenId === user?.id).length;
+  }, [allPreparing, user?.id]);
 
   // Browser tab title update
   useEffect(() => {
-    const totalPending = incoming.length + preparing.length;
+    const totalPending = allIncoming.length + allPreparing.length;
     document.title = totalPending > 0
       ? `(${totalPending}) Kitchen — Nati Nest`
       : "Kitchen — Nati Nest";
-  }, [incoming.length, preparing.length]);
+  }, [allIncoming.length, allPreparing.length]);
 
   const updateWithOptimism = async (
     orderId: string,
     status: KitchenOrder["status"],
-    timestamps: Partial<Pick<KitchenOrder, "acceptedAt" | "preparingAt" | "readyAt">>,
+    timestamps: Partial<Pick<KitchenOrder, "acceptedAt" | "preparingAt" | "readyAt" | "assignedKitchenId" | "assignedKitchenName">>,
     request: () => Promise<unknown>,
     errorMessage: string,
   ) => {
@@ -243,7 +299,11 @@ export function KitchenBoard() {
     updateWithOptimism(
       orderId,
       "ACCEPTED",
-      { acceptedAt: new Date().toISOString() },
+      {
+        acceptedAt: new Date().toISOString(),
+        assignedKitchenId: user?.id,
+        assignedKitchenName: user?.name,
+      },
       () => apiClient.patch(`/kitchen/orders/${orderId}/accept`),
       "Failed to accept order.",
     );
@@ -266,6 +326,20 @@ export function KitchenBoard() {
       "Failed to mark order ready.",
     );
 
+  const handleRelease = (orderId: string) =>
+    updateWithOptimism(
+      orderId,
+      "PLACED",
+      {
+        assignedKitchenId: null,
+        assignedKitchenName: null,
+        acceptedAt: null,
+        preparingAt: null,
+      },
+      () => apiClient.patch(`/kitchen/orders/${orderId}/release`),
+      "Failed to release order.",
+    );
+
   const columns = useMemo(
     () => [
       {
@@ -282,6 +356,7 @@ export function KitchenBoard() {
         emptyMessage: "Nothing cooking",
         onPreparing: handlePreparing,
         onReady: handleReady,
+        onRelease: handleRelease,
       },
       {
         title: "Ready",
@@ -290,7 +365,7 @@ export function KitchenBoard() {
         emptyMessage: "All delivered",
       },
     ],
-    [incoming, preparing, ready],
+    [incoming, preparing, ready, user?.id],
   );
 
   return (
@@ -301,11 +376,44 @@ export function KitchenBoard() {
           <h1 className="text-lg font-bold text-zinc-100">Kitchen</h1>
           <div className="flex items-center gap-3">
             <AudioAlert isEnabled={isEnabled} onToggle={setEnabled} />
+            <Button
+              type="button"
+              onClick={() => setIsMenuOpen(true)}
+              className="min-h-10 text-xs px-3 py-1 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold border-0"
+            >
+              Menu
+            </Button>
             <Button type="button" variant="secondary" onClick={logout} className="min-h-10 text-xs px-3 py-1">
               Logout
             </Button>
           </div>
         </header>
+
+        {/* View Mode Switcher for Mobile */}
+        <div className="flex bg-zinc-900 px-4 py-2 border-b border-zinc-855 shrink-0 gap-2">
+          <button
+            onClick={() => setViewMode("available")}
+            className={cn(
+              "flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all",
+              viewMode === "available"
+                ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                : "border-zinc-800 text-zinc-400 hover:text-zinc-300"
+            )}
+          >
+            Available
+          </button>
+          <button
+            onClick={() => setViewMode("my-orders")}
+            className={cn(
+              "flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all",
+              viewMode === "my-orders"
+                ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                : "border-zinc-800 text-zinc-400 hover:text-zinc-300"
+            )}
+          >
+            My Claims ({myActiveClaimsCount})
+          </button>
+        </div>
 
         {/* Horizontal Tab Bar */}
         <div className="grid grid-cols-3 bg-zinc-900 border-b border-zinc-850 shrink-0 text-center text-sm font-semibold relative z-10">
@@ -360,7 +468,7 @@ export function KitchenBoard() {
                   title="Incoming"
                   orders={incoming}
                   accentColor="amber"
-                  emptyMessage="No new orders"
+                  emptyMessage={viewMode === "my-orders" ? "Claimed orders will show here" : "No new orders"}
                   onAccept={handleAccept}
                   flash={flashIncoming}
                 />
@@ -373,6 +481,7 @@ export function KitchenBoard() {
                   emptyMessage="Nothing cooking"
                   onPreparing={handlePreparing}
                   onReady={handleReady}
+                  onRelease={handleRelease}
                 />
               )}
               {activeTab === "READY" && (
@@ -391,9 +500,44 @@ export function KitchenBoard() {
       {/* Desktop/Landscape Tablet Layout */}
       <div className="hidden md:flex h-screen flex-col">
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-800 bg-zinc-900 px-6">
-          <h1 className="text-xl font-bold text-zinc-100">Kitchen Dashboard</h1>
+          <div className="flex items-center gap-6">
+            <h1 className="text-xl font-bold text-zinc-100">Kitchen Dashboard</h1>
+            <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-850">
+              <button
+                type="button"
+                onClick={() => setViewMode("available")}
+                className={cn(
+                  "px-4 py-1.5 text-xs font-bold rounded-lg transition-all",
+                  viewMode === "available"
+                    ? "bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20"
+                    : "text-zinc-400 hover:text-zinc-300"
+                )}
+              >
+                Available Orders
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("my-orders")}
+                className={cn(
+                  "px-4 py-1.5 text-xs font-bold rounded-lg transition-all",
+                  viewMode === "my-orders"
+                    ? "bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20"
+                    : "text-zinc-400 hover:text-zinc-300"
+                )}
+              >
+                My Claims ({myActiveClaimsCount})
+              </button>
+            </div>
+          </div>
           <div className="flex items-center gap-4">
             <AudioAlert isEnabled={isEnabled} onToggle={setEnabled} />
+            <Button
+              type="button"
+              onClick={() => setIsMenuOpen(true)}
+              className="min-h-12 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold border-0"
+            >
+              Manage Menu
+            </Button>
             <KitchenConnectionStatus isConnected={isConnectedStore} />
             <span className="text-sm font-medium text-zinc-400">{user?.name ?? "Kitchen Staff"}</span>
             <Button type="button" variant="secondary" onClick={logout} className="min-h-12">
@@ -403,10 +547,10 @@ export function KitchenBoard() {
         </header>
 
         <SummaryBar
-          placedCount={incoming.length}
-          preparingCount={preparing.length}
-          readyCount={ready.length}
-          totalCount={incoming.length + preparing.length + ready.length}
+          placedCount={allIncoming.length}
+          preparingCount={allPreparing.length}
+          readyCount={allReady.length}
+          totalCount={allIncoming.length + allPreparing.length + allReady.length}
         />
 
         {isLoading ? (
@@ -452,6 +596,7 @@ export function KitchenBoard() {
                 onAccept={column.onAccept}
                 onPreparing={column.onPreparing}
                 onReady={column.onReady}
+                onRelease={column.onRelease}
                 flash={column.title === "Incoming" ? flashIncoming : undefined}
               />
             ))}
@@ -475,6 +620,10 @@ export function KitchenBoard() {
           {actionError}
         </button>
       ) : null}
+
+      {isMenuOpen && (
+        <KitchenMenuModal onClose={() => setIsMenuOpen(false)} />
+      )}
     </div>
   );
 }

@@ -136,6 +136,7 @@ export class OrderService {
           data: {
             sessionId,
             status: OrderStatus.PLACED,
+            specialNotes: data.specialNotes ?? null,
           },
         });
 
@@ -178,6 +179,7 @@ export class OrderService {
         sessionId,
         itemCount: serializedOrder.itemCount,
         placedAt: serializedOrder.placedAt,
+        specialNotes: serializedOrder.specialNotes,
       });
 
       return serializedOrder;

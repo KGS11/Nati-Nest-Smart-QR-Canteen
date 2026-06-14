@@ -60,11 +60,11 @@ describe("customer payment and feedback components", () => {
     );
 
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /notify server/i }));
+      fireEvent.click(screen.getByRole("button", { name: /notify waiter/i }));
     });
 
     expect(mocks.requestAssistance).toHaveBeenCalledWith(AssistanceType.BILL);
-    expect(screen.getByText(/Server has been notified/i)).toBeInTheDocument();
+    expect(screen.getByText(/Waiter has been notified/i)).toBeInTheDocument();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(2000);
@@ -85,7 +85,7 @@ describe("customer payment and feedback components", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /notify server/i }));
+    fireEvent.click(screen.getByRole("button", { name: /notify waiter/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Server unavailable");
   });

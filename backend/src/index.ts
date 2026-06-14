@@ -25,6 +25,8 @@ import settingsRouter from "./routes/settings.routes";
 import staffRouter from "./routes/staff.routes";
 import tableRouter from "./routes/table.routes";
 import dailyMenuRouter from "./routes/daily-menu.routes";
+import adminRouter from "./routes/admin.routes";
+import { checkAutoReleaseClaims } from "./services/auto-release.service";
 import { registerSocketHandlers } from "./sockets";
 import { logger } from "./config/logger";
 
@@ -159,6 +161,7 @@ app.use("/api/feedback", feedbackRouter);
 app.use("/api/reports", reportsRouter);
 app.use("/api/protected", protectedExampleRouter);
 app.use("/api/daily-menu", dailyMenuRouter);
+app.use("/api/admin", adminRouter);
 
 registerSocketHandlers(io);
 
@@ -184,6 +187,9 @@ if (process.env.NODE_ENV !== "test") {
   void verifyDatabaseConnection().finally(() => {
     server.listen(port, () => {
       logger.info(`Nati Nest API listening on port ${port}`);
+      setInterval(() => {
+        void checkAutoReleaseClaims();
+      }, 60000);
     });
   });
 }

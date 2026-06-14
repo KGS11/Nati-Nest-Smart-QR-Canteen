@@ -33,4 +33,48 @@ export const adminService = {
     const response = await apiClient.get<ApiResponse<TableRecord[]>>("/tables");
     return response.data.data;
   },
+
+  async reassignKitchen(orderId: string, staffId: string) {
+    const response = await apiClient.patch<ApiResponse<{ order: any }>>(
+      `/admin/orders/${orderId}/reassign-kitchen`,
+      { staffId }
+    );
+    return response.data.data.order;
+  },
+
+  async reassignWaiter(orderId: string, staffId: string) {
+    const response = await apiClient.patch<ApiResponse<{ order: any }>>(
+      `/admin/orders/${orderId}/reassign-waiter`,
+      { staffId }
+    );
+    return response.data.data.order;
+  },
+
+  async forceUnclaimKitchen(orderId: string) {
+    const response = await apiClient.patch<ApiResponse<{ order: any }>>(
+      `/admin/orders/${orderId}/force-unclaim-kitchen`
+    );
+    return response.data.data.order;
+  },
+
+  async forceUnclaimWaiter(orderId: string) {
+    const response = await apiClient.patch<ApiResponse<{ order: any }>>(
+      `/admin/orders/${orderId}/force-unclaim-waiter`
+    );
+    return response.data.data.order;
+  },
+
+  async forceDeliver(orderId: string) {
+    const response = await apiClient.patch<ApiResponse<{ order: any }>>(
+      `/admin/orders/${orderId}/force-deliver`
+    );
+    return response.data.data.order;
+  },
+
+  async getAssignmentHistory(orderId: string) {
+    const response = await apiClient.get<ApiResponse<{ history: any[] }>>(
+      `/admin/orders/${orderId}/assignment-history`
+    );
+    return response.data.data.history;
+  },
 };

@@ -17,6 +17,7 @@ export const createOrderSchema = z.object({
       }),
     )
     .min(1, "At least one item is required"),
+  specialNotes: z.string().trim().max(500, "Special notes must not exceed 500 characters").optional(),
 });
 
 export const orderIdParamSchema = z.object({
@@ -93,5 +94,10 @@ export const validateParams =
 export const createOrderValidator = validateRequest(createOrderSchema);
 export const orderIdParamValidator = validateParams(orderIdParamSchema);
 export const verifyPaymentValidator = validateRequest(verifyPaymentSchema);
+
+export const setTipSchema = z.object({
+  tipAmount: z.number().min(0, "Tip amount cannot be negative"),
+});
+export const setTipValidator = validateRequest(setTipSchema);
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;

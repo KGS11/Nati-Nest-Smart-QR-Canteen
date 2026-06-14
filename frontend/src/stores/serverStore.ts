@@ -19,6 +19,7 @@ interface ServerState {
 
   setReadyOrders: (orders: ReadyOrder[]) => void
   addReadyOrder: (order: ReadyOrder) => void
+  updateReadyOrder: (orderId: string, fields: Partial<ReadyOrder>) => void
   removeReadyOrder: (orderId: string) => void
 
   setAssistanceRequests: (requests: AssistanceRequest[]) => void
@@ -53,6 +54,12 @@ export const useServerStore = create<ServerState>()(
           ...state.readyOrders.filter(existing => existing.id !== order.id),
           order
         ]
+      })),
+    updateReadyOrder: (orderId, fields) =>
+      set(state => ({
+        readyOrders: state.readyOrders.map(o =>
+          o.id === orderId ? { ...o, ...fields } : o
+        )
       })),
     removeReadyOrder: (orderId) =>
       set(state => ({

@@ -5,12 +5,15 @@ import Loader from "@/components/common/Loader";
 import { KitchenOrder } from "@/types/kitchen.types";
 import { OrderItemRow } from "./OrderItemRow";
 import { OrderTimer } from "./OrderTimer";
+import { useAuthStore } from "@/stores/authStore";
+import { cn } from "@/utils/cn";
 
 interface OrderCardProps {
   order: KitchenOrder;
   onAccept?: (orderId: string) => Promise<void>;
   onPreparing?: (orderId: string) => Promise<void>;
   onReady?: (orderId: string) => Promise<void>;
+  onRelease?: (orderId: string) => Promise<void>;
 }
 
 const accentClass: Record<KitchenOrder["status"], string> = {
@@ -22,11 +25,15 @@ const accentClass: Record<KitchenOrder["status"], string> = {
 
 const shortId = (orderId: string) => `#${orderId.replace(/-/g, "").slice(-4).toUpperCase()}`;
 
-export function OrderCard({ order, onAccept, onPreparing, onReady }: OrderCardProps) {
+export function OrderCard({ order, onAccept, onPreparing, onReady, onRelease }: OrderCardProps) {
+  const { user } = useAuthStore();
   const [isActioning, setIsActioning] = useState(false);
   const [isNew, setIsNew] = useState(
     Date.now() - new Date(order.placedAt).getTime() < 3000,
   );
+
+  const isAssignedToMe = !order.assignedKitchenId || order.assignedKitchenId === user?.id;
+  const isAssignedToOther = !!(order.assignedKitchenId && order.assignedKitchenId !== user?.id);
 
   useEffect(() => {
     if (!isNew) return;
@@ -88,11 +95,11 @@ export function OrderCard({ order, onAccept, onPreparing, onReady }: OrderCardPr
 
   return (
     <article
-      className={[
-        "rounded-xl border border-l-4 border-zinc-800 bg-zinc-900 p-4 md:p-5 shadow-lg shadow-black/20",
-        accentClass[order.status],
-        isNew ? "animate-pulse ring-2 ring-amber-500/50" : "",
-      ].join(" ")}
+      className={cn(
+        "rounded-xl border border-l-4 border-zinc-800 bg-zinc-900 p-4 md:p-5 shadow-lg shadow-black/20 transition-all duration-200",
+        isAssignedToOther ? "border-l-zinc-700 opacity-60 saturate-50" : accentClass[order.status],
+        isNew && !isAssignedToOther ? "animate-pulse ring-2 ring-amber-500/50" : "",
+      )}
     >
       <header className="flex items-start justify-between gap-3">
         <div>
@@ -110,16 +117,42 @@ export function OrderCard({ order, onAccept, onPreparing, onReady }: OrderCardPr
         </div>
       )}
 
+      {order.specialNotes && (
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-2.5 text-xs text-red-400 mt-3 flex items-start gap-1.5 font-bold">
+          <span>⚠️</span>
+          <div>
+            <span className="uppercase text-[9px] tracking-wider block mb-0.5 text-red-500 font-extrabold">Waiter Note</span>
+            <span>{order.specialNotes}</span>
+          </div>
+        </div>
+      )}
+
+      {order.assignedKitchenId && (
+        <div className={cn(
+          "rounded-xl p-2.5 text-xs font-semibold mt-3 flex items-center gap-1.5",
+          isAssignedToOther
+            ? "bg-zinc-800/50 border border-zinc-700 text-zinc-400"
+            : "bg-blue-500/10 border border-blue-500/20 text-blue-400"
+        )}>
+          <span>🍳</span>
+          <span>
+            {isAssignedToOther
+              ? `Claimed by ${order.assignedKitchenName || 'another cook'}`
+              : "Claimed by me"}
+          </span>
+        </div>
+      )}
+
       <div className="my-4 border-t border-zinc-800" />
 
-      <div className="divide-y divide-zinc-800">
+      <div className={cn("divide-y divide-zinc-800", isAssignedToOther && "pointer-events-none")}>
         {order.items.map((item) => (
           <OrderItemRow
             key={item.id}
             item={item}
             orderStatus={order.status}
             onReject={
-              order.status !== "READY" && item.status !== "REJECTED"
+              order.status !== "READY" && item.status !== "REJECTED" && isAssignedToMe
                 ? (reason) => handleRejectItem(item.id, reason)
                 : undefined
             }
@@ -133,52 +166,71 @@ export function OrderCard({ order, onAccept, onPreparing, onReady }: OrderCardPr
         </span>
 
         <div className="flex gap-2">
-          {order.status !== "READY" && (
-            <button
-              type="button"
-              disabled={isActioning}
-              onClick={handleRejectOrder}
-              className="min-h-[52px] md:min-h-[56px] rounded-lg border border-red-500/30 bg-red-500/10 px-3 text-sm font-bold text-red-400 hover:bg-red-500/20 active:scale-[0.98] disabled:opacity-60"
-            >
-              Reject
-            </button>
+          {isAssignedToOther ? (
+            <span className="text-xs font-semibold text-zinc-500 self-center italic">
+              Assigned to {order.assignedKitchenName}
+            </span>
+          ) : (
+            <>
+              {order.status !== "READY" && (
+                <button
+                  type="button"
+                  disabled={isActioning}
+                  onClick={handleRejectOrder}
+                  className="min-h-[52px] md:min-h-[56px] rounded-lg border border-red-500/30 bg-red-500/10 px-3 text-sm font-bold text-red-400 hover:bg-red-500/20 active:scale-[0.98] disabled:opacity-60"
+                >
+                  Reject
+                </button>
+              )}
+
+              {order.status === "PLACED" ? (
+                <button
+                  type="button"
+                  disabled={isActioning}
+                  onClick={() => runAction(onAccept)}
+                  className="min-h-[52px] md:min-h-[56px] rounded-lg bg-amber-500 px-4 text-sm font-bold text-zinc-950 active:scale-[0.98] disabled:opacity-60"
+                >
+                  {isActioning ? <Loader className="scale-50" /> : "Claim & Accept"}
+                </button>
+              ) : null}
+
+              {(order.status === "ACCEPTED" || order.status === "PREPARING") && onRelease ? (
+                <button
+                  type="button"
+                  disabled={isActioning}
+                  onClick={() => runAction(onRelease)}
+                  className="min-h-[52px] md:min-h-[56px] rounded-lg border border-zinc-700 bg-zinc-800/30 px-3 text-sm font-bold text-zinc-350 hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-60"
+                >
+                  {isActioning ? <Loader className="scale-50" /> : "Release"}
+                </button>
+              ) : null}
+
+              {order.status === "ACCEPTED" ? (
+                <button
+                  type="button"
+                  disabled={isActioning}
+                  onClick={() => runAction(onPreparing)}
+                  className="min-h-[52px] md:min-h-[56px] rounded-lg bg-blue-500 px-4 text-sm font-bold text-white active:scale-[0.98] disabled:opacity-60"
+                >
+                  {isActioning ? <Loader className="scale-50" /> : "Start Preparing"}
+                </button>
+              ) : null}
+
+              {order.status === "PREPARING" ? (
+                <button
+                  type="button"
+                  disabled={isActioning}
+                  onClick={() => runAction(onReady)}
+                  className="min-h-[52px] md:min-h-[56px] rounded-lg bg-green-500 px-4 text-sm font-bold text-zinc-950 active:scale-[0.98] disabled:opacity-60"
+                >
+                  {isActioning ? <Loader className="scale-50" /> : "Mark Ready"}
+                </button>
+              ) : null}
+            </>
           )}
-
-          {order.status === "PLACED" ? (
-            <button
-              type="button"
-              disabled={isActioning}
-              onClick={() => runAction(onAccept)}
-              className="min-h-[52px] md:min-h-[56px] rounded-lg bg-amber-500 px-4 text-sm font-bold text-zinc-950 active:scale-[0.98] disabled:opacity-60"
-            >
-              {isActioning ? <Loader className="scale-50" /> : "Accept"}
-            </button>
-          ) : null}
-
-          {order.status === "ACCEPTED" ? (
-            <button
-              type="button"
-              disabled={isActioning}
-              onClick={() => runAction(onPreparing)}
-              className="min-h-[52px] md:min-h-[56px] rounded-lg bg-blue-500 px-4 text-sm font-bold text-white active:scale-[0.98] disabled:opacity-60"
-            >
-              {isActioning ? <Loader className="scale-50" /> : "Start Preparing"}
-            </button>
-          ) : null}
-
-          {order.status === "PREPARING" ? (
-            <button
-              type="button"
-              disabled={isActioning}
-              onClick={() => runAction(onReady)}
-              className="min-h-[52px] md:min-h-[56px] rounded-lg bg-green-500 px-4 text-sm font-bold text-zinc-950 active:scale-[0.98] disabled:opacity-60"
-            >
-              {isActioning ? <Loader className="scale-50" /> : "Mark Ready"}
-            </button>
-          ) : null}
         </div>
 
-        {order.status === "READY" ? (
+        {order.status === "READY" && !isAssignedToOther ? (
           <span className="text-xs font-semibold text-zinc-500">Awaiting delivery</span>
         ) : null}
       </footer>

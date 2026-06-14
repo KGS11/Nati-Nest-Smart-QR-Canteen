@@ -3,6 +3,7 @@ import {
   AssistanceType,
   OrderItemStatus,
   OrderStatus,
+  Role,
 } from "@prisma/client";
 import { Server } from "socket.io";
 import { prisma } from "../config/db";
@@ -119,7 +120,125 @@ export class ServerService {
     }
   }
 
-  async markDelivered(orderId: string, _staffId: string) {
+  async claimDelivery(orderId: string, staffId: string, staffName: string) {
+    try {
+      const updateResult = await prisma.order.updateMany({
+        where: {
+          id: orderId,
+          status: OrderStatus.READY,
+          assignedWaiterId: null,
+        },
+        data: {
+          assignedWaiterId: staffId,
+          assignedWaiterName: staffName,
+          assignedAt: new Date(),
+        },
+      });
+
+      if (updateResult.count === 0) {
+        const existingOrder = await prisma.order.findUnique({
+          where: { id: orderId },
+        });
+
+        if (!existingOrder) {
+          throw new AppError("Order not found", 404);
+        }
+
+        if (existingOrder.status !== OrderStatus.READY) {
+          throw new AppError("Only READY orders can be claimed for delivery.", 400);
+        }
+
+        if (existingOrder.assignedWaiterId) {
+          throw new AppError(`This delivery is already claimed by ${existingOrder.assignedWaiterName || "another waiter"}.`, 409);
+        }
+
+        throw new AppError("Failed to claim delivery.", 400);
+      }
+
+      const updatedOrder = await serverOrderById(orderId);
+      if (!updatedOrder) {
+        throw new AppError("Order not found", 404);
+      }
+
+      await prisma.orderAssignmentHistory.create({
+        data: {
+          orderId,
+          staffId,
+          role: Role.SERVER,
+          action: "CLAIMED",
+        },
+      });
+
+      const io = getIo();
+      io.to(ROOMS.server).emit("order:claimed:waiter", {
+        orderId: updatedOrder.id,
+        assignedWaiterId: staffId,
+        assignedWaiterName: staffName,
+        status: OrderStatus.READY,
+      });
+
+      return serializeOrder(updatedOrder);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async releaseDelivery(orderId: string, userId: string, role: string) {
+    try {
+      const order = await serverOrderById(orderId);
+      if (!order) {
+        throw new AppError("Order not found", 404);
+      }
+
+      if (order.status !== OrderStatus.READY) {
+        throw new AppError("Only READY orders can be released.", 400);
+      }
+
+      if (!order.assignedWaiterId) {
+        throw new AppError("Delivery is not claimed.", 400);
+      }
+
+      if (order.assignedWaiterId !== userId && role !== "ADMIN") {
+        throw new AppError("This delivery is assigned to another waiter.", 403);
+      }
+
+      const staffId = order.assignedWaiterId;
+      const updatedOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          assignedWaiterId: null,
+          assignedWaiterName: null,
+          assignedAt: null,
+        },
+        include: {
+          session: { include: { table: { select: { tableNumber: true } } } },
+          items: { include: { menuItem: true } },
+        },
+      });
+
+      await prisma.orderAssignmentHistory.create({
+        data: {
+          orderId,
+          staffId,
+          role: Role.SERVER,
+          action: "RELEASED",
+        },
+      });
+
+      const io = getIo();
+      io.to(ROOMS.server).emit("order:released", {
+        orderId,
+        role: Role.SERVER,
+        status: OrderStatus.READY,
+      });
+
+      return serializeOrder(updatedOrder);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async markDelivered(orderId: string, staffId: string, staffName: string, role: string) {
     try {
       const order = await serverOrderById(orderId);
 
@@ -131,13 +250,34 @@ export class ServerService {
         throw new AppError("Only READY orders can be marked as delivered.", 400);
       }
 
+      if (!order.assignedWaiterId) {
+        throw new AppError("You must claim this delivery first.", 400);
+      }
+
+      if (order.assignedWaiterId !== staffId && role !== "ADMIN") {
+        throw new AppError("This order is assigned to another waiter.", 403);
+      }
+
       const deliveredAt = new Date();
       const updatedOrder = await prisma.order.update({
         where: { id: orderId },
-        data: { status: OrderStatus.DELIVERED, deliveredAt },
+        data: {
+          status: OrderStatus.DELIVERED,
+          deliveredAt,
+          deliveredBy: staffName,
+        },
         include: {
           session: { include: { table: { select: { tableNumber: true } } } },
           items: { include: { menuItem: true } },
+        },
+      });
+
+      await prisma.orderAssignmentHistory.create({
+        data: {
+          orderId,
+          staffId,
+          role: Role.SERVER,
+          action: "DELIVERED",
         },
       });
 
@@ -146,9 +286,16 @@ export class ServerService {
         status: OrderStatus.DELIVERED,
         tableNumber: updatedOrder.session.table.tableNumber,
         deliveredAt: updatedOrder.deliveredAt,
+        assignedWaiterId: updatedOrder.assignedWaiterId,
+        assignedWaiterName: updatedOrder.assignedWaiterName,
+        deliveredBy: staffName,
       };
       const io = getIo();
       io.to(ROOMS.server).emit("order:status_updated", payload);
+      io.to(ROOMS.server).emit("order:delivered", {
+        orderId: updatedOrder.id,
+        deliveredBy: staffName,
+      });
       io.to(ROOMS.kitchen).emit("order:status_updated", payload);
       io.to(ROOMS.session(updatedOrder.session.id)).emit("order:delivered", {
         orderId: updatedOrder.id,
@@ -289,7 +436,6 @@ export class ServerService {
       let paymentData: { paymentId: string; totalAmount: number } | undefined;
 
       if (requestType === AssistanceType.BILL) {
-        // BR-04: Propagate payment errors for BILL requests — don't swallow silently
         const { payment } = await paymentService.createPaymentOnBillRequest(sessionId);
         paymentData = {
           paymentId: payment.id,
@@ -380,6 +526,39 @@ export class ServerService {
         totalAmount: Math.round(totalAmount * 100) / 100,
         itemBreakdown: Array.from(breakdown.values()),
       };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateOrderNotes(orderId: string, notes: string) {
+    try {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+      });
+
+      if (!order) {
+        throw new AppError("Order not found", 404);
+      }
+
+      const updatedOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          specialNotes: notes || null,
+        },
+      });
+
+      getIo().to(ROOMS.kitchen).emit("order:notes_updated", {
+        orderId,
+        specialNotes: notes || null,
+      });
+
+      getIo().to(ROOMS.server).emit("order:notes_updated", {
+        orderId,
+        specialNotes: notes || null,
+      });
+
+      return updatedOrder;
     } catch (error) {
       throw error;
     }

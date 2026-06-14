@@ -76,11 +76,14 @@ model User {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
 
-  paymentsVerified   Payment[]           @relation("VerifiedBy")
-  assistanceResolved AssistanceRequest[] @relation("ResolvedBy")
+  paymentsVerified   Payment[]                @relation("VerifiedBy")
+  assistanceResolved AssistanceRequest[]      @relation("ResolvedBy")
   refreshTokens      RefreshToken[]
-  dailyMenuAdded     DailyMenu[]         @relation("DailyMenuAddedBy")
-  dailyMenuRemoved   DailyMenu[]         @relation("DailyMenuRemovedBy")
+  dailyMenuAdded     DailyMenu[]              @relation("DailyMenuAddedBy")
+  dailyMenuRemoved   DailyMenu[]              @relation("DailyMenuRemovedBy")
+  assignedKitchenOrders Order[]               @relation("AssignedKitchen")
+  assignedWaiterOrders  Order[]               @relation("AssignedWaiter")
+  assignmentHistory     OrderAssignmentHistory[]
 
   @@map("users")
 }
@@ -178,16 +181,28 @@ model Order {
   readyAt         DateTime?
   deliveredAt     DateTime?
   paidAt          DateTime?
-  rejectionReason String?
+  rejectionReason     String?
+  specialNotes        String?
+  assignedKitchenId   String?
+  assignedKitchenName String?
+  assignedWaiterId    String?
+  assignedWaiterName  String?
+  assignedAt          DateTime?
+  deliveredBy         String?
 
-  session TableSession @relation(fields: [sessionId], references: [id])
-  items   OrderItem[]
+  session           TableSession             @relation(fields: [sessionId], references: [id])
+  items             OrderItem[]
+  assignedKitchen   User?                    @relation("AssignedKitchen", fields: [assignedKitchenId], references: [id])
+  assignedWaiter    User?                    @relation("AssignedWaiter", fields: [assignedWaiterId], references: [id])
+  assignmentHistory OrderAssignmentHistory[]
 
   @@index([sessionId, status])
   @@index([status, placedAt])
   @@index([placedAt])
   @@index([readyAt])
   @@index([status])
+  @@index([assignedKitchenId])
+  @@index([assignedWaiterId])
   @@map("orders")
 }
 
@@ -218,6 +233,7 @@ model Payment {
   sessionId     String        @unique
   verifiedById  String?
   totalAmount   Decimal       @db.Decimal(10, 2)
+  tipAmount     Decimal       @db.Decimal(10, 2) @default(0)
   paymentMethod PaymentMethod
   status        PaymentStatus @default(PENDING)
   createdAt     DateTime      @default(now())
@@ -326,5 +342,21 @@ enum DailyMenuRemovalReason {
   MACHINE_PROBLEM
   KITCHEN_CLOSED
   OTHER
+}
+
+model OrderAssignmentHistory {
+  id        String   @id @default(uuid())
+  orderId   String
+  staffId   String
+  role      Role
+  action    String
+  timestamp DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  staff User  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([staffId])
+  @@map("order_assignment_history")
 }
 

@@ -7,6 +7,7 @@ import {
   Prisma,
   SessionStatus,
   TableStatus,
+  Role,
 } from "@prisma/client";
 import { prisma } from "../config/db";
 import { DateGroupBy, getGroupKey, getMondayOfCurrentWeek } from "../utils/date.utils";
@@ -52,7 +53,7 @@ export class ReportsService {
       const [totalRevenue, methodRevenue, payments] = await Promise.all([
         prisma.payment.aggregate({
           where,
-          _sum: { totalAmount: true },
+          _sum: { totalAmount: true, tipAmount: true },
           _count: { id: true },
           _avg: { totalAmount: true },
         }),
@@ -64,7 +65,7 @@ export class ReportsService {
         }),
         prisma.payment.findMany({
           where,
-          select: { totalAmount: true, paymentMethod: true, verifiedAt: true },
+          select: { totalAmount: true, tipAmount: true, paymentMethod: true, verifiedAt: true },
           orderBy: { verifiedAt: "asc" },
         }),
       ]);
@@ -82,10 +83,13 @@ export class ReportsService {
           transactionCount: 0,
           cashRevenue: 0,
           upiRevenue: 0,
+          totalTips: 0,
         }),
         (target, payment) => {
           const amount = Number(payment.totalAmount);
+          const tip = Number(payment.tipAmount);
           target.totalRevenue = round2(Number(target.totalRevenue) + amount);
+          target.totalTips = round2(Number(target.totalTips) + tip);
           target.transactionCount = Number(target.transactionCount) + 1;
           if (payment.paymentMethod === PaymentMethod.CASH) {
             target.cashRevenue = round2(Number(target.cashRevenue) + amount);
@@ -105,6 +109,7 @@ export class ReportsService {
           upiRevenue: money(upi?._sum.totalAmount),
           cashTransactions: cash?._count.id ?? 0,
           upiTransactions: upi?._count.id ?? 0,
+          totalTips: money(totalRevenue._sum.tipAmount),
         },
         breakdown,
         dateRange: { ...params },
@@ -568,6 +573,210 @@ export class ReportsService {
         },
         generatedAt: new Date(),
       };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getTipsReport(params: { startDate: string; endDate: string }) {
+    try {
+      const from = getStartOfDay(params.startDate);
+      const to = getEndOfDay(params.endDate);
+
+      const where = {
+        status: PaymentStatus.COMPLETED,
+        verifiedAt: { gte: from, lte: to },
+      };
+
+      const [totalTipsAgg, waiterTipsRows, dailyTipsRows] = await Promise.all([
+        prisma.payment.aggregate({
+          where,
+          _sum: { tipAmount: true },
+          _count: { id: true },
+        }),
+        prisma.payment.groupBy({
+          by: ["verifiedById"],
+          where: {
+            ...where,
+            verifiedById: { not: null },
+          },
+          _sum: { tipAmount: true },
+          _count: { id: true },
+        }),
+        prisma.payment.findMany({
+          where,
+          select: { tipAmount: true, verifiedAt: true },
+          orderBy: { verifiedAt: "asc" },
+        }),
+      ]);
+
+      const verifiedByIds = waiterTipsRows
+        .map((row) => row.verifiedById)
+        .filter((id): id is string => id !== null);
+
+      const waiters = await prisma.user.findMany({
+        where: { id: { in: verifiedByIds } },
+        select: { id: true, name: true, phone: true },
+      });
+
+      const waiterMap = new Map(waiters.map((w) => [w.id, w]));
+
+      const waiterTips = waiterTipsRows.map((row) => {
+        const waiter = row.verifiedById ? waiterMap.get(row.verifiedById) : null;
+        return {
+          waiterId: row.verifiedById,
+          waiterName: waiter?.name ?? "Unknown Waiter",
+          waiterPhone: waiter?.phone ?? "",
+          tipAmount: money(row._sum.tipAmount),
+          transactionCount: row._count.id,
+        };
+      });
+
+      const dailyTips = groupDateTotals(
+        dailyTipsRows
+          .filter((row): row is typeof row & { verifiedAt: Date } => Boolean(row.verifiedAt))
+          .map((row) => ({ ...row, date: row.verifiedAt })),
+        "day",
+        (key) => ({
+          date: key,
+          tipAmount: 0,
+          transactionCount: 0,
+        }),
+        (target, row) => {
+          const tip = Number(row.tipAmount);
+          target.tipAmount = round2(Number(target.tipAmount) + tip);
+          target.transactionCount = Number(target.transactionCount) + 1;
+        },
+      );
+
+      return {
+        totalTips: money(totalTipsAgg._sum.tipAmount),
+        transactionCount: totalTipsAgg._count.id,
+        tipsByWaiter: waiterTips.sort((a, b) => b.tipAmount - a.tipAmount),
+        tipsByDate: dailyTips,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getWaiterPerformanceReport() {
+    try {
+      const waiters = await prisma.user.findMany({
+        where: { role: Role.SERVER },
+        select: { id: true, name: true, phone: true, isActive: true },
+      });
+
+      const performance = await Promise.all(
+        waiters.map(async (waiter) => {
+          const completedOrders = await prisma.order.findMany({
+            where: {
+              assignedWaiterId: waiter.id,
+              status: { in: [OrderStatus.DELIVERED, OrderStatus.PAID] },
+            },
+            select: { readyAt: true, deliveredAt: true },
+          });
+
+          const activeCount = await prisma.order.count({
+            where: {
+              assignedWaiterId: waiter.id,
+              status: OrderStatus.READY,
+            },
+          });
+
+          const tipsAgg = await prisma.payment.aggregate({
+            where: {
+              verifiedById: waiter.id,
+              status: PaymentStatus.COMPLETED,
+            },
+            _sum: { tipAmount: true },
+          });
+
+          let totalDeliveryMinutes = 0;
+          let countedDeliveries = 0;
+
+          completedOrders.forEach((o) => {
+            if (o.readyAt && o.deliveredAt) {
+              const diff = (o.deliveredAt.getTime() - o.readyAt.getTime()) / 60000;
+              totalDeliveryMinutes += diff;
+              countedDeliveries += 1;
+            }
+          });
+
+          const avgDeliveryTime = countedDeliveries > 0 ? round1(totalDeliveryMinutes / countedDeliveries) : 0;
+
+          return {
+            waiterId: waiter.id,
+            waiterName: waiter.name,
+            waiterPhone: waiter.phone,
+            isActive: waiter.isActive,
+            ordersDelivered: completedOrders.length,
+            tipsEarned: money(tipsAgg._sum.tipAmount),
+            avgDeliveryTime,
+            activeOrders: activeCount,
+            completedOrders: completedOrders.length,
+          };
+        })
+      );
+
+      return performance;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getKitchenPerformanceReport() {
+    try {
+      const staffList = await prisma.user.findMany({
+        where: { role: Role.KITCHEN },
+        select: { id: true, name: true, phone: true, isActive: true },
+      });
+
+      const performance = await Promise.all(
+        staffList.map(async (staff) => {
+          const preparedOrders = await prisma.order.findMany({
+            where: {
+              assignedKitchenId: staff.id,
+              status: { in: [OrderStatus.READY, OrderStatus.DELIVERED, OrderStatus.PAID] },
+            },
+            select: { acceptedAt: true, readyAt: true },
+          });
+
+          const activeCount = await prisma.order.count({
+            where: {
+              assignedKitchenId: staff.id,
+              status: { in: [OrderStatus.ACCEPTED, OrderStatus.PREPARING] },
+            },
+          });
+
+          let totalPrepMinutes = 0;
+          let countedPrep = 0;
+
+          preparedOrders.forEach((o) => {
+            if (o.acceptedAt && o.readyAt) {
+              const diff = (o.readyAt.getTime() - o.acceptedAt.getTime()) / 60000;
+              totalPrepMinutes += diff;
+              countedPrep += 1;
+            }
+          });
+
+          const avgPrepTime = countedPrep > 0 ? round1(totalPrepMinutes / countedPrep) : 0;
+
+          return {
+            staffId: staff.id,
+            staffName: staff.name,
+            staffPhone: staff.phone,
+            isActive: staff.isActive,
+            ordersAccepted: preparedOrders.length + activeCount,
+            ordersPrepared: preparedOrders.length,
+            avgPreparationTime: avgPrepTime,
+            activeOrders: activeCount,
+            completedOrders: preparedOrders.length,
+          };
+        })
+      );
+
+      return performance;
     } catch (error) {
       throw error;
     }

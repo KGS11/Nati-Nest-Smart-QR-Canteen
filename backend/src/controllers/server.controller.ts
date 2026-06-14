@@ -30,13 +30,60 @@ export class ServerController {
 
   async markDelivered(request: Request, response: Response, next: NextFunction) {
     try {
+      const orderId = param(request, "orderId");
+      if (!UUID_REGEX.test(orderId)) {
+        return response.status(400).json({ success: false, message: "Invalid order ID format." });
+      }
+
       const order = await serverService.markDelivered(
-        param(request, "orderId"),
+        orderId,
         request.user!.userId,
+        request.user!.name,
+        request.user!.role,
       );
       return response.status(200).json({
         success: true,
         message: "Order marked as delivered",
+        data: { order },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async claimDelivery(request: Request, response: Response, next: NextFunction) {
+    try {
+      const orderId = param(request, "orderId");
+      if (!UUID_REGEX.test(orderId)) {
+        return response.status(400).json({ success: false, message: "Invalid order ID format." });
+      }
+
+      const staffId = request.user!.userId;
+      const staffName = request.user!.name;
+
+      const order = await serverService.claimDelivery(orderId, staffId, staffName);
+      return response.status(200).json({
+        success: true,
+        message: "Delivery claimed successfully",
+        data: { order },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async releaseDelivery(request: Request, response: Response, next: NextFunction) {
+    try {
+      const orderId = param(request, "orderId");
+      if (!UUID_REGEX.test(orderId)) {
+        return response.status(400).json({ success: false, message: "Invalid order ID format." });
+      }
+
+      const user = request.user!;
+      const order = await serverService.releaseDelivery(orderId, user.userId, user.role);
+      return response.status(200).json({
+        success: true,
+        message: "Delivery released back to available queue",
         data: { order },
       });
     } catch (error) {
@@ -80,7 +127,6 @@ export class ServerController {
 
   async createAssistanceRequest(request: Request, response: Response, next: NextFunction) {
     try {
-      // SEC-01: Validate requestType against enum before calling service
       const parsed = assistanceTypeSchema.safeParse(request.body.requestType);
       if (!parsed.success) {
         return response.status(400).json({
@@ -110,6 +156,25 @@ export class ServerController {
       return response.status(200).json({
         success: true,
         data: billSummary,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async updateOrderNotes(request: Request, response: Response, next: NextFunction) {
+    try {
+      const orderId = param(request, "orderId");
+      if (!UUID_REGEX.test(orderId)) {
+        return response.status(400).json({ success: false, message: "Invalid order ID format." });
+      }
+
+      const { specialNotes } = request.body;
+      const order = await serverService.updateOrderNotes(orderId, specialNotes);
+      return response.status(200).json({
+        success: true,
+        message: "Order special notes updated successfully",
+        data: { order },
       });
     } catch (error) {
       return next(error);

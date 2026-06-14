@@ -122,7 +122,7 @@ export const generateCSV = (
   const data = rows.map((row) =>
     columns.map((column) => escapeCsvValue(row[column.key])).join(","),
   );
-  return [header, ...data].join("\n");
+  return "\ufeff" + [header, ...data].join("\n");
 };
 
 export const parseDateRange = (params: {

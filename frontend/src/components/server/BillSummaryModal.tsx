@@ -1,9 +1,10 @@
-'use client'
+"use client";
 
 import { useState, useEffect } from 'react'
 import apiClient from '@/lib/api-client'
 import Loader from '@/components/ui/Loader'
 import { BillSummary, PendingPayment } from '@/types/server.types'
+import { cn } from '@/utils/cn'
 
 interface BillSummaryModalProps {
   sessionId: string
@@ -14,6 +15,52 @@ interface BillSummaryModalProps {
 
 const formatCurrency = (amount: number): string =>
   `₹ ${amount.toFixed(2)}`
+
+function OrderNotesEditor({ orderId, initialNotes }: { orderId: string; initialNotes: string }) {
+  const [notes, setNotes] = useState(initialNotes)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveSuccess, setSaveSuccess] = useState(false)
+
+  const handleSave = async () => {
+    setIsSaving(true)
+    setSaveSuccess(false)
+    try {
+      await apiClient.patch(`/server/orders/${orderId}/notes`, { specialNotes: notes })
+      setSaveSuccess(true)
+      setTimeout(() => setSaveSuccess(false), 2000)
+    } catch (err) {
+      console.error(err)
+      alert('Failed to update notes')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex gap-2 mt-1.5">
+      <input
+        type="text"
+        placeholder="Add special instructions (e.g. VIP, Spicy)..."
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500"
+      />
+      <button
+        type="button"
+        onClick={handleSave}
+        disabled={isSaving}
+        className={cn(
+          "px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-transparent shrink-0",
+          saveSuccess
+            ? "bg-green-500 text-zinc-950"
+            : "bg-amber-500 text-zinc-950 hover:bg-amber-400 disabled:opacity-50"
+        )}
+      >
+        {isSaving ? '...' : saveSuccess ? 'Saved' : 'Save'}
+      </button>
+    </div>
+  )
+}
 
 export default function BillSummaryModal({
   sessionId,
@@ -152,6 +199,30 @@ export default function BillSummaryModal({
               </span>
             </div>
 
+            {/* Active Orders & Notes Section */}
+            <div className="space-y-3 border-t border-zinc-800 pt-4">
+              <h3 className="text-sm font-semibold text-zinc-300 flex items-center gap-1.5">
+                <span>📝</span> Active Orders Notes
+              </h3>
+              {bill.orders && bill.orders.length > 0 ? (
+                <div className="space-y-3">
+                  {bill.orders.map((ord) => (
+                    <div key={ord.id} className="bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 flex flex-col gap-1.5">
+                      <div className="flex justify-between items-center text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">
+                        <span>Order #{ord.id.slice(-6).toUpperCase()}</span>
+                      </div>
+                      <div className="text-xs text-zinc-300">
+                        {ord.items.map(item => `${item.name} (x${item.quantity})`).join(', ')}
+                      </div>
+                      <OrderNotesEditor orderId={ord.id} initialNotes={(ord as any).specialNotes || ''} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-zinc-500 italic">No active orders</p>
+              )}
+            </div>
+
             {/* Payment Section */}
             <div className="mt-2">
               {paymentId ? (
@@ -161,7 +232,7 @@ export default function BillSummaryModal({
                     onRequestPaymentVerification(paymentId)
                     onClose()
                   }}
-                  className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded-xl transition-colors text-center text-sm shadow-md"
+                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-xl transition-colors text-center text-sm shadow-md"
                 >
                   Verify Payment
                 </button>
@@ -189,3 +260,4 @@ export default function BillSummaryModal({
     </div>
   )
 }
+

@@ -176,7 +176,7 @@ describe("frontend critical screens", () => {
   it("renders server dashboard", async () => {
     const ServerBoard = (await import("@/components/server/ServerBoard")).default;
     render(<ServerBoard />);
-    await waitFor(() => expect(screen.getByText("Server Dashboard")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Waiter Dashboard")).toBeInTheDocument());
   });
 
   it("renders admin menu pages", async () => {

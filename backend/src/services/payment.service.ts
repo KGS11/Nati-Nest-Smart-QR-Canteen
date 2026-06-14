@@ -5,6 +5,8 @@ import {
   PaymentStatus,
   SessionStatus,
   TableStatus,
+  Prisma,
+  Role,
 } from "@prisma/client";
 import { Server } from "socket.io";
 import { prisma } from "../config/db";
@@ -16,9 +18,17 @@ const getIo = (): Server => {
   return io;
 };
 
-const serializePayment = <T extends { totalAmount: { toNumber(): number } }>(payment: T) => ({
+const serializePayment = <
+  T extends {
+    totalAmount: { toNumber(): number };
+    tipAmount?: { toNumber(): number } | null;
+  }
+>(
+  payment: T
+) => ({
   ...payment,
   totalAmount: payment.totalAmount.toNumber(),
+  tipAmount: payment.tipAmount ? payment.tipAmount.toNumber() : 0,
 });
 
 const buildBillSummary = async (sessionId: string) => {
@@ -53,18 +63,19 @@ const buildBillSummary = async (sessionId: string) => {
   const serializedOrders = orders.map((order) => ({
     ...order,
     items: order.items.map((item) => {
-      const unitPrice = item.unitPrice.toNumber();
-      const subtotal = Math.round(unitPrice * item.quantity * 100) / 100;
+      const unitPrice = Number(item.unitPrice) || 0;
+      const quantity = Number(item.quantity) || 0;
+      const subtotal = Math.round(unitPrice * quantity * 100) / 100;
       totalAmount += subtotal;
 
       const existing = breakdown.get(item.menuItem.name);
       if (existing) {
-        existing.quantity += item.quantity;
+        existing.quantity += quantity;
         existing.subtotal = Math.round((existing.subtotal + subtotal) * 100) / 100;
       } else {
         breakdown.set(item.menuItem.name, {
           name: item.menuItem.name,
-          quantity: item.quantity,
+          quantity,
           unitPrice,
           subtotal,
         });
@@ -75,7 +86,7 @@ const buildBillSummary = async (sessionId: string) => {
         unitPrice,
         menuItem: {
           ...item.menuItem,
-          price: item.menuItem.price.toNumber(),
+          price: Number(item.menuItem.price) || 0,
         },
       };
     }),
@@ -111,6 +122,18 @@ export class PaymentService {
       const billSummary = await buildBillSummary(sessionId);
 
       if (existingPayment?.status === PaymentStatus.PENDING) {
+        const currentTotal = Number(existingPayment.totalAmount) || 0;
+        if (currentTotal !== billSummary.totalAmount) {
+          const updatedPayment = await prisma.payment.update({
+            where: { id: existingPayment.id },
+            data: { totalAmount: new Prisma.Decimal(billSummary.totalAmount) },
+          });
+          return {
+            payment: serializePayment(updatedPayment),
+            billSummary,
+            isNew: false,
+          };
+        }
         return {
           payment: serializePayment(existingPayment),
           billSummary,
@@ -154,7 +177,7 @@ export class PaymentService {
     }
   }
 
-  async verifyPayment(paymentId: string, staffId: string, paymentMethod: PaymentMethod) {
+  async verifyPayment(paymentId: string, staffId: string, paymentMethod: PaymentMethod, role: string) {
     try {
       const payment = await prisma.payment.findUnique({
         where: { id: paymentId },
@@ -171,6 +194,15 @@ export class PaymentService {
 
       if (!payment) {
         throw new AppError("Payment not found", 404);
+      }
+
+      // Enforce waiter order ownership
+      const sessionOrders = await prisma.order.findMany({
+        where: { sessionId: payment.sessionId, status: { not: OrderStatus.CANCELLED } }
+      });
+      const assignedWaiterIds = [...new Set(sessionOrders.map(o => o.assignedWaiterId).filter(Boolean))];
+      if (assignedWaiterIds.length > 0 && !assignedWaiterIds.includes(staffId) && role !== "ADMIN") {
+        throw new AppError("Payment verification is restricted to the assigned waiter.", 403);
       }
 
       if (payment.status === PaymentStatus.COMPLETED) {
@@ -296,6 +328,83 @@ export class PaymentService {
       });
 
       return payments.map((payment) => serializePayment(payment));
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async setTipAmount(sessionId: string, tipAmount: number) {
+    try {
+      const sanitizedTip = Number(tipAmount) || 0;
+      if (isNaN(sanitizedTip) || sanitizedTip < 0) {
+        throw new AppError("Invalid tip amount.", 400);
+      }
+
+      let payment = await prisma.payment.findUnique({
+        where: { sessionId },
+      });
+
+      if (!payment) {
+        const session = await prisma.tableSession.findUnique({
+          where: { id: sessionId },
+          include: { table: { select: { tableNumber: true } } },
+        });
+
+        if (!session) {
+          throw new AppError("Session not found", 404);
+        }
+
+        if (session.status !== SessionStatus.ACTIVE) {
+          throw new AppError("Session has already ended.", 400);
+        }
+
+        const billSummary = await buildBillSummary(sessionId);
+        if (billSummary.totalAmount === 0) {
+          throw new AppError("No items to bill. Place an order first.", 400);
+        }
+
+        payment = await prisma.payment.create({
+          data: {
+            sessionId,
+            totalAmount: billSummary.totalAmount,
+            paymentMethod: PaymentMethod.CASH,
+            status: PaymentStatus.PENDING,
+            tipAmount: new Prisma.Decimal(sanitizedTip),
+          },
+        });
+
+        const serializedPayment = serializePayment(payment);
+
+        getIo().to(ROOMS.server).emit("payment:bill_requested", {
+          sessionId,
+          paymentId: payment.id,
+          tableNumber: session.table.tableNumber,
+          totalAmount: serializedPayment.totalAmount,
+          requestedAt: new Date(),
+        });
+      } else {
+        if (payment.status === PaymentStatus.COMPLETED) {
+          throw new AppError("Payment already completed.", 400);
+        }
+
+        const billSummary = await buildBillSummary(sessionId);
+        payment = await prisma.payment.update({
+          where: { id: payment.id },
+          data: {
+            tipAmount: new Prisma.Decimal(sanitizedTip),
+            totalAmount: new Prisma.Decimal(billSummary.totalAmount),
+          },
+        });
+      }
+
+      const serialized = serializePayment(payment);
+
+      getIo().to(ROOMS.server).emit("payment:tip_updated", {
+        paymentId: payment.id,
+        tipAmount: serialized.tipAmount,
+      });
+
+      return serialized;
     } catch (error) {
       throw error;
     }

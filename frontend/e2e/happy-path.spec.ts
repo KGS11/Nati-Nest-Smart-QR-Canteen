@@ -276,15 +276,17 @@ test.describe("Nati Nest happy path", () => {
     }
     await page.goto("/customer/bill");
     await expect(page.getByText(/Your Bill/i)).toBeVisible();
-    await page.getByText(/Pay with Cash/i).click();
+    await page.waitForTimeout(1000);
+    await page.getByText("Pay with Cash").first().click();
     await page.getByRole("button", { name: /continue/i }).click();
-    await page.getByRole("button", { name: /notify server/i }).click();
-    await expect(page.getByText(/Server has been notified|Payment Pending/i)).toBeVisible();
+    await page.getByRole("button", { name: /notify waiter/i }).click();
+    await expect(page.getByText(/Waiter has been notified|Payment Pending/i)).toBeVisible();
 
     if (!hasSeededE2e) {
       await seedMockCustomerSession(page);
     }
     await page.goto("/customer/feedback");
+    await page.waitForTimeout(1000);
     await page.getByRole("button", { name: /5 star/i }).click();
     await page.getByRole("button", { name: /submit feedback/i }).click();
     await expect(page.getByText(/Thank you|great rating/i)).toBeVisible();
@@ -305,6 +307,6 @@ test.describe("Nati Nest happy path", () => {
     await expect(page.getByRole("heading", { name: "Kitchen Dashboard" })).toBeVisible();
 
     await page.goto("/server");
-    await expect(page.getByText(/Server Dashboard/i)).toBeVisible();
+    await expect(page.getByText(/Waiter Dashboard/i)).toBeVisible();
   });
 });

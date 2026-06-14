@@ -38,4 +38,11 @@ export const kitchenService = {
     );
     return response.data.data.order;
   },
+
+  async releaseOrder(orderId: string) {
+    const response = await apiClient.patch<ApiResponse<{ order: Order }>>(
+      `/kitchen/orders/${orderId}/release`,
+    );
+    return response.data.data.order;
+  },
 };

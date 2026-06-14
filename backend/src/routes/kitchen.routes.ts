@@ -16,6 +16,7 @@ router.patch(
   kitchenController.startPreparing.bind(kitchenController),
 );
 router.patch("/orders/:orderId/ready", kitchenController.markReady.bind(kitchenController));
+router.patch("/orders/:orderId/release", kitchenController.releaseOrder.bind(kitchenController));
 router.patch("/orders/:orderId/reject", kitchenController.rejectOrder.bind(kitchenController));
 router.patch("/orders/:orderId/items/:itemId/reject", kitchenController.rejectOrderItem.bind(kitchenController));
 

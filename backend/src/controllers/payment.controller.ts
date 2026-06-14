@@ -30,6 +30,7 @@ export class PaymentController {
             id: payment.id,
             totalAmount: payment.totalAmount,
             status: payment.status,
+            tipAmount: payment.tipAmount,
           },
           billSummary,
         },
@@ -61,6 +62,7 @@ export class PaymentController {
         paymentId,
         request.user!.userId,
         parsed.data,
+        request.user!.role,
       );
 
       return response.status(200).json({
@@ -97,6 +99,24 @@ export class PaymentController {
           payments,
           count: payments.length,
         },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async setTip(request: Request, response: Response, next: NextFunction) {
+    try {
+      const { tipAmount } = request.body;
+      const payment = await paymentService.setTipAmount(
+        request.session!.sessionId,
+        tipAmount,
+      );
+
+      return response.status(200).json({
+        success: true,
+        message: "Tip set successfully",
+        data: { payment },
       });
     } catch (error) {
       return next(error);

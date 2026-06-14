@@ -18,6 +18,20 @@ export const serverService = {
     return response.data.data.order;
   },
 
+  async claimDelivery(orderId: string) {
+    const response = await apiClient.patch<ApiResponse<{ order: Order }>>(
+      `/server/orders/${orderId}/claim`,
+    );
+    return response.data.data.order;
+  },
+
+  async releaseDelivery(orderId: string) {
+    const response = await apiClient.patch<ApiResponse<{ order: Order }>>(
+      `/server/orders/${orderId}/release`,
+    );
+    return response.data.data.order;
+  },
+
   async getAssistanceRequests() {
     const response = await apiClient.get<ApiResponse<AssistanceRequest[]>>("/server/assistance");
     return response.data.data;
