@@ -164,6 +164,7 @@ model TableSession {
   @@index([tableId, status])
   @@index([openedAt])
   @@index([closedAt])
+  @@index([status])
   @@map("table_sessions")
 }
 
@@ -185,6 +186,7 @@ model Order {
   @@index([status, placedAt])
   @@index([placedAt])
   @@index([readyAt])
+  @@index([status])
   @@map("orders")
 }
 
@@ -204,6 +206,8 @@ model OrderItem {
   @@index([orderId])
   @@index([menuItemId])
   @@index([status, createdAt])
+  @@index([status])
+  @@index([orderId, status])
   @@map("order_items")
 }
 
@@ -223,6 +227,7 @@ model Payment {
   @@index([status, createdAt])
   @@index([status, verifiedAt])
   @@index([verifiedAt])
+  @@index([status])
   @@map("payments")
 }
 
@@ -292,13 +297,15 @@ model Settings {
 }
 
 model DailyMenu {
-  id          String    @id @default(uuid())
-  menuItemId  String
-  menuDate    DateTime  @db.Date
-  addedById   String
-  addedAt     DateTime  @default(now())
-  removedAt   DateTime?
-  removedById String?
+  id                String                  @id @default(uuid())
+  menuItemId        String
+  menuDate          DateTime                @db.Date
+  addedById         String
+  addedAt           DateTime                @default(now())
+  removedAt         DateTime?
+  removedById       String?
+  removalReason     String?
+  removalReasonType DailyMenuRemovalReason?
 
   menuItem    MenuItem  @relation(fields: [menuItemId], references: [id])
   addedBy     User      @relation("DailyMenuAddedBy", fields: [addedById], references: [id])
@@ -309,5 +316,13 @@ model DailyMenu {
   @@index([menuItemId, menuDate])
   @@index([menuDate, removedAt])
   @@map("daily_menu")
+}
+
+enum DailyMenuRemovalReason {
+  OUT_OF_STOCK
+  INGREDIENT_FINISHED
+  MACHINE_PROBLEM
+  KITCHEN_CLOSED
+  OTHER
 }
 

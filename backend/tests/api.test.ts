@@ -92,6 +92,8 @@ const dailyMenuService = {
   getFullMenuWithStatus: vi.fn(),
   addItemToToday: vi.fn(),
   removeItemFromToday: vi.fn(),
+  getRemovedItems: vi.fn(),
+  restoreItem: vi.fn(),
   copyYesterdayMenu: vi.fn(),
   getHistoryMenu: vi.fn(),
 };
@@ -444,6 +446,8 @@ describe("Nati Nest backend API", () => {
     dailyMenuService.getFullMenuWithStatus.mockResolvedValue({ date: "2026-06-13", categories: [] });
     dailyMenuService.addItemToToday.mockResolvedValue({ id, name: "Special Rice", addedAt: new Date() });
     dailyMenuService.removeItemFromToday.mockResolvedValue({ id, name: "Special Rice", removedAt: new Date() });
+    dailyMenuService.getRemovedItems.mockResolvedValue({ date: "2026-06-13", items: [], count: 0 });
+    dailyMenuService.restoreItem.mockResolvedValue({ id, name: "Special Rice", addedAt: new Date() });
     dailyMenuService.copyYesterdayMenu.mockResolvedValue({ copied: 5, skipped: 0, items: [] });
     dailyMenuService.getHistoryMenu.mockResolvedValue({ date: "2026-06-12", items: [], count: 0 });
 
@@ -465,6 +469,17 @@ describe("Nati Nest backend API", () => {
 
     await request(app)
       .delete(`/api/daily-menu/remove/${id}`)
+      .set("Authorization", auth(adminToken))
+      .send({ reason: "Out of stock", reasonType: "OUT_OF_STOCK" })
+      .expect(200);
+
+    await request(app)
+      .get("/api/daily-menu/removed")
+      .set("Authorization", auth(adminToken))
+      .expect(200);
+
+    await request(app)
+      .post(`/api/daily-menu/restore/${id}`)
       .set("Authorization", auth(adminToken))
       .expect(200);
 

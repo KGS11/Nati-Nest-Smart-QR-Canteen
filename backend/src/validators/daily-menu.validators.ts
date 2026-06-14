@@ -1,8 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 import { z, ZodError, ZodTypeAny } from "zod";
+import { DailyMenuRemovalReason } from "@prisma/client";
 
 export const addDailyMenuItemSchema = z.object({
   menuItemId: z.string().uuid("Invalid menu item ID format"),
+});
+
+export const removeDailyMenuItemSchema = z.object({
+  reason: z.string().min(1, "Reason is required"),
+  reasonType: z.nativeEnum(DailyMenuRemovalReason),
 });
 
 export const validate =
@@ -21,3 +27,4 @@ export const validate =
       return next(error);
     }
   };
+

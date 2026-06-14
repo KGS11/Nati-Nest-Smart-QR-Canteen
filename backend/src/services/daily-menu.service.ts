@@ -1,3 +1,4 @@
+import { DailyMenuRemovalReason } from "@prisma/client";
 import { prisma } from "../config/db";
 import { AppError } from "../utils/AppError";
 
@@ -196,7 +197,12 @@ export class DailyMenuService {
     return { ...created, name: menuItem.name };
   }
 
-  async removeItemFromToday(menuItemId: string, userId: string) {
+  async removeItemFromToday(
+    menuItemId: string,
+    userId: string,
+    reason: string,
+    reasonType: DailyMenuRemovalReason
+  ) {
     const today = getTodayDate();
 
     const existingEntry = await prisma.dailyMenu.findUnique({
@@ -220,6 +226,116 @@ export class DailyMenuService {
       data: {
         removedAt: new Date(),
         removedById: userId,
+        removalReason: reason,
+        removalReasonType: reasonType,
+      },
+    });
+
+    return { ...updated, name: existingEntry.menuItem.name };
+  }
+
+  async getRemovedItems(dateStr?: string) {
+    let targetDate: Date;
+    if (dateStr) {
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(dateStr)) {
+        throw new AppError("Invalid date format. Expected YYYY-MM-DD.", 400);
+      }
+      targetDate = new Date(`${dateStr}T00:00:00.000Z`);
+    } else {
+      targetDate = getTodayDate();
+    }
+
+    const items = await prisma.dailyMenu.findMany({
+      where: {
+        menuDate: targetDate,
+        removedAt: { not: null },
+      },
+      include: {
+        menuItem: {
+          include: {
+            category: true,
+          },
+        },
+        addedBy: {
+          select: {
+            name: true,
+          },
+        },
+        removedBy: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        removedAt: "desc",
+      },
+    });
+
+    return {
+      date: targetDate.toISOString().split("T")[0],
+      items: items.map((entry) => ({
+        dailyMenuId: entry.id,
+        menuItemId: entry.menuItemId,
+        name: entry.menuItem.name,
+        description: entry.menuItem.description,
+        price: entry.menuItem.price.toNumber(),
+        imageUrl: entry.menuItem.imageUrl,
+        isPopular: entry.menuItem.isPopular,
+        category: {
+          id: entry.menuItem.category.id,
+          name: entry.menuItem.category.name,
+        },
+        addedAt: entry.addedAt,
+        addedBy: {
+          name: entry.addedBy.name,
+        },
+        removedAt: entry.removedAt,
+        removedBy: entry.removedBy
+          ? {
+              name: entry.removedBy.name,
+            }
+          : null,
+        removalReason: entry.removalReason,
+        removalReasonType: entry.removalReasonType,
+      })),
+      count: items.length,
+    };
+  }
+
+  async restoreItem(dailyMenuId: string, userId: string) {
+    const existingEntry = await prisma.dailyMenu.findUnique({
+      where: { id: dailyMenuId },
+      include: {
+        menuItem: true,
+      },
+    });
+
+    if (!existingEntry) {
+      throw new AppError("Daily menu entry not found.", 404);
+    }
+
+    if (existingEntry.removedAt === null) {
+      throw new AppError("Item is already active on today's menu.", 400);
+    }
+
+    if (!existingEntry.menuItem.isAvailable) {
+      throw new AppError(
+        `${existingEntry.menuItem.name} is retired from the master catalog.`,
+        400
+      );
+    }
+
+    const updated = await prisma.dailyMenu.update({
+      where: { id: dailyMenuId },
+      data: {
+        removedAt: null,
+        removedById: null,
+        removalReason: null,
+        removalReasonType: null,
+        addedById: userId,
+        addedAt: new Date(),
       },
     });
 

@@ -7,15 +7,19 @@ import { TodaysMenuPanel } from "@/components/admin/daily-menu/TodaysMenuPanel";
 import { FullMenuPanel } from "@/components/admin/daily-menu/FullMenuPanel";
 import { CopyYesterdayModal } from "@/components/admin/daily-menu/CopyYesterdayModal";
 import { HistoryModal } from "@/components/admin/daily-menu/HistoryModal";
+import { RemoveItemModal } from "@/components/admin/daily-menu/RemoveItemModal";
 import { apiClient } from "@/lib/api-client";
 import { ApiResponse } from "@/types/api";
 import { useIsMobile } from "@/hooks/useMediaQuery";
+import { DailyMenuRemovalReason } from "@/types/daily-menu.types";
 
 export default function DailyMenuPage() {
   const {
     todaysItems,
+    removedItems,
     fullMenuCategories,
     isLoadingToday,
+    isLoadingRemoved,
     isLoadingFull,
     isCopying,
     searchQuery,
@@ -24,20 +28,28 @@ export default function DailyMenuPage() {
     setSearchQuery,
     setSelectedCategoryId,
     fetchTodayMenu,
+    fetchRemovedItems,
     fetchFullMenu,
     addItemToToday,
     removeItemFromToday,
+    restoreItem,
     copyYesterdayMenu,
   } = useDailyMenu();
 
   const [allCategories, setAllCategories] = useState<Array<{ id: string; name: string }>>([]);
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  
+  // State for deactivating item modal
+  const [deactivatingItem, setDeactivatingItem] = useState<{ id: string; name: string } | null>(null);
+  const [isDeactivating, setIsDeactivating] = useState(false);
+
   const [activeTab, setActiveTab] = useState<"today" | "catalog">("today");
   const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchTodayMenu();
+    fetchRemovedItems();
     fetchFullMenu();
 
     const loadCategories = async () => {
@@ -49,7 +61,7 @@ export default function DailyMenuPage() {
       }
     };
     loadCategories();
-  }, [fetchTodayMenu, fetchFullMenu]);
+  }, [fetchTodayMenu, fetchRemovedItems, fetchFullMenu]);
 
   const handleCopyConfirm = async () => {
     try {
@@ -60,10 +72,27 @@ export default function DailyMenuPage() {
     }
   };
 
+  const handleRemoveClick = (menuItemId: string, itemName: string) => {
+    setDeactivatingItem({ id: menuItemId, name: itemName });
+  };
+
+  const handleRemoveConfirm = async (reason: string, reasonType: DailyMenuRemovalReason) => {
+    if (!deactivatingItem) return;
+    setIsDeactivating(true);
+    try {
+      await removeItemFromToday(deactivatingItem.id, reason, reasonType);
+      setDeactivatingItem(null);
+    } catch (err) {
+      // Store handles error state
+    } finally {
+      setIsDeactivating(false);
+    }
+  };
+
   const todayDateStr = new Date().toISOString().split("T")[0];
 
   return (
-    <div className="mx-auto w-full max-w-[1600px] p-4 pb-24 md:p-8">
+    <div className="mx-auto w-full max-w-[1600px] p-4 pb-24 md:p-8 animate-in fade-in duration-200">
       {error && (
         <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-semibold flex items-center justify-between animate-pulse">
           <span>{error}</span>
@@ -108,8 +137,11 @@ export default function DailyMenuPage() {
         {(!isMobile || activeTab === "today") && (
           <TodaysMenuPanel
             items={todaysItems}
-            onRemoveItem={removeItemFromToday}
+            removedItems={removedItems}
+            onRemoveItem={handleRemoveClick}
+            onRestoreItem={restoreItem}
             isLoading={isLoadingToday}
+            isLoadingRemoved={isLoadingRemoved}
           />
         )}
         {(!isMobile || activeTab === "catalog") && (
@@ -136,6 +168,15 @@ export default function DailyMenuPage() {
 
       {showHistoryModal && (
         <HistoryModal onClose={() => setShowHistoryModal(false)} />
+      )}
+
+      {deactivatingItem && (
+        <RemoveItemModal
+          itemName={deactivatingItem.name}
+          onConfirm={handleRemoveConfirm}
+          onCancel={() => setDeactivatingItem(null)}
+          isSubmitting={isDeactivating}
+        />
       )}
     </div>
   );

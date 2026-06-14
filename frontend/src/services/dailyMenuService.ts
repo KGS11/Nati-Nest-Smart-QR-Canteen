@@ -23,8 +23,23 @@ export const dailyMenuService = {
     return response.data.data;
   },
 
-  async removeItemFromToday(menuItemId: string) {
-    const response = await apiClient.delete<ApiResponse<any>>(`/daily-menu/remove/${menuItemId}`);
+  async removeItemFromToday(menuItemId: string, reason: string, reasonType: string) {
+    const response = await apiClient.delete<ApiResponse<any>>(`/daily-menu/remove/${menuItemId}`, {
+      data: { reason, reasonType },
+    });
+    return response.data.data;
+  },
+
+  async getRemovedItems(date?: string) {
+    const response = await apiClient.get<ApiResponse<{ date: string; items: DailyMenuItem[]; count: number }>>(
+      "/daily-menu/removed",
+      { params: { date } }
+    );
+    return response.data.data;
+  },
+
+  async restoreItem(dailyMenuId: string) {
+    const response = await apiClient.post<ApiResponse<any>>(`/daily-menu/restore/${dailyMenuId}`);
     return response.data.data;
   },
 

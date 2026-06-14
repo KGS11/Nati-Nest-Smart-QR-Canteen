@@ -72,8 +72,9 @@ export class DailyMenuController {
     try {
       const menuItemId = request.params.menuItemId as string;
       const userId = request.user!.userId;
+      const { reason, reasonType } = request.body;
 
-      const data = await dailyMenuService.removeItemFromToday(menuItemId, userId);
+      const data = await dailyMenuService.removeItemFromToday(menuItemId, userId, reason, reasonType);
 
       // Emit socket events
       try {
@@ -81,11 +82,15 @@ export class DailyMenuController {
           menuItemId,
           name: data.name,
           removedAt: data.removedAt,
+          reason: data.removalReason,
+          reasonType: data.removalReasonType,
         });
         getIo().to(ROOMS.server).emit("daily-menu:item-removed", {
           menuItemId,
           name: data.name,
           removedAt: data.removedAt,
+          reason: data.removalReason,
+          reasonType: data.removalReasonType,
         });
       } catch (err) {
         // Suppress socket errors so it doesn't fail request
@@ -94,6 +99,52 @@ export class DailyMenuController {
       return response.status(200).json({
         success: true,
         message: `${data.name} removed from today's menu`,
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getRemoved(request: Request, response: Response, next: NextFunction) {
+    try {
+      const date = request.query.date as string | undefined;
+      const data = await dailyMenuService.getRemovedItems(date);
+      return response.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async restore(request: Request, response: Response, next: NextFunction) {
+    try {
+      const dailyMenuId = request.params.dailyMenuId as string;
+      const userId = request.user!.userId;
+
+      const data = await dailyMenuService.restoreItem(dailyMenuId, userId);
+
+      // Emit socket events
+      try {
+        getIo().to(ROOMS.kitchen).emit("daily-menu:item-added", {
+          menuItemId: data.menuItemId,
+          name: data.name,
+          addedAt: data.addedAt,
+        });
+        getIo().to(ROOMS.server).emit("daily-menu:item-added", {
+          menuItemId: data.menuItemId,
+          name: data.name,
+          addedAt: data.addedAt,
+        });
+      } catch (err) {
+        // Suppress socket errors
+      }
+
+      return response.status(200).json({
+        success: true,
+        message: `${data.name} restored to today's menu`,
         data,
       });
     } catch (error) {

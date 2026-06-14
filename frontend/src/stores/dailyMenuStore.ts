@@ -6,8 +6,10 @@ import { dailyMenuService } from "@/services/dailyMenuService";
 
 interface DailyMenuState {
   todaysItems: DailyMenuItem[];
+  removedItems: DailyMenuItem[];
   fullMenuCategories: CategoryWithDailyStatus[];
   isLoadingToday: boolean;
+  isLoadingRemoved: boolean;
   isLoadingFull: boolean;
   isCopying: boolean;
   searchQuery: string;
@@ -18,9 +20,11 @@ interface DailyMenuState {
   setSelectedCategoryId: (id: string | null) => void;
 
   fetchTodayMenu: () => Promise<void>;
+  fetchRemovedItems: () => Promise<void>;
   fetchFullMenu: () => Promise<void>;
   addItemToToday: (menuItemId: string) => Promise<void>;
-  removeItemFromToday: (menuItemId: string) => Promise<void>;
+  removeItemFromToday: (menuItemId: string, reason: string, reasonType: string) => Promise<void>;
+  restoreItem: (dailyMenuId: string) => Promise<void>;
   copyYesterdayMenu: () => Promise<void>;
 
   // Real-time Socket Handlers
@@ -31,8 +35,10 @@ interface DailyMenuState {
 
 export const useDailyMenuStore = create<DailyMenuState>()((set, get) => ({
   todaysItems: [],
+  removedItems: [],
   fullMenuCategories: [],
   isLoadingToday: false,
+  isLoadingRemoved: false,
   isLoadingFull: false,
   isCopying: false,
   searchQuery: "",
@@ -59,6 +65,16 @@ export const useDailyMenuStore = create<DailyMenuState>()((set, get) => ({
     }
   },
 
+  fetchRemovedItems: async () => {
+    set({ isLoadingRemoved: true, error: null });
+    try {
+      const data = await dailyMenuService.getRemovedItems();
+      set({ removedItems: data.items, isLoadingRemoved: false });
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || "Failed to fetch removed items", isLoadingRemoved: false });
+    }
+  },
+
   fetchFullMenu: async () => {
     set({ isLoadingFull: true, error: null });
     try {
@@ -77,20 +93,31 @@ export const useDailyMenuStore = create<DailyMenuState>()((set, get) => ({
     set({ error: null });
     try {
       await dailyMenuService.addItemToToday(menuItemId);
-      await Promise.all([get().fetchTodayMenu(), get().fetchFullMenu()]);
+      await Promise.all([get().fetchTodayMenu(), get().fetchFullMenu(), get().fetchRemovedItems()]);
     } catch (err: any) {
       set({ error: err.response?.data?.message || "Failed to add item to today's menu" });
       throw err;
     }
   },
 
-  removeItemFromToday: async (menuItemId) => {
+  removeItemFromToday: async (menuItemId, reason, reasonType) => {
     set({ error: null });
     try {
-      await dailyMenuService.removeItemFromToday(menuItemId);
-      await Promise.all([get().fetchTodayMenu(), get().fetchFullMenu()]);
+      await dailyMenuService.removeItemFromToday(menuItemId, reason, reasonType);
+      await Promise.all([get().fetchTodayMenu(), get().fetchFullMenu(), get().fetchRemovedItems()]);
     } catch (err: any) {
       set({ error: err.response?.data?.message || "Failed to remove item from today's menu" });
+      throw err;
+    }
+  },
+
+  restoreItem: async (dailyMenuId) => {
+    set({ error: null });
+    try {
+      await dailyMenuService.restoreItem(dailyMenuId);
+      await Promise.all([get().fetchTodayMenu(), get().fetchFullMenu(), get().fetchRemovedItems()]);
+    } catch (err: any) {
+      set({ error: err.response?.data?.message || "Failed to restore item to today's menu" });
       throw err;
     }
   },
@@ -99,7 +126,7 @@ export const useDailyMenuStore = create<DailyMenuState>()((set, get) => ({
     set({ isCopying: true, error: null });
     try {
       await dailyMenuService.copyYesterdayMenu();
-      await Promise.all([get().fetchTodayMenu(), get().fetchFullMenu()]);
+      await Promise.all([get().fetchTodayMenu(), get().fetchFullMenu(), get().fetchRemovedItems()]);
       set({ isCopying: false });
     } catch (err: any) {
       set({ error: err.response?.data?.message || "Failed to copy yesterday's menu", isCopying: false });
@@ -110,15 +137,18 @@ export const useDailyMenuStore = create<DailyMenuState>()((set, get) => ({
   handleItemAdded: (payload) => {
     get().fetchTodayMenu();
     get().fetchFullMenu();
+    get().fetchRemovedItems();
   },
 
   handleItemRemoved: (payload) => {
     get().fetchTodayMenu();
     get().fetchFullMenu();
+    get().fetchRemovedItems();
   },
 
   handleCopied: (payload) => {
     get().fetchTodayMenu();
     get().fetchFullMenu();
+    get().fetchRemovedItems();
   },
 }));

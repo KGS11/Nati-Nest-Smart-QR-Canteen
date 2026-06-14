@@ -1,3 +1,11 @@
+export enum DailyMenuRemovalReason {
+  OUT_OF_STOCK = "OUT_OF_STOCK",
+  INGREDIENT_FINISHED = "INGREDIENT_FINISHED",
+  MACHINE_PROBLEM = "MACHINE_PROBLEM",
+  KITCHEN_CLOSED = "KITCHEN_CLOSED",
+  OTHER = "OTHER",
+}
+
 export interface DailyMenuItem {
   dailyMenuId: string;
   menuItemId: string;
@@ -14,6 +22,12 @@ export interface DailyMenuItem {
   addedBy: {
     name: string;
   };
+  removedAt?: string | null;
+  removedBy?: {
+    name: string;
+  } | null;
+  removalReason?: string | null;
+  removalReasonType?: DailyMenuRemovalReason | null;
 }
 
 export interface MenuItemWithStatus {
@@ -40,3 +54,4 @@ export interface DailyMenuStatus {
   items: DailyMenuItem[];
   count: number;
 }
+

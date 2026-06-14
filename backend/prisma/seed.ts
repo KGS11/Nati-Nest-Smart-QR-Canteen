@@ -23,14 +23,26 @@ const main = async () => {
       },
     });
 
-    await prisma.settings.upsert({
-      where: { key: "upi_qr_url" },
-      update: {},
-      create: {
-        key: "upi_qr_url",
-        value: "",
-      },
-    });
+    const defaultSettings = [
+      { key: "business_name", value: "Nati Nest" },
+      { key: "business_address", value: "" },
+      { key: "business_phone", value: "" },
+      { key: "business_tax_rate", value: "0" },
+      { key: "upi_id", value: "" },
+      { key: "logo_url", value: "" },
+      { key: "upi_qr_url", value: "" },
+    ];
+
+    for (const setting of defaultSettings) {
+      await prisma.settings.upsert({
+        where: { key: setting.key },
+        update: {},
+        create: {
+          key: setting.key,
+          value: setting.value,
+        },
+      });
+    }
 
     console.log("Seed completed: default admin account is ready.");
   } catch (error) {
