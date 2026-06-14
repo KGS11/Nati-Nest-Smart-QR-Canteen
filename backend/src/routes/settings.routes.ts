@@ -20,6 +20,7 @@ router.put(
   settingsController.updateAdminSettings.bind(settingsController),
 );
 router.get("/upi-qr", settingsController.getUpiQr.bind(settingsController));
+router.get("/upi-qr-dynamic", settingsController.getDynamicUpiQr.bind(settingsController));
 router.post(
   "/upi-qr",
   authenticate,

@@ -44,6 +44,40 @@ export function OrderCard({ order, onAccept, onPreparing, onReady }: OrderCardPr
     }
   };
 
+  const handleRejectOrder = async () => {
+    if (isActioning) return;
+    const reason = window.prompt(
+      `Enter reason for rejecting Table ${order.tableNumber} order:\n- Out of Stock\n- Ingredients Finished\n- Kitchen Closed\n- Other`
+    );
+    if (reason === null) return;
+    if (reason.trim() === "") {
+      alert("Rejection reason is required.");
+      return;
+    }
+
+    setIsActioning(true);
+    try {
+      const { apiClient } = await import("@/lib/api-client");
+      await apiClient.patch(`/kitchen/orders/${order.id}/reject`, { reason });
+    } catch (err) {
+      alert("Failed to reject order.");
+    } finally {
+      setIsActioning(false);
+    }
+  };
+
+  const handleRejectItem = async (itemId: string, reason: string) => {
+    setIsActioning(true);
+    try {
+      const { apiClient } = await import("@/lib/api-client");
+      await apiClient.patch(`/kitchen/orders/${order.id}/items/${itemId}/reject`, { reason });
+    } catch (err) {
+      alert("Failed to reject order item.");
+    } finally {
+      setIsActioning(false);
+    }
+  };
+
   const activeItemCount = order.items
     .filter((item) => item.status === "ACTIVE")
     .reduce((sum, item) => sum + item.quantity, 0);
@@ -80,7 +114,16 @@ export function OrderCard({ order, onAccept, onPreparing, onReady }: OrderCardPr
 
       <div className="divide-y divide-zinc-800">
         {order.items.map((item) => (
-          <OrderItemRow key={item.id} item={item} />
+          <OrderItemRow
+            key={item.id}
+            item={item}
+            orderStatus={order.status}
+            onReject={
+              order.status !== "READY" && item.status !== "REJECTED"
+                ? (reason) => handleRejectItem(item.id, reason)
+                : undefined
+            }
+          />
         ))}
       </div>
 
@@ -89,38 +132,51 @@ export function OrderCard({ order, onAccept, onPreparing, onReady }: OrderCardPr
           {activeItemCount} {activeItemCount === 1 ? "item" : "items"}
         </span>
 
-        {order.status === "PLACED" ? (
-          <button
-            type="button"
-            disabled={isActioning}
-            onClick={() => runAction(onAccept)}
-            className="min-h-[52px] md:min-h-[56px] rounded-lg bg-amber-500 px-4 text-sm font-bold text-zinc-950 active:scale-[0.98] disabled:opacity-60"
-          >
-            {isActioning ? <Loader className="scale-50" /> : "Accept"}
-          </button>
-        ) : null}
+        <div className="flex gap-2">
+          {order.status !== "READY" && (
+            <button
+              type="button"
+              disabled={isActioning}
+              onClick={handleRejectOrder}
+              className="min-h-[52px] md:min-h-[56px] rounded-lg border border-red-500/30 bg-red-500/10 px-3 text-sm font-bold text-red-400 hover:bg-red-500/20 active:scale-[0.98] disabled:opacity-60"
+            >
+              Reject
+            </button>
+          )}
 
-        {order.status === "ACCEPTED" ? (
-          <button
-            type="button"
-            disabled={isActioning}
-            onClick={() => runAction(onPreparing)}
-            className="min-h-[52px] md:min-h-[56px] rounded-lg bg-blue-500 px-4 text-sm font-bold text-white active:scale-[0.98] disabled:opacity-60"
-          >
-            {isActioning ? <Loader className="scale-50" /> : "Start Preparing"}
-          </button>
-        ) : null}
+          {order.status === "PLACED" ? (
+            <button
+              type="button"
+              disabled={isActioning}
+              onClick={() => runAction(onAccept)}
+              className="min-h-[52px] md:min-h-[56px] rounded-lg bg-amber-500 px-4 text-sm font-bold text-zinc-950 active:scale-[0.98] disabled:opacity-60"
+            >
+              {isActioning ? <Loader className="scale-50" /> : "Accept"}
+            </button>
+          ) : null}
 
-        {order.status === "PREPARING" ? (
-          <button
-            type="button"
-            disabled={isActioning}
-            onClick={() => runAction(onReady)}
-            className="min-h-[52px] md:min-h-[56px] rounded-lg bg-green-500 px-4 text-sm font-bold text-zinc-950 active:scale-[0.98] disabled:opacity-60"
-          >
-            {isActioning ? <Loader className="scale-50" /> : "Mark Ready"}
-          </button>
-        ) : null}
+          {order.status === "ACCEPTED" ? (
+            <button
+              type="button"
+              disabled={isActioning}
+              onClick={() => runAction(onPreparing)}
+              className="min-h-[52px] md:min-h-[56px] rounded-lg bg-blue-500 px-4 text-sm font-bold text-white active:scale-[0.98] disabled:opacity-60"
+            >
+              {isActioning ? <Loader className="scale-50" /> : "Start Preparing"}
+            </button>
+          ) : null}
+
+          {order.status === "PREPARING" ? (
+            <button
+              type="button"
+              disabled={isActioning}
+              onClick={() => runAction(onReady)}
+              className="min-h-[52px] md:min-h-[56px] rounded-lg bg-green-500 px-4 text-sm font-bold text-zinc-950 active:scale-[0.98] disabled:opacity-60"
+            >
+              {isActioning ? <Loader className="scale-50" /> : "Mark Ready"}
+            </button>
+          ) : null}
+        </div>
 
         {order.status === "READY" ? (
           <span className="text-xs font-semibold text-zinc-500">Awaiting delivery</span>

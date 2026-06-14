@@ -1,4 +1,5 @@
 import {
+  AssistanceStatus,
   CateringLeadStatus,
   OrderItemStatus,
   PaymentMethod,
@@ -17,7 +18,7 @@ import {
 import { AppError } from "../utils/AppError";
 
 export type ExportFormat = "csv" | "xlsx";
-export type ExportType = "orders" | "payments" | "revenue" | "feedback" | "tables" | "catering";
+export type ExportType = "orders" | "payments" | "revenue" | "feedback" | "tables" | "catering" | "staff";
 
 export interface ExportParams {
   filter?: string;
@@ -331,6 +332,75 @@ export class ExportService {
     });
   }
 
+  async exportStaffActivity(params: ExportParams) {
+    const { from, to } = parseDateRange(params);
+
+    const users = await prisma.user.findMany({
+      include: {
+        paymentsVerified: {
+          where: {
+            status: PaymentStatus.COMPLETED,
+            verifiedAt: { gte: from, lte: to },
+          },
+        },
+        assistanceResolved: {
+          where: {
+            status: AssistanceStatus.RESOLVED,
+            resolvedAt: { gte: from, lte: to },
+          },
+        },
+        dailyMenuAdded: {
+          where: {
+            addedAt: { gte: from, lte: to },
+          },
+        },
+        dailyMenuRemoved: {
+          where: {
+            removedAt: { gte: from, lte: to },
+          },
+        },
+      },
+    });
+
+    const columns: ExcelColumn[] = [
+      { header: "Staff Name", key: "name", width: 20 },
+      { header: "Phone", key: "phone", width: 15 },
+      { header: "Role", key: "role", width: 12 },
+      { header: "Payments Verified", key: "paymentsVerifiedCount", width: 18 },
+      { header: "Verified Amount Rs", key: "paymentsVerifiedAmount", width: 20 },
+      { header: "Assistance Resolved", key: "assistanceResolvedCount", width: 20 },
+      { header: "Daily Menu Added", key: "dailyMenuAddedCount", width: 18 },
+      { header: "Daily Menu Removed", key: "dailyMenuRemovedCount", width: 20 },
+    ];
+
+    const rows = users.map<Record<string, ExcelCellValue>>((u) => {
+      const verifiedAmount = u.paymentsVerified.reduce((sum, p) => sum + money(p.totalAmount), 0);
+      return {
+        name: u.name,
+        phone: u.phone,
+        role: u.role,
+        paymentsVerifiedCount: u.paymentsVerified.length,
+        paymentsVerifiedAmount: money(verifiedAmount),
+        assistanceResolvedCount: u.assistanceResolved.length,
+        dailyMenuAddedCount: u.dailyMenuAdded.length,
+        dailyMenuRemovedCount: u.dailyMenuRemoved.length,
+      };
+    });
+
+    return sendSheet("staff", params, {
+      sheetName: "Staff Activity",
+      columns,
+      rows,
+      totals: {
+        paymentsVerifiedCount: rows.reduce((sum, r) => sum + Number(r.paymentsVerifiedCount), 0),
+        paymentsVerifiedAmount: rows.reduce((sum, r) => sum + Number(r.paymentsVerifiedAmount), 0),
+        assistanceResolvedCount: rows.reduce((sum, r) => sum + Number(r.assistanceResolvedCount), 0),
+        dailyMenuAddedCount: rows.reduce((sum, r) => sum + Number(r.dailyMenuAddedCount), 0),
+        dailyMenuRemovedCount: rows.reduce((sum, r) => sum + Number(r.dailyMenuRemovedCount), 0),
+      },
+    });
+  }
+
   async export(type: ExportType, params: ExportParams) {
     switch (type) {
       case "orders":
@@ -345,6 +415,8 @@ export class ExportService {
         return this.exportTables(params);
       case "catering":
         return this.exportCatering(params);
+      case "staff":
+        return this.exportStaffActivity(params);
       default:
         throw new AppError("Unsupported export type", 400);
     }

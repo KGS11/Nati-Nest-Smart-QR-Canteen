@@ -54,6 +54,7 @@ export interface OrderItem {
   menuItemId: string;
   quantity: number;
   specialInstructions: string;
+  rejectionReason?: string;
 }
 
 export interface Order {
@@ -63,6 +64,7 @@ export interface Order {
   items: Array<{ name: string; quantity: number; price: number }>;
   total: number;
   createdAt: string;
+  rejectionReason?: string;
 }
 
 export interface BillSummary {

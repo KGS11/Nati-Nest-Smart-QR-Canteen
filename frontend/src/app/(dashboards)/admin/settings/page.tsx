@@ -18,6 +18,7 @@ interface AdminSettings {
   notificationsEnabled: boolean;
   logoUrl: string;
   upiQrUrl: string;
+  upiId: string;
 }
 
 type ToastState = {
@@ -70,6 +71,7 @@ export default function AdminSettingsPage() {
         businessAddress: values.businessAddress,
         taxRate: Number(values.taxRate),
         notificationsEnabled: values.notificationsEnabled,
+        upiId: values.upiId,
       });
       setSettings(response.data.data);
       reset(response.data.data);
@@ -140,6 +142,9 @@ export default function AdminSettingsPage() {
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 <Input label="Business Name" {...register("businessName", { required: true })} />
                 <Input label="Business Phone" {...register("businessPhone")} />
+                <div className="md:col-span-2">
+                  <Input label="Merchant UPI ID (for dynamic QR codes)" {...register("upiId")} placeholder="e.g. merchant@okaxis" />
+                </div>
                 <label className="block space-y-2 text-left md:col-span-2">
                   <span className="text-sm font-medium text-zinc-200">Business Address</span>
                   <textarea

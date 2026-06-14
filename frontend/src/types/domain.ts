@@ -30,6 +30,7 @@ export interface OrderItem {
   specialInstructions?: string | null;
   status?: string;
   menuItem: MenuItem;
+  rejectionReason?: string | null;
 }
 
 export interface Order {
@@ -48,6 +49,7 @@ export interface Order {
     };
   };
   items: OrderItem[];
+  rejectionReason?: string | null;
 }
 
 export interface DashboardSummary {

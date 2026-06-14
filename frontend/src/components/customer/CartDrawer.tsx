@@ -133,10 +133,16 @@ export function CartDrawer() {
             </Button>
           )}
 
-          <div className="flex justify-center mt-3">
+          <div className="flex flex-col gap-2 mt-3">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="w-full h-11 border border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 text-zinc-300 text-sm font-semibold rounded-xl active:scale-95 transition-transform py-2 focus:outline-none"
+            >
+              Continue Shopping
+            </button>
             <button
               onClick={handleClearCart}
-              className="text-xs text-zinc-500 hover:text-red-400 transition-colors py-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 rounded px-2"
+              className="text-xs text-zinc-500 hover:text-red-400 transition-colors py-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 rounded px-2 mx-auto block mt-1"
             >
               Clear cart
             </button>

@@ -17,6 +17,7 @@ import PendingPaymentsPanel from './PendingPaymentsPanel'
 import BillSummaryModal from './BillSummaryModal'
 import PaymentVerificationModal from './PaymentVerificationModal'
 import { OrderCardSkeleton } from '@/components/ui/Skeleton'
+import { MaterialIcon } from '@/components/stitch/MaterialIcon'
 
 // Types
 import {
@@ -505,8 +506,8 @@ export default function ServerBoard() {
               activeMobileTab === 'requests' ? "text-amber-400" : "text-zinc-500"
             )}
           >
-            <div className="relative">
-              <span className="text-xl select-none"></span>
+            <div className="relative flex items-center justify-center">
+              <MaterialIcon name="support_agent" className="text-xl" />
               {store.assistanceRequests.length > 0 && (
                 <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-zinc-900 animate-pulse" />
               )}
@@ -521,8 +522,8 @@ export default function ServerBoard() {
               activeMobileTab === 'deliver' ? "text-amber-400" : "text-zinc-500"
             )}
           >
-            <div className="relative">
-              <span className="text-xl select-none"></span>
+            <div className="relative flex items-center justify-center">
+              <MaterialIcon name="restaurant" className="text-xl" />
               {store.readyOrders.length > 0 && (
                 <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-zinc-900 animate-pulse" />
               )}
@@ -537,8 +538,8 @@ export default function ServerBoard() {
               activeMobileTab === 'payments' ? "text-amber-400" : "text-zinc-500"
             )}
           >
-            <div className="relative">
-              <span className="text-xl select-none"></span>
+            <div className="relative flex items-center justify-center">
+              <MaterialIcon name="payments" className="text-xl" />
               {store.pendingPayments.length > 0 && (
                 <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-zinc-900 animate-pulse" />
               )}

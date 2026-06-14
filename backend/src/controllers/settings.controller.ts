@@ -8,6 +8,7 @@ const adminSettingsSchema = z.object({
   businessAddress: z.string().trim().max(500).optional(),
   taxRate: z.coerce.number().min(0).max(100).optional(),
   notificationsEnabled: z.boolean().optional(),
+  upiId: z.string().trim().max(100).optional(),
 });
 
 export class SettingsController {
@@ -48,6 +49,7 @@ export class SettingsController {
           ...(parsed.data.notificationsEnabled !== undefined
             ? { notifications_enabled: String(parsed.data.notificationsEnabled) }
             : {}),
+          ...(parsed.data.upiId !== undefined ? { upi_id: parsed.data.upiId } : {}),
         },
         request.user!.userId,
       );
@@ -108,6 +110,26 @@ export class SettingsController {
         success: true,
         message: "Logo updated successfully",
         data: { logoUrl: setting.value },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getDynamicUpiQr(request: Request, response: Response, next: NextFunction) {
+    try {
+      const sessionId = request.query.sessionId as string;
+      if (!sessionId || sessionId.trim() === "") {
+        return response.status(400).json({
+          success: false,
+          message: "sessionId query parameter is required.",
+        });
+      }
+
+      const qrData = await settingsService.getDynamicUpiQr(sessionId);
+      return response.status(200).json({
+        success: true,
+        data: qrData,
       });
     } catch (error) {
       return next(error);

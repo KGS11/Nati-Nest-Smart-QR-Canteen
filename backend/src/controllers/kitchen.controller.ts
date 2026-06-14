@@ -99,6 +99,55 @@ export class KitchenController {
       return next(error);
     }
   }
+
+  async rejectOrder(request: Request, response: Response, next: NextFunction) {
+    try {
+      const orderId = param(request, "orderId");
+      if (!validateOrderId(orderId, response)) return;
+
+      const { reason } = request.body;
+      if (!reason || reason.trim() === "") {
+        return response.status(400).json({
+          success: false,
+          message: "Rejection reason is required.",
+        });
+      }
+
+      const order = await kitchenService.rejectOrder(orderId, reason);
+      return response.status(200).json({
+        success: true,
+        message: "Order rejected successfully.",
+        data: { order },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async rejectOrderItem(request: Request, response: Response, next: NextFunction) {
+    try {
+      const orderId = param(request, "orderId");
+      const itemId = param(request, "itemId");
+      if (!validateOrderId(orderId, response)) return;
+
+      const { reason } = request.body;
+      if (!reason || reason.trim() === "") {
+        return response.status(400).json({
+          success: false,
+          message: "Rejection reason is required.",
+        });
+      }
+
+      const order = await kitchenService.rejectOrderItem(orderId, itemId, reason);
+      return response.status(200).json({
+        success: true,
+        message: "Order item rejected successfully.",
+        data: { order },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
 }
 
 export const kitchenController = new KitchenController();

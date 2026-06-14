@@ -113,9 +113,11 @@ describe("Customer View Components", () => {
   });
 
   describe("FloatingCartButton Component", () => {
-    it("returns null if cart is empty", () => {
-      const { container } = render(<FloatingCartButton />);
-      expect(container.firstChild).toBeNull();
+    it("renders empty state if cart is empty", () => {
+      render(<FloatingCartButton />);
+      expect(screen.getByText("0")).toBeInTheDocument();
+      expect(screen.getByText("Empty Cart")).toBeInTheDocument();
+      expect(screen.getByText(/Rs\s*0\.00/)).toBeInTheDocument();
     });
 
     it("renders count and subtotal when items are present", () => {

@@ -1,3 +1,5 @@
+import { OrderStatus, OrderItemStatus } from "@prisma/client";
+import QRCode from "qrcode";
 import { prisma } from "../config/db";
 import {
   deleteCloudinaryImage,
@@ -15,6 +17,7 @@ const editableSettingKeys = [
   "business_address",
   "tax_rate",
   "notifications_enabled",
+  "upi_id",
 ] as const;
 
 export type EditableSettingKey = (typeof editableSettingKeys)[number];
@@ -34,6 +37,7 @@ export class SettingsService {
         notificationsEnabled: map.get("notifications_enabled") === "true",
         logoUrl: map.get(LOGO_URL_KEY) ?? "",
         upiQrUrl: map.get(UPI_QR_KEY) ?? "",
+        upiId: map.get("upi_id") ?? "",
       };
     } catch (error) {
       throw error;
@@ -140,6 +144,80 @@ export class SettingsService {
           updatedBy: staffId,
         },
       });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getDynamicUpiQr(sessionId: string) {
+    try {
+      const session = await prisma.tableSession.findUnique({
+        where: { id: sessionId },
+        include: { table: { select: { tableNumber: true } } },
+      });
+
+      if (!session) {
+        throw new AppError("Session not found", 404);
+      }
+
+      const orders = await prisma.order.findMany({
+        where: {
+          sessionId,
+          status: { not: OrderStatus.CANCELLED },
+        },
+        include: {
+          items: {
+            where: { status: OrderItemStatus.ACTIVE },
+            include: { menuItem: true },
+          },
+        },
+      });
+
+      let totalAmount = 0;
+      orders.forEach((order) => {
+        order.items.forEach((item) => {
+          if (item.status === OrderItemStatus.ACTIVE) {
+            totalAmount += Number(item.unitPrice) * item.quantity;
+          }
+        });
+      });
+
+      const amount = Math.round(totalAmount * 100) / 100;
+      if (amount <= 0) {
+        throw new AppError("No items to bill. Place an order first.", 400);
+      }
+
+      const settings = await prisma.settings.findMany({
+        where: {
+          key: { in: ["upi_id", "business_name", "upi_qr_url"] },
+        },
+      });
+
+      const map = new Map(settings.map((s) => [s.key, s.value]));
+      const upiId = map.get("upi_id");
+      const businessName = map.get("business_name") ?? "Nati Nest";
+      const staticUpiQrUrl = map.get("upi_qr_url");
+
+      if (!upiId || upiId.trim() === "") {
+        if (!staticUpiQrUrl || staticUpiQrUrl.trim() === "") {
+          throw new AppError("UPI payment has not been configured yet. Please contact admin.", 503);
+        }
+        return {
+          qrType: "static",
+          qrDataUrl: staticUpiQrUrl,
+          amount,
+        };
+      }
+
+      const upiLink = `upi://pay?pa=${upiId.trim()}&pn=${encodeURIComponent(businessName.trim())}&am=${amount}&cu=INR`;
+      const qrDataUrl = await QRCode.toDataURL(upiLink);
+
+      return {
+        qrType: "dynamic",
+        qrDataUrl,
+        amount,
+        upiLink,
+      };
     } catch (error) {
       throw error;
     }

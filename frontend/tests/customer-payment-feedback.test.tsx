@@ -40,7 +40,7 @@ describe("customer payment and feedback components", () => {
     mocks.apiGet.mockResolvedValue({
       data: {
         success: true,
-        data: { upiQrUrl: "https://example.com/upi.png" },
+        data: { qrDataUrl: "https://example.com/upi.png" },
       },
     });
   });

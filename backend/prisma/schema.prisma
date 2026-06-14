@@ -169,15 +169,16 @@ model TableSession {
 }
 
 model Order {
-  id          String      @id @default(uuid())
-  sessionId   String
-  status      OrderStatus @default(PLACED)
-  placedAt    DateTime    @default(now())
-  acceptedAt  DateTime?
-  preparingAt DateTime?
-  readyAt     DateTime?
-  deliveredAt DateTime?
-  paidAt      DateTime?
+  id              String      @id @default(uuid())
+  sessionId       String
+  status          OrderStatus @default(PLACED)
+  placedAt        DateTime    @default(now())
+  acceptedAt      DateTime?
+  preparingAt     DateTime?
+  readyAt         DateTime?
+  deliveredAt     DateTime?
+  paidAt          DateTime?
+  rejectionReason String?
 
   session TableSession @relation(fields: [sessionId], references: [id])
   items   OrderItem[]
@@ -199,6 +200,7 @@ model OrderItem {
   specialInstructions String?
   status              OrderItemStatus @default(ACTIVE)
   createdAt           DateTime        @default(now())
+  rejectionReason     String?
 
   order    Order    @relation(fields: [orderId], references: [id])
   menuItem MenuItem @relation(fields: [menuItemId], references: [id])

@@ -280,6 +280,147 @@ export class KitchenService {
       throw error;
     }
   }
+
+  async rejectOrderItem(orderId: string, itemId: string, reason: string) {
+    try {
+      const order = await kitchenOrderById(orderId);
+      if (!order) {
+        throw new AppError("Order not found", 404);
+      }
+
+      if (order.session.status !== "ACTIVE") {
+        throw new AppError("Cannot update order — the table session is already closed.", 409);
+      }
+
+      const item = order.items.find((i) => i.id === itemId);
+      if (!item) {
+        throw new AppError("Order item not found", 404);
+      }
+
+      if (item.status === OrderItemStatus.REJECTED) {
+        throw new AppError("Item is already rejected", 400);
+      }
+
+      await prisma.orderItem.update({
+        where: { id: itemId },
+        data: {
+          status: OrderItemStatus.REJECTED,
+          rejectionReason: reason,
+        },
+      });
+
+      const reloadedOrder = await kitchenOrderById(orderId);
+      if (!reloadedOrder) {
+        throw new AppError("Reloading order failed", 500);
+      }
+
+      const allRejected = reloadedOrder.items.every((i) => i.status === OrderItemStatus.REJECTED);
+      let finalOrder = reloadedOrder;
+
+      if (allRejected) {
+        finalOrder = await prisma.order.update({
+          where: { id: orderId },
+          data: {
+            status: OrderStatus.CANCELLED,
+            rejectionReason: `All items rejected: ${reason}`,
+          },
+          include: {
+            session: {
+              include: {
+                table: {
+                  select: { tableNumber: true },
+                },
+              },
+            },
+            items: {
+              include: { menuItem: true },
+            },
+          },
+        });
+      }
+
+      const io = getIo();
+      io.to(ROOMS.kitchen).emit("order:status_updated", {
+        orderId: finalOrder.id,
+        status: finalOrder.status,
+        tableNumber: finalOrder.session.table.tableNumber,
+      });
+
+      io.to(ROOMS.session(finalOrder.session.id)).emit("order:item_rejected", {
+        orderId: finalOrder.id,
+        itemId,
+        name: item.menuItem.name,
+        reason,
+        orderStatus: finalOrder.status,
+      });
+
+      if (finalOrder.status === OrderStatus.CANCELLED) {
+        io.to(ROOMS.session(finalOrder.session.id)).emit("order:cancelled", {
+          orderId: finalOrder.id,
+          reason: `All items rejected: ${reason}`,
+        });
+      }
+
+      return serializeOrder(finalOrder);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async rejectOrder(orderId: string, reason: string) {
+    try {
+      const order = await kitchenOrderById(orderId);
+      if (!order) {
+        throw new AppError("Order not found", 404);
+      }
+
+      if (order.session.status !== "ACTIVE") {
+        throw new AppError("Cannot update order — the table session is already closed.", 409);
+      }
+
+      if (order.status === OrderStatus.CANCELLED) {
+        throw new AppError("Order is already cancelled", 400);
+      }
+
+      await prisma.$transaction([
+        prisma.orderItem.updateMany({
+          where: { orderId, status: OrderItemStatus.ACTIVE },
+          data: {
+            status: OrderItemStatus.REJECTED,
+            rejectionReason: reason,
+          },
+        }),
+        prisma.order.update({
+          where: { id: orderId },
+          data: {
+            status: OrderStatus.CANCELLED,
+            rejectionReason: reason,
+          },
+        }),
+      ]);
+
+      const finalOrder = await kitchenOrderById(orderId);
+      if (!finalOrder) {
+        throw new AppError("Reloading order failed", 500);
+      }
+
+      const io = getIo();
+      io.to(ROOMS.kitchen).emit("order:status_updated", {
+        orderId: finalOrder.id,
+        status: finalOrder.status,
+        tableNumber: finalOrder.session.table.tableNumber,
+      });
+
+      io.to(ROOMS.session(finalOrder.session.id)).emit("order:cancelled", {
+        orderId: finalOrder.id,
+        reason,
+      });
+
+      return serializeOrder(finalOrder);
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export const kitchenService = new KitchenService();

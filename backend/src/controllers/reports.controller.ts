@@ -4,7 +4,7 @@ import { AppError } from "../utils/AppError";
 import { reportsService } from "../services/reports.service";
 
 type GroupBy = "day" | "week" | "month";
-const exportTypes: ExportType[] = ["orders", "payments", "revenue", "feedback", "tables", "catering"];
+const exportTypes: ExportType[] = ["orders", "payments", "revenue", "feedback", "tables", "catering", "staff"];
 const exportFormats: ExportFormat[] = ["csv", "xlsx"];
 
 const isExportType = (value: string): value is ExportType =>

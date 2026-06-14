@@ -33,11 +33,11 @@ export function UpiPaymentDisplay({
       setIsLoadingQr(true);
       setQrError(null);
       try {
-        const response = await apiClient.get<{ success: boolean; data: { upiQrUrl: string } }>(
-          "/settings/upi-qr"
+        const response = await apiClient.get<{ success: boolean; data: { qrDataUrl: string } }>(
+          `/settings/upi-qr-dynamic?sessionId=${sessionId}`
         );
-        if (response.data?.success && response.data?.data?.upiQrUrl) {
-          setUpiQrUrl(response.data.data.upiQrUrl);
+        if (response.data?.success && response.data?.data?.qrDataUrl) {
+          setUpiQrUrl(response.data.data.qrDataUrl);
         } else {
           setQrError("UPI QR Code is not configured by the admin.");
         }
@@ -49,7 +49,7 @@ export function UpiPaymentDisplay({
     };
 
     fetchQr();
-  }, []);
+  }, [sessionId]);
 
   useEffect(() => {
     if (!socket) return;

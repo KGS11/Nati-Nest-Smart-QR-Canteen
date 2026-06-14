@@ -10,7 +10,7 @@ import apiClient from "@/lib/api-client";
 import { ApiResponse, ClientApiError } from "@/types/api";
 import { DashboardSummary, PopularItem } from "@/types/domain";
 
-type Preset = "today" | "week" | "month" | "custom";
+type Preset = "today" | "yesterday" | "week" | "month" | "custom";
 type GroupBy = "day" | "week" | "month";
 
 interface RevenueReport {
@@ -102,7 +102,10 @@ const getPresetRange = (preset: Preset) => {
   const end = new Date();
   const start = new Date();
 
-  if (preset === "week") {
+  if (preset === "yesterday") {
+    start.setDate(end.getDate() - 1);
+    end.setDate(end.getDate() - 1);
+  } else if (preset === "week") {
     start.setDate(end.getDate() - 6);
   } else if (preset === "month") {
     start.setDate(end.getDate() - 29);
@@ -216,7 +219,7 @@ export default function AdminReportsPage() {
     }
   };
 
-  const exportFilter = preset === "today" ? "today" : preset === "month" ? "this_month" : preset === "week" ? "this_week" : "custom";
+  const exportFilter = preset === "today" ? "today" : preset === "yesterday" ? "yesterday" : preset === "month" ? "this_month" : preset === "week" ? "this_week" : "custom";
   const runExport = (type: ExportType, format: ExportFormat) => {
     void downloadExport({
       type,
@@ -233,7 +236,7 @@ export default function AdminReportsPage() {
 
       <div className="mb-6 flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4 lg:flex-row lg:items-end">
         <div className="flex flex-wrap gap-2">
-          {(["today", "week", "month", "custom"] as Preset[]).map((item) => (
+          {(["today", "yesterday", "week", "month", "custom"] as Preset[]).map((item) => (
             <button
               key={item}
               type="button"
@@ -284,11 +287,11 @@ export default function AdminReportsPage() {
         {exportError ? (
           <p role="alert" className="mb-3 text-xs font-semibold text-red-400">{exportError}</p>
         ) : null}
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-          {(["revenue", "orders", "payments", "tables", "feedback"] as ExportType[]).map((type) => (
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
+          {(["revenue", "orders", "payments", "tables", "feedback", "staff"] as ExportType[]).map((type) => (
             <div key={type} className="flex min-w-0 gap-2 rounded-lg bg-zinc-950 p-2">
               <span className="flex-1 truncate px-2 py-2 text-xs font-bold capitalize text-zinc-300">
-                {type}
+                {type === "staff" ? "Staff Activity" : type}
               </span>
               <button
                 type="button"

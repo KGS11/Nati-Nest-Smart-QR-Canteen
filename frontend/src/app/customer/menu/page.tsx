@@ -324,6 +324,23 @@ export default function CustomerMenuPage() {
             {/* Popular Items Section */}
             <PopularItemsSection items={allMenuItems} />
 
+            {/* Event Catering Promotion Banner */}
+            <div className="mx-4 mb-6 mt-2 overflow-hidden rounded-2xl border border-zinc-800 bg-gradient-to-r from-zinc-900 via-amber-950/20 to-zinc-900 p-5 shadow-lg relative">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
+              <p className="text-[10px] font-extrabold uppercase tracking-widest text-amber-500">Host with Nati Nest</p>
+              <h3 className="mt-1 text-base font-bold text-zinc-100">Need Catering For Your Event?</h3>
+              <p className="mt-1.5 text-xs leading-relaxed text-zinc-400">
+                Custom menu planning, professional catering setups, and warm hospitality for corporate events, weddings, birthdays, and family gatherings.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsCateringFormOpen(true)}
+                className="mt-4 min-h-[44px] rounded-xl bg-amber-500 hover:bg-amber-400 px-4 py-2 text-xs font-bold text-zinc-950 transition-all active:scale-95 shadow-md shadow-amber-500/10"
+              >
+                Plan Your Event
+              </button>
+            </div>
+
             {/* Category Groups */}
             <div className="space-y-8 pb-12">
               {categories.map((category) => {
@@ -376,16 +393,7 @@ export default function CustomerMenuPage() {
         )}
       </main>
 
-      {/* Floating Action Button */}
-      <button
-        type="button"
-        onClick={() => setIsCateringFormOpen(true)}
-        className="fixed bottom-24 right-4 z-20 flex min-h-12 items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm font-semibold text-zinc-300 shadow-lg active:scale-95"
-        aria-label="Open catering enquiry form"
-      >
-        <MaterialIcon name="event" className="text-amber-400" />
-        Catering?
-      </button>
+
       <FloatingCartButton />
 
       {/* Search Overlay */}
@@ -395,9 +403,6 @@ export default function CustomerMenuPage() {
         items={allMenuItems}
         onAdd={addItem}
       />
-
-      {/* Cart Drawer */}
-      {isCartOpen && <CartDrawer />}
 
       <CateringEnquiryForm
         isOpen={isCateringFormOpen}
