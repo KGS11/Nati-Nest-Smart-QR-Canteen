@@ -126,6 +126,13 @@ export class SettingsController {
         });
       }
 
+      if (sessionId !== request.session!.sessionId) {
+        return response.status(403).json({
+          success: false,
+          message: "Access denied. Invalid session.",
+        });
+      }
+
       const qrData = await settingsService.getDynamicUpiQr(sessionId);
       return response.status(200).json({
         success: true,

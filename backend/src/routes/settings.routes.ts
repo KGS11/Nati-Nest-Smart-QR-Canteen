@@ -1,7 +1,7 @@
 import { Role } from "@prisma/client";
 import { Router } from "express";
 import { settingsController } from "../controllers/settings.controller";
-import { authenticate } from "../middlewares/authenticate";
+import { authenticate, authenticateSession } from "../middlewares/authenticate";
 import { authorize } from "../middlewares/authorize";
 import { uploadImage } from "../middlewares/upload";
 
@@ -20,7 +20,7 @@ router.put(
   settingsController.updateAdminSettings.bind(settingsController),
 );
 router.get("/upi-qr", settingsController.getUpiQr.bind(settingsController));
-router.get("/upi-qr-dynamic", settingsController.getDynamicUpiQr.bind(settingsController));
+router.get("/upi-qr-dynamic", authenticateSession, settingsController.getDynamicUpiQr.bind(settingsController));
 router.post(
   "/upi-qr",
   authenticate,
