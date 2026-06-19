@@ -20,8 +20,8 @@ import PaymentVerificationModal from './PaymentVerificationModal'
 import { OrderCardSkeleton } from '@/components/ui/Skeleton'
 import { MaterialIcon } from '@/components/stitch/MaterialIcon'
 import TipsReportModal from './TipsReportModal'
+import { AssignmentRequestBanner } from './AssignmentRequestBanner'
 
-// Types
 import {
   ReadyOrder,
   ReadyOrderItem,
@@ -31,7 +31,9 @@ import {
   AssistanceNewSocketPayload,
   AssistanceResolvedSocketPayload,
   PaymentBillRequestedPayload,
-  PaymentCompletedPayload
+  PaymentCompletedPayload,
+  WaiterAssignmentRequest,
+  MyTableSession
 } from '@/types/server.types'
 
 interface ActiveToast {
@@ -53,7 +55,7 @@ interface BackendOrderItem {
 
 interface BackendReadyOrder {
   id: string
-  status: 'READY'
+  status: 'READY' | 'PREPARED'
   sessionId: string
   readyAt: string
   subtotal?: number
@@ -106,7 +108,7 @@ const normalizeItem = (item: BackendOrderItem): ReadyOrderItem => ({
 
 const normalizeReadyOrder = (order: BackendReadyOrder): ReadyOrder => ({
   id: order.id,
-  status: 'READY',
+  status: order.status,
   sessionId: order.sessionId,
   tableNumber: order.session.table.tableNumber,
   readyAt: order.readyAt,
@@ -160,19 +162,25 @@ export default function ServerBoard() {
     store.setLoading(true)
     store.setError(null)
     try {
-      const [ordersRes, assistanceRes, paymentsRes] = await Promise.all([
+      const [ordersRes, assistanceRes, paymentsRes, myTablesRes, assignmentRequestsRes] = await Promise.all([
         apiClient.get('/server/orders/ready'),
         apiClient.get('/server/assistance'),
-        apiClient.get('/payments/pending')
+        apiClient.get('/payments/pending'),
+        apiClient.get('/server/my-tables'),
+        apiClient.get('/server/assignment-requests')
       ])
 
       const orders = (ordersRes.data?.data?.orders || []) as BackendReadyOrder[]
       const requests = (assistanceRes.data?.data?.requests || []) as BackendAssistanceRequest[]
       const payments = (paymentsRes.data?.data?.payments || []) as BackendPendingPayment[]
+      const myTables = (myTablesRes.data?.data?.myTables || []) as MyTableSession[]
+      const assignmentRequests = (assignmentRequestsRes.data?.data?.requests || []) as WaiterAssignmentRequest[]
 
       store.setReadyOrders(orders.map(normalizeReadyOrder))
       store.setAssistanceRequests(requests.map(normalizeAssistanceRequest))
       store.setPendingPayments(payments.map(normalizePendingPayment))
+      store.setMyTables(myTables)
+      store.setAssignmentRequests(assignmentRequests)
     } catch (err: any) {
       store.setError(err?.message || 'Failed to fetch server dashboard data.')
     } finally {
@@ -204,6 +212,37 @@ export default function ServerBoard() {
 
     const handleError = () => {
       store.setConnected(false)
+    }
+
+    const handleWaiterAssignmentRequest = (payload: WaiterAssignmentRequest) => {
+      store.addAssignmentRequest(payload)
+      addToast(`New assignment request Table ${payload.tableNumber}`, 'assistance')
+    }
+
+    const handleWaiterAssignmentAccepted = (payload: { sessionId: string; tableNumber: string; acceptedBy: string; waiterId?: string; isYours?: boolean }) => {
+      store.removeAssignmentRequest(payload.sessionId)
+      if (payload.waiterId === user?.id || payload.isYours) {
+        fetchAllData()
+        addToast(`Table ${payload.tableNumber} assigned to you`, 'ready')
+      } else {
+        addToast(`Table ${payload.tableNumber} assigned to ${payload.acceptedBy}`, 'ready')
+      }
+    }
+
+    const handleOrderPrepared = (payload: OrderReadySocketPayload & { assignedWaiterId?: string | null; assignedWaiterName?: string | null }) => {
+      const newOrder: ReadyOrder = {
+        id: payload.orderId,
+        status: 'PREPARED',
+        tableNumber: payload.tableNumber,
+        sessionId: payload.sessionId,
+        readyAt: payload.readyAt,
+        items: payload.items,
+        subtotal: payload.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
+        assignedWaiterId: payload.assignedWaiterId ?? null,
+        assignedWaiterName: payload.assignedWaiterName ?? null
+      }
+      store.addReadyOrder(newOrder)
+      addToast(`Order prepared Table ${payload.tableNumber}`, 'ready')
     }
 
     const handleOrderReady = (payload: OrderReadySocketPayload & { assignedWaiterId?: string | null; assignedWaiterName?: string | null }) => {
@@ -255,6 +294,8 @@ export default function ServerBoard() {
       const toastMessage =
         payload.requestType === 'WATER'
           ? ` Water  Table ${payload.tableNumber}`
+          : payload.requestType === 'PLATE'
+          ? ` Plate  Table ${payload.tableNumber}`
           : payload.requestType === 'BILL'
           ? ` Bill  Table ${payload.tableNumber}`
           : ` Help  Table ${payload.tableNumber}`
@@ -331,6 +372,9 @@ export default function ServerBoard() {
     socket.on('payment:completed', handlePaymentCompleted)
     socket.on('order:claimed:waiter', handleOrderClaimedWaiter)
     socket.on('order:released', handleReleased)
+    socket.on('waiter:assignment_request', handleWaiterAssignmentRequest)
+    socket.on('waiter:assignment_accepted', handleWaiterAssignmentAccepted)
+    socket.on('order:prepared', handleOrderPrepared)
     socket.on('connect', handleConnect)
     socket.on('disconnect', handleDisconnect)
 
@@ -345,6 +389,9 @@ export default function ServerBoard() {
       socket.off('payment:completed', handlePaymentCompleted)
       socket.off('order:claimed:waiter', handleOrderClaimedWaiter)
       socket.off('order:released', handleReleased)
+      socket.off('waiter:assignment_request', handleWaiterAssignmentRequest)
+      socket.off('waiter:assignment_accepted', handleWaiterAssignmentAccepted)
+      socket.off('order:prepared', handleOrderPrepared)
       socket.off('connect', handleConnect)
       socket.off('disconnect', handleDisconnect)
     }
@@ -456,6 +503,20 @@ export default function ServerBoard() {
         </div>
       </header>
 
+      {/* Assignment Requests Banner */}
+      <AssignmentRequestBanner
+        requests={store.assignmentRequests}
+        onAccept={async (requestId) => {
+          try {
+            await apiClient.post(`/server/assignment/${requestId}/accept`)
+            addToast('Table assignment accepted', 'ready')
+            await fetchAllData()
+          } catch (err: any) {
+            addToast(err?.response?.data?.message || err?.message || 'Failed to accept assignment', 'error')
+          }
+        }}
+      />
+
       {/* Main Board Area (Tablet and Desktop only, above 768px) */}
       <div className="hidden md:flex flex-1 overflow-hidden relative">
         {store.isLoading ? (
@@ -488,9 +549,38 @@ export default function ServerBoard() {
             </div>
           </div>
         ) : (
-          <main className="flex-1 overflow-hidden p-4 md:overflow-y-auto lg:overflow-hidden">
-            <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 h-full">
-              
+          <main className="flex-1 overflow-hidden p-4 md:overflow-y-auto lg:overflow-hidden flex flex-col gap-4">
+            {/* My Active Tables Grid */}
+            {store.myTables.length > 0 && (
+              <div className="shrink-0 bg-zinc-950/40 border border-zinc-800 rounded-xl p-4">
+                <h2 className="text-sm font-extrabold text-zinc-400 tracking-wider uppercase mb-3 flex items-center gap-2">
+                  <MaterialIcon name="table_restaurant" className="text-amber-500" />
+                  My Active Tables ({store.myTables.length})
+                </h2>
+                <div className="flex flex-wrap gap-3">
+                  {store.myTables.map((table) => (
+                    <div
+                      key={table.sessionId}
+                      className="bg-zinc-900/60 border border-zinc-800 rounded-lg px-4 py-3 flex items-center justify-between gap-4 min-w-[160px]"
+                    >
+                      <div>
+                        <div className="text-base font-black text-zinc-100">Table {table.tableNumber}</div>
+                        <div className="text-xs text-zinc-400">
+                          {table.orderCount} order{table.orderCount !== 1 ? 's' : ''}
+                        </div>
+                      </div>
+                      {table.pendingRequestsCount > 0 && (
+                        <span className="flex items-center justify-center bg-red-500/20 text-red-400 border border-red-500/30 font-black text-xs rounded-full px-2 py-0.5 animate-pulse">
+                          {table.pendingRequestsCount} Request{table.pendingRequestsCount !== 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex-1 flex flex-col lg:grid lg:grid-cols-3 gap-4 min-h-0 overflow-hidden">
               {/* Ready Orders Panel */}
               <div className="flex flex-col bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden h-[600px] lg:h-full">
                 <ReadyOrdersPanel
@@ -541,6 +631,29 @@ export default function ServerBoard() {
         ) : (
           /* Content Area */
           <div className="flex-1 overflow-y-auto pb-24">
+            {/* My Active Tables Grid for Mobile */}
+            {store.myTables.length > 0 && (
+              <div className="bg-zinc-900/40 border-b border-zinc-800 p-4">
+                <h2 className="text-xs font-extrabold text-zinc-400 tracking-wider uppercase mb-2 flex items-center gap-1.5">
+                  <MaterialIcon name="table_restaurant" className="text-amber-500 text-sm" />
+                  My Active Tables ({store.myTables.length})
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {store.myTables.map((table) => (
+                    <div
+                      key={table.sessionId}
+                      className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 flex items-center gap-2 text-xs"
+                    >
+                      <span className="font-bold text-zinc-100">T{table.tableNumber}</span>
+                      {table.pendingRequestsCount > 0 && (
+                        <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {activeMobileTab === 'requests' && (
               <AssistancePanel
                 requests={store.assistanceRequests}

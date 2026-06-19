@@ -43,6 +43,7 @@ export enum AssistanceType {
   WATER = "WATER",
   BILL = "BILL",
   GENERAL = "GENERAL",
+  PLATE = "PLATE",
 }
 
 export enum AssistanceStatus {

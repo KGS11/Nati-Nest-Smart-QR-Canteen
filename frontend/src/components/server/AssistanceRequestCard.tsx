@@ -71,6 +71,13 @@ export default function AssistanceRequestCard({
           badgeBg: 'bg-blue-500/10 border-blue-500/20 text-blue-400',
           label: 'Water Requested'
         }
+      case 'PLATE':
+        return {
+          icon: '🍽️',
+          accent: 'text-orange-400',
+          badgeBg: 'bg-orange-500/10 border-orange-500/20 text-orange-400',
+          label: 'Plate Requested'
+        }
       case 'BILL':
         return {
           icon: '🧾',
@@ -166,6 +173,8 @@ export default function AssistanceRequestCard({
               <Loader />
             ) : request.requestType === 'WATER' ? (
               'Delivered 💧'
+            ) : request.requestType === 'PLATE' ? (
+              'Delivered 🍽️'
             ) : (
               'On my way ✓'
             )}

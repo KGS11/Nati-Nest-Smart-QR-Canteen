@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AssistanceType } from "@/types";
 import { customerService } from "@/services/customerService";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import Loader from "@/components/ui/Loader";
 import { ClientApiError } from "@/types/api";
 import { MaterialIcon } from "@/components/stitch/MaterialIcon";
+import { useSessionStore } from "@/stores/sessionStore";
 
 interface GlobalHelpModalProps {
   isOpen: boolean;
@@ -16,9 +17,17 @@ interface GlobalHelpModalProps {
 
 export function GlobalHelpModal({ isOpen, onClose }: GlobalHelpModalProps) {
   const router = useRouter();
+  const { sessionId } = useSessionStore();
   const [busyType, setBusyType] = useState<AssistanceType | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && typeof window !== "undefined" && sessionId) {
+      setPaymentCompleted(window.sessionStorage.getItem(`paymentCompleted_${sessionId}`) === "true");
+    }
+  }, [sessionId, isOpen]);
 
   if (!isOpen) return null;
 
@@ -117,6 +126,26 @@ export function GlobalHelpModal({ isOpen, onClose }: GlobalHelpModalProps) {
           <button
             type="button"
             disabled={busyType !== null}
+            onClick={() => triggerAssistance(AssistanceType.PLATE)}
+            className="flex min-h-[60px] w-full items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-left active:scale-[0.98] transition-all hover:border-zinc-700 disabled:opacity-50"
+          >
+            <div className="flex items-center gap-3">
+              <MaterialIcon name="restaurant" className="text-orange-400 text-2xl" />
+              <div>
+                <h4 className="font-semibold text-zinc-100">Request Plates</h4>
+                <p className="text-xs text-zinc-400">Bring extra dining plates to the table</p>
+              </div>
+            </div>
+            {busyType === AssistanceType.PLATE ? (
+              <Loader label="" className="scale-75" />
+            ) : (
+              <MaterialIcon name="chevron_right" className="text-zinc-500" />
+            )}
+          </button>
+
+          <button
+            type="button"
+            disabled={busyType !== null}
             onClick={() => triggerAssistance(AssistanceType.GENERAL)}
             className="flex min-h-[60px] w-full items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-left active:scale-[0.98] transition-all hover:border-zinc-700 disabled:opacity-50"
           >
@@ -136,7 +165,7 @@ export function GlobalHelpModal({ isOpen, onClose }: GlobalHelpModalProps) {
 
           <button
             type="button"
-            disabled={busyType !== null}
+            disabled={busyType !== null || paymentCompleted}
             onClick={() => triggerAssistance(AssistanceType.BILL)}
             className="flex min-h-[60px] w-full items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-left active:scale-[0.98] transition-all hover:border-zinc-700 disabled:opacity-50"
           >

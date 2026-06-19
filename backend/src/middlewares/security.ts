@@ -11,12 +11,12 @@ export const securityHeaders = (_request: Request, response: Response, next: Nex
 
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     success: false,
-    message: "Too many login attempts. Try again in 15 minutes.",
+    message: "Too many login attempts from this network. Try again later.",
   },
 });
 

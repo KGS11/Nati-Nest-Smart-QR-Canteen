@@ -14,6 +14,7 @@ import { ClientApiError } from "@/types/api";
 // New components
 import { EmojiRating } from "@/components/customer/feedback/EmojiRating";
 import { FeedbackSuccess } from "@/components/customer/feedback/FeedbackSuccess";
+import { CateringEnquiryForm } from "@/components/customer/CateringEnquiryForm";
 
 export default function CustomerFeedbackPage() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function CustomerFeedbackPage() {
   const clearSession = useSessionStore((state) => state.clearSession);
   const [status, setStatus] = useState<FeedbackStatus | null>(null);
   const [rating, setRating] = useState<number | null>(null);
+  const [isCateringOpen, setIsCateringOpen] = useState(false);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -81,7 +83,8 @@ export default function CustomerFeedbackPage() {
   if (status?.submitted && rating !== null) {
     return (
       <div className="min-h-screen bg-zinc-950 flex flex-col justify-center max-w-md mx-auto">
-        <FeedbackSuccess rating={rating} onContinue={handleSkip} />
+        <FeedbackSuccess rating={rating} onContinue={handleSkip} onInquire={() => setIsCateringOpen(true)} />
+        <CateringEnquiryForm isOpen={isCateringOpen} onClose={() => setIsCateringOpen(false)} />
       </div>
     );
   }

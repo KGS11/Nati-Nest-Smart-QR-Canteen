@@ -176,7 +176,7 @@ describe("Multi-Waiter & Multi-Kitchen Order Ownership & Assignment System", () 
       expect(mocks.prisma.order.updateMany).toHaveBeenCalledWith({
         where: {
           id: "order-789",
-          status: OrderStatus.READY,
+          status: { in: [OrderStatus.READY, OrderStatus.PREPARED] },
           assignedWaiterId: null,
         },
         data: {

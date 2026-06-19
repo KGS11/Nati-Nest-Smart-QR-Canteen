@@ -12,6 +12,7 @@ import { Server } from "socket.io";
 import { prisma } from "../config/db";
 import { ROOMS } from "../sockets/rooms";
 import { AppError } from "../utils/AppError";
+import { sessionService } from "./session.service";
 
 const getIo = (): Server => {
   const { io } = require("../index") as typeof import("../index");
@@ -250,17 +251,19 @@ export class PaymentService {
         }),
       ]);
 
-      // DB-06: Mark both DELIVERED and READY orders as PAID at payment time
+      // DB-06: Mark both DELIVERED, READY and PREPARED orders as PAID at payment time
       await prisma.order.updateMany({
         where: {
           sessionId: payment.session.id,
-          status: { in: [OrderStatus.DELIVERED, OrderStatus.READY] },
+          status: { in: [OrderStatus.DELIVERED, OrderStatus.READY, OrderStatus.PREPARED] },
         },
         data: {
           status: OrderStatus.PAID,
           paidAt: new Date(),
         },
       });
+
+      await sessionService.clearWaiterAssignment(payment.session.id);
 
       const serializedPayment = serializePayment(updatedPayment);
       const io = getIo();

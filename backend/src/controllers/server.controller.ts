@@ -2,11 +2,12 @@ import { AssistanceType } from "@prisma/client";
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 import { serverService } from "../services/server.service";
+import { sessionService } from "../services/session.service";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const assistanceTypeSchema = z.enum(
-  [AssistanceType.WATER, AssistanceType.BILL, AssistanceType.GENERAL] as const,
+  [AssistanceType.WATER, AssistanceType.BILL, AssistanceType.GENERAL, AssistanceType.PLATE] as const,
   { error: `requestType must be one of: ${Object.values(AssistanceType).join(", ")}` },
 );
 
@@ -16,9 +17,10 @@ const param = (request: Request, key: string) => {
 };
 
 export class ServerController {
-  async getReadyOrders(_request: Request, response: Response, next: NextFunction) {
+  async getReadyOrders(request: Request, response: Response, next: NextFunction) {
     try {
-      const orders = await serverService.getReadyOrders();
+      const own = request.query.own !== "false";
+      const orders = await serverService.getReadyOrders(request.user?.userId, own);
       return response.status(200).json({
         success: true,
         data: { orders, count: orders.length },
@@ -91,9 +93,10 @@ export class ServerController {
     }
   }
 
-  async getAssistanceRequests(_request: Request, response: Response, next: NextFunction) {
+  async getAssistanceRequests(request: Request, response: Response, next: NextFunction) {
     try {
-      const requests = await serverService.getAssistanceRequests();
+      const own = request.query.own !== "false";
+      const requests = await serverService.getAssistanceRequests(request.user?.userId, own);
       return response.status(200).json({
         success: true,
         data: { requests, count: requests.length },
@@ -175,6 +178,56 @@ export class ServerController {
         success: true,
         message: "Order special notes updated successfully",
         data: { order },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+  async acceptWaiterAssignment(request: Request, response: Response, next: NextFunction) {
+    try {
+      const requestId = param(request, "requestId");
+      if (!UUID_REGEX.test(requestId)) {
+        return response.status(400).json({ success: false, message: "Invalid request ID format." });
+      }
+
+      const waiterId = request.user!.userId;
+      const result = await sessionService.acceptWaiterAssignment(requestId, waiterId);
+
+      if (result.alreadyTaken) {
+        return response.status(409).json({
+          success: false,
+          message: "Table already assigned to another waiter.",
+        });
+      }
+
+      return response.status(200).json({
+        success: true,
+        message: "Table assignment accepted.",
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getMyTables(request: Request, response: Response, next: NextFunction) {
+    try {
+      const waiterId = request.user!.userId;
+      const myTables = await sessionService.getMyTables(waiterId);
+      return response.status(200).json({
+        success: true,
+        data: { myTables },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getAssignmentRequests(request: Request, response: Response, next: NextFunction) {
+    try {
+      const requests = await sessionService.getAssignmentRequests();
+      return response.status(200).json({
+        success: true,
+        data: { requests, count: requests.length },
       });
     } catch (error) {
       return next(error);

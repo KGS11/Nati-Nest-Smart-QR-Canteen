@@ -420,7 +420,7 @@ export class DailyMenuService {
         copied++;
         itemsResult.push({ name: entry.menuItem.name, status: "added" });
       }
-    });
+    }, { timeout: 15000 });
 
     return {
       copied,

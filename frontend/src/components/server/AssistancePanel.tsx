@@ -61,6 +61,11 @@ export default function AssistancePanel({
     .filter((r) => r.requestType === 'WATER')
     .sort(sortByTime)
 
+  // Priority 4b: Assistance requests of type 'PLATE'
+  const plateRequests = requests
+    .filter((r) => r.requestType === 'PLATE')
+    .sort(sortByTime)
+
   // Priority 5: Assistance requests of type 'GENERAL'
   const generalRequests = requests
     .filter((r) => r.requestType === 'GENERAL')
@@ -71,6 +76,7 @@ export default function AssistancePanel({
     paymentsList.length > 0 ||
     ordersList.length > 0 ||
     waterRequests.length > 0 ||
+    plateRequests.length > 0 ||
     generalRequests.length > 0
 
   const totalCount = requests.length + paymentsList.length + ordersList.length
@@ -191,7 +197,7 @@ export default function AssistancePanel({
           )}
 
           {/* Section: OTHER REQUESTS (Priority 4 & 5) */}
-          {(waterRequests.length > 0 || generalRequests.length > 0) && (
+          {(waterRequests.length > 0 || plateRequests.length > 0 || generalRequests.length > 0) && (
             <div className="space-y-3">
               <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-1 flex items-center gap-1.5 border-b border-zinc-800/60 pb-1">
                 <span>🔔</span> Other Requests
@@ -199,6 +205,16 @@ export default function AssistancePanel({
               <div className="space-y-3">
                 {/* Render Priority 4: Water requests */}
                 {waterRequests.map((req) => (
+                  <AssistanceRequestCard
+                    key={req.id}
+                    request={req}
+                    onResolve={onResolve}
+                    onViewBill={onViewBill}
+                  />
+                ))}
+
+                {/* Render Priority 4b: Plate requests */}
+                {plateRequests.map((req) => (
                   <AssistanceRequestCard
                     key={req.id}
                     request={req}

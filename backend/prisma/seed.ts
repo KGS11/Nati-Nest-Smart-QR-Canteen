@@ -4,21 +4,57 @@ import { prisma } from "../src/config/db";
 
 const main = async () => {
   try {
-    const passwordHash = await bcrypt.hash("admin123", 10);
+    const adminHash = await bcrypt.hash("admin123", 10);
+    const waiterHash = await bcrypt.hash("waiter123", 10);
+    const kitchenHash = await bcrypt.hash("kitchen123", 10);
 
     await prisma.user.upsert({
       where: { phone: "9999999999" },
       update: {
         name: "Admin",
-        passwordHash,
+        passwordHash: adminHash,
         role: Role.ADMIN,
         isActive: true,
       },
       create: {
         name: "Admin",
         phone: "9999999999",
-        passwordHash,
+        passwordHash: adminHash,
         role: Role.ADMIN,
+        isActive: true,
+      },
+    });
+
+    await prisma.user.upsert({
+      where: { phone: "8888888888" },
+      update: {
+        name: "Default Waiter",
+        passwordHash: waiterHash,
+        role: Role.SERVER,
+        isActive: true,
+      },
+      create: {
+        name: "Default Waiter",
+        phone: "8888888888",
+        passwordHash: waiterHash,
+        role: Role.SERVER,
+        isActive: true,
+      },
+    });
+
+    await prisma.user.upsert({
+      where: { phone: "7777777777" },
+      update: {
+        name: "Default Kitchen",
+        passwordHash: kitchenHash,
+        role: Role.KITCHEN,
+        isActive: true,
+      },
+      create: {
+        name: "Default Kitchen",
+        phone: "7777777777",
+        passwordHash: kitchenHash,
+        role: Role.KITCHEN,
         isActive: true,
       },
     });

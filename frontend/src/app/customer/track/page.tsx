@@ -200,6 +200,15 @@ export default function CustomerTrackPage() {
         </button>
         <button
           type="button"
+          onClick={() => requestService(AssistanceType.PLATE)}
+          disabled={Boolean(serviceBusy)}
+          className="flex-1 h-12 rounded-xl border border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 flex items-center justify-center gap-2 text-zinc-300 font-semibold active:scale-95 transition-all text-xs disabled:opacity-50"
+        >
+          <MaterialIcon name={serviceBusy === AssistanceType.PLATE ? "sync" : "restaurant"} className={serviceBusy === AssistanceType.PLATE ? "animate-spin" : ""} />
+          Plate
+        </button>
+        <button
+          type="button"
           onClick={() => requestService(AssistanceType.GENERAL)}
           disabled={Boolean(serviceBusy)}
           className="flex-1 h-12 rounded-xl border border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 flex items-center justify-center gap-2 text-zinc-300 font-semibold active:scale-95 transition-all text-xs disabled:opacity-50"

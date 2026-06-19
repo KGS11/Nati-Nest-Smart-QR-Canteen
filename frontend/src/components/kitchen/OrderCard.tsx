@@ -21,6 +21,7 @@ const accentClass: Record<KitchenOrder["status"], string> = {
   ACCEPTED: "border-l-blue-500",
   PREPARING: "border-l-blue-400",
   READY: "border-l-green-500",
+  PREPARED: "border-l-green-500",
 };
 
 const shortId = (orderId: string) => `#${orderId.replace(/-/g, "").slice(-4).toUpperCase()}`;
@@ -152,7 +153,7 @@ export function OrderCard({ order, onAccept, onPreparing, onReady, onRelease }: 
             item={item}
             orderStatus={order.status}
             onReject={
-              order.status !== "READY" && item.status !== "REJECTED" && isAssignedToMe
+              order.status !== "READY" && order.status !== "PREPARED" && item.status !== "REJECTED" && isAssignedToMe
                 ? (reason) => handleRejectItem(item.id, reason)
                 : undefined
             }
@@ -205,32 +206,21 @@ export function OrderCard({ order, onAccept, onPreparing, onReady, onRelease }: 
                 </button>
               ) : null}
 
-              {order.status === "ACCEPTED" ? (
-                <button
-                  type="button"
-                  disabled={isActioning}
-                  onClick={() => runAction(onPreparing)}
-                  className="min-h-[52px] md:min-h-[56px] rounded-lg bg-blue-500 px-4 text-sm font-bold text-white active:scale-[0.98] disabled:opacity-60"
-                >
-                  {isActioning ? <Loader className="scale-50" /> : "Start Preparing"}
-                </button>
-              ) : null}
-
-              {order.status === "PREPARING" ? (
+              {(order.status === "ACCEPTED" || order.status === "PREPARING") ? (
                 <button
                   type="button"
                   disabled={isActioning}
                   onClick={() => runAction(onReady)}
                   className="min-h-[52px] md:min-h-[56px] rounded-lg bg-green-500 px-4 text-sm font-bold text-zinc-950 active:scale-[0.98] disabled:opacity-60"
                 >
-                  {isActioning ? <Loader className="scale-50" /> : "Mark Ready"}
+                  {isActioning ? <Loader className="scale-50" /> : "Mark Prepared"}
                 </button>
               ) : null}
             </>
           )}
         </div>
 
-        {order.status === "READY" && !isAssignedToOther ? (
+        {(order.status === "READY" || order.status === "PREPARED") && !isAssignedToOther ? (
           <span className="text-xs font-semibold text-zinc-500">Awaiting delivery</span>
         ) : null}
       </footer>

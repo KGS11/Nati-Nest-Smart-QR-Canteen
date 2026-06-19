@@ -60,6 +60,7 @@ export const initializeServerSockets = (io: Server) => {
         }
 
         await socket.join(ROOMS.server);
+        await socket.join(ROOMS.waiter(jwtPayload.userId));
         socket.emit("server:joined", {
           message: "Connected to server dashboard",
           staffName: user.name,

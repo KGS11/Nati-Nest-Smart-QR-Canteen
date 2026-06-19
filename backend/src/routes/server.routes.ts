@@ -19,5 +19,8 @@ router.patch(
   serverController.resolveAssistanceRequest.bind(serverController),
 );
 router.get("/sessions/:sessionId/bill", serverController.getSessionBillSummary.bind(serverController));
+router.post("/assignment/:requestId/accept", serverController.acceptWaiterAssignment.bind(serverController));
+router.get("/my-tables", serverController.getMyTables.bind(serverController));
+router.get("/assignment-requests", serverController.getAssignmentRequests.bind(serverController));
 
 export default router;

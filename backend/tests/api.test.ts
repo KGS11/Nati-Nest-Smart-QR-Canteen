@@ -372,6 +372,20 @@ describe("Nati Nest backend API", () => {
     await request(app).patch(`/api/server/assistance/${id}/resolve`).set("Authorization", auth(serverToken)).expect(200);
   });
 
+  it("supports customer assistance requests including PLATE type", async () => {
+    serverService.createAssistanceRequest.mockResolvedValue({
+      id: "assistance-1",
+      requestType: "PLATE",
+      status: "PENDING",
+    });
+
+    await request(app)
+      .post("/api/customer/assistance")
+      .set("Authorization", auth(sessionToken))
+      .send({ requestType: "PLATE" })
+      .expect(201);
+  });
+
   it("supports payment request and verification", async () => {
     paymentService.createPaymentOnBillRequest.mockResolvedValue({
       isNew: true,

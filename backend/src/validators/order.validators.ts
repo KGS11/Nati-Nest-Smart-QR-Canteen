@@ -25,7 +25,7 @@ export const orderIdParamSchema = z.object({
 });
 
 export const assistanceRequestSchema = z.object({
-  requestType: z.enum(["WATER", "BILL", "GENERAL"]),
+  requestType: z.enum(["WATER", "BILL", "GENERAL", "PLATE"]),
 });
 
 export const verifyPaymentSchema = z.object({

@@ -10,7 +10,7 @@ export interface KitchenOrderItem {
 
 export interface KitchenOrder {
   id: string;
-  status: "PLACED" | "ACCEPTED" | "PREPARING" | "READY";
+  status: "PLACED" | "ACCEPTED" | "PREPARING" | "READY" | "PREPARED";
   tableNumber: string;
   placedAt: string;
   acceptedAt: string | null;
@@ -41,7 +41,7 @@ export interface OrderNewSocketPayload {
 
 export interface OrderStatusUpdatedPayload {
   orderId: string;
-  status: KitchenOrder["status"] | "DELIVERED" | "PAID" | "CANCELLED";
+  status: KitchenOrder["status"] | "DELIVERED" | "PAID" | "CANCELLED" | "PREPARED";
   tableNumber: string;
   acceptedAt?: string;
   preparingAt?: string;

@@ -36,6 +36,13 @@ const app = express();
 const server = http.createServer(app);
 const port = process.env.PORT ?? 5000;
 const clientUrl = process.env.CLIENT_URL ?? "http://localhost:3000";
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+];
+if (clientUrl && !allowedOrigins.includes(clientUrl)) {
+  allowedOrigins.push(clientUrl);
+}
 
 if (process.env.NODE_ENV !== "test" && (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32)) {
   logger.error("FATAL: JWT_SECRET must be 32+ characters");
@@ -81,7 +88,7 @@ const verifyDatabaseConnection = async () => {
 
 const io = new Server(server, {
   cors: {
-    origin: clientUrl,
+    origin: allowedOrigins,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   },
 });
@@ -91,7 +98,11 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        connectSrc: ["'self'", clientUrl, clientUrl.replace(/^http/, "ws")],
+        connectSrc: [
+          "'self'",
+          ...allowedOrigins,
+          ...allowedOrigins.map(url => url.replace(/^http/, "ws")),
+        ],
         imgSrc: ["'self'", "data:", "https:"],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
@@ -103,7 +114,7 @@ app.use(
 app.use(compression());
 app.use(
   cors({
-    origin: clientUrl,
+    origin: allowedOrigins,
     credentials: true,
   }),
 );
@@ -185,8 +196,9 @@ process.on("SIGTERM", shutdown);
 
 if (process.env.NODE_ENV !== "test") {
   void verifyDatabaseConnection().finally(() => {
-    server.listen(port, () => {
+    server.listen(Number(port), "0.0.0.0", () => {
       logger.info(`Nati Nest API listening on port ${port}`);
+      logger.info(`Local Network Access: http://10.171.118.179:${port}`);
       setInterval(() => {
         void checkAutoReleaseClaims();
       }, 60000);

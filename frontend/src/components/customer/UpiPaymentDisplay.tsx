@@ -22,6 +22,9 @@ export function UpiPaymentDisplay({
 }: UpiPaymentDisplayProps) {
   const { socket } = useSocket();
   const [upiQrUrl, setUpiQrUrl] = useState<string | null>(null);
+  const [upiLink, setUpiLink] = useState<string | null>(null);
+  const [qrType, setQrType] = useState<string | null>(null);
+  const [showQrFallback, setShowQrFallback] = useState(false);
   const [isLoadingQr, setIsLoadingQr] = useState(true);
   const [qrError, setQrError] = useState<string | null>(null);
   const [paymentRequested, setPaymentRequested] = useState(false);
@@ -33,11 +36,17 @@ export function UpiPaymentDisplay({
       setIsLoadingQr(true);
       setQrError(null);
       try {
-        const response = await apiClient.get<{ success: boolean; data: { qrDataUrl: string } }>(
-          `/settings/upi-qr-dynamic?sessionId=${sessionId}&t=${Date.now()}`
-        );
-        if (response.data?.success && response.data?.data?.qrDataUrl) {
+        const response = await apiClient.get<{
+          success: boolean;
+          data: { qrDataUrl: string; qrType: string; amount: number; upiLink?: string };
+        }>(`/settings/upi-qr-dynamic?sessionId=${sessionId}&t=${Date.now()}`);
+        
+        if (response.data?.success && response.data?.data) {
           setUpiQrUrl(response.data.data.qrDataUrl);
+          setQrType(response.data.data.qrType);
+          if (response.data.data.upiLink) {
+            setUpiLink(response.data.data.upiLink);
+          }
         } else {
           setQrError("Unable to generate payment. Please try again.");
         }
@@ -79,6 +88,18 @@ export function UpiPaymentDisplay({
     }
   };
 
+  const handleUpiPayClick = () => {
+    if (!upiLink) return;
+    try {
+      window.location.href = upiLink;
+    } catch (err) {
+      console.error("UPI app link navigation failed:", err);
+      setShowQrFallback(true);
+    }
+  };
+
+  const isMobile = typeof window !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
   if (paymentConfirmed) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-10 px-4 animate-fade-in">
@@ -106,51 +127,88 @@ export function UpiPaymentDisplay({
   }
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col items-center max-w-md mx-auto">
-      <h3 className="text-lg font-bold text-zinc-100 text-center">Scan to Pay</h3>
+    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col items-center max-w-md mx-auto w-full">
+      <h3 className="text-lg font-bold text-zinc-100 text-center">
+        {upiLink && isMobile && !showQrFallback ? "Pay Using UPI" : "Scan to Pay"}
+      </h3>
       <p className="text-2xl font-bold text-amber-400 text-center mt-1">
         Rs {totalAmount.toFixed(2)}
       </p>
 
-      <div className="bg-white rounded-2xl p-5 mx-auto w-fit mt-4 flex items-center justify-center min-h-[224px] min-w-[224px]">
-        {isLoadingQr ? (
-          <Loader label="" />
-        ) : qrError ? (
-          <div className="text-zinc-800 text-xs text-center p-2 max-w-[180px]">
-            <p className="font-semibold text-red-500 mb-2">Error Loading QR</p>
-            <p className="text-[10px] text-zinc-500">{qrError}</p>
-            <p className="text-[10px] text-zinc-500 mt-2 font-medium">Contact waiter for assistance</p>
+      {upiLink && isMobile && !showQrFallback ? (
+        <div className="w-full flex flex-col items-center py-6">
+          <p className="text-sm text-zinc-400 text-center mb-6 leading-relaxed">
+            Click the button below to pay directly using any installed UPI app (Google Pay, PhonePe, Paytm, etc.).
+          </p>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={handleUpiPayClick}
+            className="h-14 w-full bg-blue-500 hover:bg-blue-400 text-zinc-950 font-bold text-base rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2 border-0"
+          >
+            Pay Using UPI App 📱
+          </Button>
+          <button
+            type="button"
+            onClick={() => setShowQrFallback(true)}
+            className="text-sm text-zinc-400 hover:text-zinc-200 mt-6 underline font-medium focus:outline-none bg-transparent border-0 cursor-pointer"
+          >
+            Scan QR Code instead
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="bg-white rounded-2xl p-5 mx-auto w-fit mt-4 flex items-center justify-center min-h-[224px] min-w-[224px]">
+            {isLoadingQr ? (
+              <Loader label="" />
+            ) : qrError ? (
+              <div className="text-zinc-800 text-xs text-center p-2 max-w-[180px]">
+                <p className="font-semibold text-red-500 mb-2">Error Loading QR</p>
+                <p className="text-[10px] text-zinc-500">{qrError}</p>
+                <p className="text-[10px] text-zinc-500 mt-2 font-medium">Contact waiter for assistance</p>
+              </div>
+            ) : upiQrUrl ? (
+              <img
+                src={upiQrUrl}
+                alt="UPI QR Code"
+                className="w-52 h-52 object-contain"
+              />
+            ) : null}
           </div>
-        ) : upiQrUrl ? (
-          <img
-            src={upiQrUrl}
-            alt="UPI QR Code"
-            className="w-52 h-52 object-contain"
-          />
-        ) : null}
-      </div>
 
-      <ul className="text-sm text-zinc-400 space-y-2 mt-6 text-left w-full px-2">
-        <li className="flex items-center gap-2">
-          <span className="font-bold text-blue-400">1.</span> Open any UPI app on your phone
-        </li>
-        <li className="flex items-center gap-2">
-          <span className="font-bold text-blue-400">2.</span> Scan the QR code above
-        </li>
-        <li className="flex items-center gap-2">
-          <span className="font-bold text-blue-400">3.</span> Pay <strong className="text-zinc-200">Rs {totalAmount.toFixed(2)}</strong> and confirm
-        </li>
-        <li className="flex items-center gap-2">
-          <span className="font-bold text-blue-400">4.</span> Tap below after payment
-        </li>
-      </ul>
+          <ul className="text-sm text-zinc-400 space-y-2 mt-6 text-left w-full px-2">
+            <li className="flex items-center gap-2">
+              <span className="font-bold text-blue-400">1.</span> Open any UPI app on your phone
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="font-bold text-blue-400">2.</span> Scan the QR code above
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="font-bold text-blue-400">3.</span> Pay <strong className="text-zinc-200">Rs {totalAmount.toFixed(2)}</strong> and confirm
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="font-bold text-blue-400">4.</span> Tap below after payment
+            </li>
+          </ul>
+
+          {upiLink && isMobile && showQrFallback && (
+            <button
+              type="button"
+              onClick={() => setShowQrFallback(false)}
+              className="text-xs text-zinc-500 hover:text-zinc-405 mt-4 underline font-medium focus:outline-none bg-transparent border-0 cursor-pointer"
+            >
+              Back to UPI App Pay
+            </button>
+          )}
+        </>
+      )}
 
       <Button
         type="button"
         variant="primary"
         disabled={isRequestingPayment || isLoadingQr || !!qrError}
         onClick={handlePaid}
-        className="h-14 w-full bg-green-500 hover:bg-green-400 text-zinc-950 font-semibold text-base mt-8 rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="h-14 w-full bg-green-500 hover:bg-green-400 text-zinc-950 font-semibold text-base mt-8 rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed border-0"
       >
         {isRequestingPayment ? <Loader label="" /> : "I've Completed Payment"}
       </Button>
@@ -159,7 +217,7 @@ export function UpiPaymentDisplay({
         type="button"
         onClick={onBack}
         disabled={isRequestingPayment}
-        className="text-sm text-zinc-500 hover:text-zinc-300 font-medium mt-4 focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 rounded px-2 py-1"
+        className="text-sm text-zinc-500 hover:text-zinc-300 font-medium mt-4 focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 rounded px-2 py-1 bg-transparent border-0 cursor-pointer"
       >
          Change payment method
       </button>

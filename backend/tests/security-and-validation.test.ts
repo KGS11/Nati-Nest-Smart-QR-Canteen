@@ -66,7 +66,7 @@ describe("security middleware and validation", () => {
   });
 
   it("rate limits auth and API callers independently", async () => {
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < 100; i += 1) {
       expect((await runLimiter(authRateLimit, "10.0.0.10")).next).toHaveBeenCalledOnce();
     }
 

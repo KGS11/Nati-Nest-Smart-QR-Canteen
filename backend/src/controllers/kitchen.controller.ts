@@ -172,6 +172,23 @@ export class KitchenController {
       return next(error);
     }
   }
+
+  async markPrepared(request: Request, response: Response, next: NextFunction) {
+    try {
+      const orderId = param(request, "orderId");
+      if (!validateOrderId(orderId, response)) return;
+
+      const user = request.user!;
+      const order = await kitchenService.markPrepared(orderId, user.userId, user.role);
+      return response.status(200).json({
+        success: true,
+        message: "Order is prepared",
+        data: { order },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
 }
 
 export const kitchenController = new KitchenController();

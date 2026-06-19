@@ -28,6 +28,7 @@ enum OrderStatus {
   ACCEPTED
   PREPARING
   READY
+  PREPARED
   DELIVERED
   PAID
   CANCELLED
@@ -52,6 +53,7 @@ enum AssistanceType {
   WATER
   BILL
   GENERAL
+  PLATE
 }
 
 enum AssistanceStatus {
@@ -74,6 +76,9 @@ model User {
   passwordHash String
   role         Role
   isActive     Boolean  @default(true)
+  failedAttempts Int    @default(0)
+  lastFailedAttempt DateTime?
+  lockUntil    DateTime?
   createdAt    DateTime @default(now())
 
   paymentsVerified   Payment[]                @relation("VerifiedBy")
@@ -84,6 +89,8 @@ model User {
   assignedKitchenOrders Order[]               @relation("AssignedKitchen")
   assignedWaiterOrders  Order[]               @relation("AssignedWaiter")
   assignmentHistory     OrderAssignmentHistory[]
+  assignedSessions      TableSession[]          @relation("AssignedWaiter")
+  waiterAssignmentClaims WaiterAssignmentRequest[]
 
   @@map("users")
 }
@@ -163,11 +170,17 @@ model TableSession {
   feedback           Feedback?
   assistanceRequests AssistanceRequest[]
   cateringLeads      CateringLead[]
+  
+  assignedWaiterId   String?
+  assignedAt         DateTime?
+  assignedWaiter     User?               @relation("AssignedWaiter", fields: [assignedWaiterId], references: [id])
+  waiterAssignmentRequests WaiterAssignmentRequest[]
 
   @@index([tableId, status])
   @@index([openedAt])
   @@index([closedAt])
   @@index([status])
+  @@index([assignedWaiterId])
   @@map("table_sessions")
 }
 
@@ -358,5 +371,27 @@ model OrderAssignmentHistory {
   @@index([orderId])
   @@index([staffId])
   @@map("order_assignment_history")
+}
+
+model WaiterAssignmentRequest {
+  id           String           @id @default(uuid())
+  sessionId    String
+  requestedAt  DateTime         @default(now())
+  acceptedAt   DateTime?
+  acceptedById String?
+  status       AssignmentStatus @default(PENDING)
+
+  session      TableSession     @relation(fields: [sessionId], references: [id])
+  acceptedBy   User?            @relation(fields: [acceptedById], references: [id])
+
+  @@index([sessionId])
+  @@index([status])
+  @@map("waiter_assignment_requests")
+}
+
+enum AssignmentStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
 }
 

@@ -73,6 +73,8 @@ const requestMessage = (requestType: AssistanceType, tableNumber: string) => {
   switch (requestType) {
     case AssistanceType.WATER:
       return `Water requested at Table ${tableNumber}`;
+    case AssistanceType.PLATE:
+      return `Plate requested at Table ${tableNumber}`;
     case AssistanceType.BILL:
       return `Bill requested at Table ${tableNumber}`;
     case AssistanceType.GENERAL:
@@ -85,6 +87,8 @@ const resolvedMessage = (requestType: AssistanceType) => {
   switch (requestType) {
     case AssistanceType.WATER:
       return "Water is on its way to your table.";
+    case AssistanceType.PLATE:
+      return "Plates are on their way to your table.";
     case AssistanceType.BILL:
       return "Your bill is on its way.";
     case AssistanceType.GENERAL:
@@ -94,10 +98,20 @@ const resolvedMessage = (requestType: AssistanceType) => {
 };
 
 export class ServerService {
-  async getReadyOrders() {
+  async getReadyOrders(userId?: string, own: boolean = true) {
     try {
+      const whereClause: any = {
+        status: { in: [OrderStatus.READY, OrderStatus.PREPARED] },
+      };
+
+      if (userId && own) {
+        whereClause.session = {
+          assignedWaiterId: userId,
+        };
+      }
+
       const orders = await prisma.order.findMany({
-        where: { status: OrderStatus.READY },
+        where: whereClause,
         orderBy: { readyAt: "asc" },
         include: {
           session: {
@@ -125,7 +139,7 @@ export class ServerService {
       const updateResult = await prisma.order.updateMany({
         where: {
           id: orderId,
-          status: OrderStatus.READY,
+          status: { in: [OrderStatus.READY, OrderStatus.PREPARED] },
           assignedWaiterId: null,
         },
         data: {
@@ -144,8 +158,8 @@ export class ServerService {
           throw new AppError("Order not found", 404);
         }
 
-        if (existingOrder.status !== OrderStatus.READY) {
-          throw new AppError("Only READY orders can be claimed for delivery.", 400);
+        if (existingOrder.status !== OrderStatus.READY && existingOrder.status !== OrderStatus.PREPARED) {
+          throw new AppError("Only READY or PREPARED orders can be claimed for delivery.", 400);
         }
 
         if (existingOrder.assignedWaiterId) {
@@ -174,7 +188,7 @@ export class ServerService {
         orderId: updatedOrder.id,
         assignedWaiterId: staffId,
         assignedWaiterName: staffName,
-        status: OrderStatus.READY,
+        status: updatedOrder.status,
       });
 
       return serializeOrder(updatedOrder);
@@ -190,8 +204,8 @@ export class ServerService {
         throw new AppError("Order not found", 404);
       }
 
-      if (order.status !== OrderStatus.READY) {
-        throw new AppError("Only READY orders can be released.", 400);
+      if (order.status !== OrderStatus.READY && order.status !== OrderStatus.PREPARED) {
+        throw new AppError("Only READY or PREPARED orders can be released.", 400);
       }
 
       if (!order.assignedWaiterId) {
@@ -229,7 +243,7 @@ export class ServerService {
       io.to(ROOMS.server).emit("order:released", {
         orderId,
         role: Role.SERVER,
-        status: OrderStatus.READY,
+        status: updatedOrder.status,
       });
 
       return serializeOrder(updatedOrder);
@@ -246,8 +260,8 @@ export class ServerService {
         throw new AppError("Order not found", 404);
       }
 
-      if (order.status !== OrderStatus.READY) {
-        throw new AppError("Only READY orders can be marked as delivered.", 400);
+      if (order.status !== OrderStatus.READY && order.status !== OrderStatus.PREPARED) {
+        throw new AppError("Only READY or PREPARED orders can be marked as delivered.", 400);
       }
 
       if (!order.assignedWaiterId) {
@@ -290,14 +304,13 @@ export class ServerService {
         assignedWaiterName: updatedOrder.assignedWaiterName,
         deliveredBy: staffName,
       };
-      const io = getIo();
-      io.to(ROOMS.server).emit("order:status_updated", payload);
-      io.to(ROOMS.server).emit("order:delivered", {
+      const { notifyWaiter } = require("../utils/notification.util") as typeof import("../utils/notification.util");
+      await notifyWaiter(updatedOrder.session.id, "order:status_updated", payload);
+      await notifyWaiter(updatedOrder.session.id, "order:delivered", {
         orderId: updatedOrder.id,
         deliveredBy: staffName,
       });
-      io.to(ROOMS.kitchen).emit("order:status_updated", payload);
-      io.to(ROOMS.session(updatedOrder.session.id)).emit("order:delivered", {
+      getIo().to(ROOMS.session(updatedOrder.session.id)).emit("order:delivered", {
         orderId: updatedOrder.id,
         message: "Your order has been delivered. Enjoy your meal!",
         deliveredAt: updatedOrder.deliveredAt,
@@ -309,11 +322,18 @@ export class ServerService {
     }
   }
 
-  async getAssistanceRequests() {
+  async getAssistanceRequests(userId?: string, own: boolean = true) {
     try {
-      return prisma.assistanceRequest.findMany({
-        where: { status: AssistanceStatus.PENDING },
-        orderBy: { createdAt: "asc" },
+      const whereClause: any = { status: AssistanceStatus.PENDING };
+
+      if (userId && own) {
+        whereClause.session = {
+          assignedWaiterId: userId,
+        };
+      }
+
+      const requests = await prisma.assistanceRequest.findMany({
+        where: whereClause,
         include: {
           session: {
             include: {
@@ -324,6 +344,21 @@ export class ServerService {
           },
         },
       });
+
+      const priorityOrder: Record<AssistanceType, number> = {
+        BILL: 0,
+        WATER: 1,
+        PLATE: 1,
+        GENERAL: 2,
+      };
+
+      requests.sort((a, b) => {
+        const typeDiff = priorityOrder[a.requestType] - priorityOrder[b.requestType];
+        if (typeDiff !== 0) return typeDiff;
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      });
+
+      return requests;
     } catch (error) {
       throw error;
     }
@@ -370,14 +405,14 @@ export class ServerService {
         },
       });
 
-      const io = getIo();
-      io.to(ROOMS.server).emit("assistance:resolved", {
+      const { notifyWaiter } = require("../utils/notification.util") as typeof import("../utils/notification.util");
+      await notifyWaiter(updatedRequest.session.id, "assistance:resolved", {
         requestId: updatedRequest.id,
         tableNumber: updatedRequest.session.table.tableNumber,
         requestType: updatedRequest.requestType,
         resolvedAt: updatedRequest.resolvedAt,
       });
-      io.to(ROOMS.session(updatedRequest.session.id)).emit("assistance:resolved", {
+      getIo().to(ROOMS.session(updatedRequest.session.id)).emit("assistance:resolved", {
         requestId: updatedRequest.id,
         requestType: updatedRequest.requestType,
         message: resolvedMessage(updatedRequest.requestType),
@@ -443,7 +478,17 @@ export class ServerService {
         };
       }
 
-      getIo().to(ROOMS.server).emit("assistance:new", {
+      const pendingCount = await prisma.assistanceRequest.count({
+        where: { sessionId, status: AssistanceStatus.PENDING },
+      });
+
+      if (pendingCount === 1 && !session.assignedWaiterId) {
+        const { sessionService } = require("./session.service") as typeof import("./session.service");
+        await sessionService.requestWaiterAssignment(sessionId);
+      }
+
+      const { notifyWaiter } = require("../utils/notification.util") as typeof import("../utils/notification.util");
+      await notifyWaiter(sessionId, "assistance:new", {
         requestId: request.id,
         sessionId,
         tableNumber: request.session.table.tableNumber,

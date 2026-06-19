@@ -4,6 +4,7 @@ import { prisma } from "../config/db";
 import { ROOMS } from "../sockets/rooms";
 import { AppError } from "../utils/AppError";
 import { CreateOrderInput } from "../validators/order.validators";
+import { sessionService } from "./session.service";
 
 type OrderWithRelations = Awaited<ReturnType<typeof findOrderById>>;
 
@@ -170,7 +171,7 @@ export class OrderService {
             },
           },
         });
-      });
+      }, { timeout: 15000 });
 
       const serializedOrder = serializeOrder(createdOrder);
       getIo().to(ROOMS.kitchen).emit("order:new", {
@@ -181,6 +182,10 @@ export class OrderService {
         placedAt: serializedOrder.placedAt,
         specialNotes: serializedOrder.specialNotes,
       });
+
+      if (!session.assignedWaiterId) {
+        await sessionService.requestWaiterAssignment(sessionId);
+      }
 
       return serializedOrder;
     } catch (error) {

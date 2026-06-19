@@ -56,8 +56,7 @@ const toKitchenOrder = (order: Order): KitchenOrder | null => {
   if (
     order.status !== "PLACED" &&
     order.status !== "ACCEPTED" &&
-    order.status !== "PREPARING" &&
-    order.status !== "READY"
+    order.status !== "PREPARING"
   ) {
     return null;
   }
@@ -93,7 +92,7 @@ export function KitchenBoard() {
   // Audio & flash state
   const { isEnabled, setEnabled, playNewOrderAlert } = useAudioAlert();
   const [flashIncoming, setFlashIncoming] = useState(false);
-  const [activeTab, setActiveTab] = useState<"PLACED" | "PREPARING" | "READY">("PLACED");
+  const [activeTab, setActiveTab] = useState<"PLACED" | "IN_PROGRESS">("PLACED");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"available" | "my-orders">("available");
 
@@ -157,6 +156,8 @@ export function KitchenBoard() {
     };
     const handleStatusUpdated = (payload: OrderStatusUpdatedPayload & { assignedKitchenId?: string | null; assignedKitchenName?: string | null }) => {
       if (
+        payload.status === "PREPARED" ||
+        payload.status === "READY" ||
         payload.status === "DELIVERED" ||
         payload.status === "PAID" ||
         payload.status === "CANCELLED"
@@ -254,15 +255,11 @@ export function KitchenBoard() {
 
   const allIncoming = getOrdersByStatus(["PLACED"]);
   const allPreparing = getOrdersByStatus(["ACCEPTED", "PREPARING"]);
-  const allReady = getOrdersByStatus(["READY"]);
 
   const incoming = viewMode === "available" ? allIncoming : [];
   const preparing = viewMode === "available"
     ? allPreparing
     : allPreparing.filter((o) => o.assignedKitchenId === user?.id);
-  const ready = viewMode === "available"
-    ? allReady
-    : allReady.filter((o) => o.assignedKitchenId === user?.id);
 
   const myActiveClaimsCount = useMemo(() => {
     return allPreparing.filter((o) => o.assignedKitchenId === user?.id).length;
@@ -308,22 +305,13 @@ export function KitchenBoard() {
       "Failed to accept order.",
     );
 
-  const handlePreparing = (orderId: string) =>
+  const handlePrepared = (orderId: string) =>
     updateWithOptimism(
       orderId,
-      "PREPARING",
-      { preparingAt: new Date().toISOString() },
-      () => apiClient.patch(`/kitchen/orders/${orderId}/preparing`),
-      "Failed to start preparing order.",
-    );
-
-  const handleReady = (orderId: string) =>
-    updateWithOptimism(
-      orderId,
-      "READY",
+      "PREPARED",
       { readyAt: new Date().toISOString() },
-      () => apiClient.patch(`/kitchen/orders/${orderId}/ready`),
-      "Failed to mark order ready.",
+      () => apiClient.patch(`/kitchen/orders/${orderId}/prepared`),
+      "Failed to mark order prepared.",
     );
 
   const handleRelease = (orderId: string) =>
@@ -343,29 +331,22 @@ export function KitchenBoard() {
   const columns = useMemo(
     () => [
       {
-        title: "Incoming",
+        title: "New Orders",
         orders: incoming,
         accentColor: "amber" as const,
         emptyMessage: "No new orders",
         onAccept: handleAccept,
       },
       {
-        title: "Preparing",
+        title: "In Progress",
         orders: preparing,
         accentColor: "blue" as const,
         emptyMessage: "Nothing cooking",
-        onPreparing: handlePreparing,
-        onReady: handleReady,
+        onReady: handlePrepared,
         onRelease: handleRelease,
       },
-      {
-        title: "Ready",
-        orders: ready,
-        accentColor: "green" as const,
-        emptyMessage: "All delivered",
-      },
     ],
-    [incoming, preparing, ready, user?.id],
+    [incoming, preparing, user?.id],
   );
 
   return (
@@ -416,7 +397,7 @@ export function KitchenBoard() {
         </div>
 
         {/* Horizontal Tab Bar */}
-        <div className="grid grid-cols-3 bg-zinc-900 border-b border-zinc-850 shrink-0 text-center text-sm font-semibold relative z-10">
+        <div className="grid grid-cols-2 bg-zinc-900 border-b border-zinc-800 shrink-0 text-center text-sm font-semibold relative z-10">
           <button
             onClick={() => setActiveTab("PLACED")}
             className={cn(
@@ -424,25 +405,16 @@ export function KitchenBoard() {
               activeTab === "PLACED" ? "border-amber-500 text-amber-400" : "border-transparent text-zinc-500"
             )}
           >
-            Incoming ({incoming.length})
+            New Orders ({incoming.length})
           </button>
           <button
-            onClick={() => setActiveTab("PREPARING")}
+            onClick={() => setActiveTab("IN_PROGRESS")}
             className={cn(
               "py-3 border-b-2 transition-colors focus:outline-none",
-              activeTab === "PREPARING" ? "border-amber-500 text-amber-400" : "border-transparent text-zinc-500"
+              activeTab === "IN_PROGRESS" ? "border-amber-500 text-amber-400" : "border-transparent text-zinc-500"
             )}
           >
-            Preparing ({preparing.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("READY")}
-            className={cn(
-              "py-3 border-b-2 transition-colors focus:outline-none",
-              activeTab === "READY" ? "border-amber-500 text-amber-400" : "border-transparent text-zinc-500"
-            )}
-          >
-            Ready ({ready.length})
+            In Progress ({preparing.length})
           </button>
         </div>
 
@@ -465,7 +437,7 @@ export function KitchenBoard() {
             <div className="flex-1 min-h-0 flex flex-col">
               {activeTab === "PLACED" && (
                 <KitchenColumn
-                  title="Incoming"
+                  title="New Orders"
                   orders={incoming}
                   accentColor="amber"
                   emptyMessage={viewMode === "my-orders" ? "Claimed orders will show here" : "No new orders"}
@@ -473,23 +445,14 @@ export function KitchenBoard() {
                   flash={flashIncoming}
                 />
               )}
-              {activeTab === "PREPARING" && (
+              {activeTab === "IN_PROGRESS" && (
                 <KitchenColumn
-                  title="Preparing"
+                  title="In Progress"
                   orders={preparing}
                   accentColor="blue"
                   emptyMessage="Nothing cooking"
-                  onPreparing={handlePreparing}
-                  onReady={handleReady}
+                  onReady={handlePrepared}
                   onRelease={handleRelease}
-                />
-              )}
-              {activeTab === "READY" && (
-                <KitchenColumn
-                  title="Ready"
-                  orders={ready}
-                  accentColor="green"
-                  emptyMessage="All delivered"
                 />
               )}
             </div>
@@ -549,17 +512,12 @@ export function KitchenBoard() {
         <SummaryBar
           placedCount={allIncoming.length}
           preparingCount={allPreparing.length}
-          readyCount={allReady.length}
-          totalCount={allIncoming.length + allPreparing.length + allReady.length}
+          readyCount={0}
+          totalCount={allIncoming.length + allPreparing.length}
         />
 
         {isLoading ? (
           <main className="flex min-h-0 flex-1 gap-4 overflow-hidden p-4">
-            <div className="flex-1 space-y-4">
-              <div className="h-6 w-24 bg-zinc-800 rounded animate-pulse mb-3" />
-              <OrderCardSkeleton />
-              <OrderCardSkeleton />
-            </div>
             <div className="flex-1 space-y-4">
               <div className="h-6 w-24 bg-zinc-800 rounded animate-pulse mb-3" />
               <OrderCardSkeleton />
@@ -594,10 +552,9 @@ export function KitchenBoard() {
                 accentColor={column.accentColor}
                 emptyMessage={column.emptyMessage}
                 onAccept={column.onAccept}
-                onPreparing={column.onPreparing}
                 onReady={column.onReady}
                 onRelease={column.onRelease}
-                flash={column.title === "Incoming" ? flashIncoming : undefined}
+                flash={column.title === "New Orders" ? flashIncoming : undefined}
               />
             ))}
           </main>

@@ -27,7 +27,14 @@ import { MenuItemSkeleton } from "@/components/ui/Skeleton";
 export default function CustomerMenuPage() {
   const router = useRouter();
   const { socket } = useSocket();
-  const { tableNumber, clearSession } = useSessionStore();
+  const { tableNumber, clearSession, sessionId } = useSessionStore();
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && sessionId) {
+      setPaymentCompleted(window.sessionStorage.getItem(`paymentCompleted_${sessionId}`) === "true");
+    }
+  }, [sessionId]);
   const {
     items,
     isOpen: isCartOpen,
@@ -272,7 +279,7 @@ export default function CustomerMenuPage() {
       {/* Main Content */}
       <main className="max-w-md mx-auto pt-[136px]">
         {/* Quick Actions */}
-        <div className="grid grid-cols-4 gap-3 px-4 py-4">
+        <div className="grid grid-cols-5 gap-2 px-4 py-4">
           <button
             type="button"
             onClick={() => requestService(AssistanceType.WATER)}
@@ -281,6 +288,15 @@ export default function CustomerMenuPage() {
           >
             <MaterialIcon name={serviceBusy === AssistanceType.WATER ? "sync" : "water_drop"} className={serviceBusy === AssistanceType.WATER ? "animate-spin" : ""} />
             Water
+          </button>
+          <button
+            type="button"
+            onClick={() => requestService(AssistanceType.PLATE)}
+            disabled={Boolean(serviceBusy)}
+            className="flex min-h-[48px] flex-col items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 p-2 text-xs text-amber-400 shadow-sm active:scale-95 transition-all disabled:opacity-50"
+          >
+            <MaterialIcon name={serviceBusy === AssistanceType.PLATE ? "sync" : "restaurant"} className={serviceBusy === AssistanceType.PLATE ? "animate-spin" : ""} />
+            Plate
           </button>
           <button
             type="button"
@@ -294,7 +310,7 @@ export default function CustomerMenuPage() {
           <button
             type="button"
             onClick={() => requestService(AssistanceType.BILL)}
-            disabled={Boolean(serviceBusy)}
+            disabled={Boolean(serviceBusy) || paymentCompleted}
             className="flex min-h-[48px] flex-col items-center justify-center rounded-xl bg-zinc-900 border border-zinc-800 p-2 text-xs text-amber-400 shadow-sm active:scale-95 transition-all disabled:opacity-50"
           >
             <MaterialIcon name={serviceBusy === AssistanceType.BILL ? "sync" : "receipt_long"} className={serviceBusy === AssistanceType.BILL ? "animate-spin" : ""} />

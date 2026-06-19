@@ -33,6 +33,11 @@ const mocks = vi.hoisted(() => {
       update: vi.fn(),
       create: vi.fn(),
     },
+    waiterAssignmentRequest: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
   };
 
   const prisma = {
@@ -66,6 +71,13 @@ const mocks = vi.hoisted(() => {
       findMany: vi.fn(),
       update: vi.fn(),
     },
+    waiterAssignmentRequest: {
+      findFirst: vi.fn(),
+      create: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
     $transaction: vi.fn(async (arg: unknown) => {
       if (typeof arg === "function") {
         return (arg as (transaction: typeof tx) => unknown)(tx);
@@ -82,12 +94,12 @@ vi.mock("../src/index", () => ({ io: { to: mocks.to } }));
 
 const originalLoad = (Module as unknown as { _load: typeof Module["_load"] })._load;
 vi.spyOn(Module as unknown as { _load: typeof Module["_load"] }, "_load").mockImplementation(
-  ((request: string, parent: NodeModule | null, isMain: boolean) => {
+  (function (this: any, request: string, parent: NodeModule | null, isMain: boolean) {
     if (request === "../index" && parent?.filename.includes("\\src\\services\\")) {
       return { io: { to: mocks.to } };
     }
-    return originalLoad(request, parent, isMain);
-  }) as typeof Module["_load"],
+    return originalLoad.apply(this, arguments as any);
+  }) as any,
 );
 
 const { orderService } = await import("../src/services/order.service");
@@ -143,6 +155,13 @@ describe("order, payment, and session services", () => {
       { menuItemId: "item-1" },
       { menuItemId: "item-2" },
     ]);
+    mocks.prisma.waiterAssignmentRequest.findFirst.mockResolvedValue(null);
+    mocks.prisma.waiterAssignmentRequest.create.mockResolvedValue({
+      id: "req-1",
+      sessionId: "session-1",
+      status: "PENDING",
+      requestedAt: new Date(),
+    });
   });
 
   it("creates an order transaction using database prices and emits order:new", async () => {
@@ -280,7 +299,7 @@ describe("order, payment, and session services", () => {
     expect(mocks.prisma.order.updateMany).toHaveBeenCalledWith(expect.objectContaining({
       where: {
         sessionId: "session-1",
-        status: { in: [OrderStatus.DELIVERED, OrderStatus.READY] },
+        status: { in: [OrderStatus.DELIVERED, OrderStatus.READY, OrderStatus.PREPARED] },
       },
       data: expect.objectContaining({ status: OrderStatus.PAID }),
     }));

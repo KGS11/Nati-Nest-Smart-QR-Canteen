@@ -9,7 +9,7 @@ export interface ReadyOrderItem {
 
 export interface ReadyOrder {
   id: string
-  status: 'READY'
+  status: 'READY' | 'PREPARED'
   tableNumber: string
   sessionId: string
   readyAt: string
@@ -19,7 +19,7 @@ export interface ReadyOrder {
   assignedWaiterName?: string | null
 }
 
-export type AssistanceType = 'WATER' | 'BILL' | 'GENERAL'
+export type AssistanceType = 'WATER' | 'BILL' | 'GENERAL' | 'PLATE'
 export type AssistanceStatus = 'PENDING' | 'RESOLVED'
 export type PaymentMethod = 'CASH' | 'UPI'
 export type PaymentStatus = 'PENDING' | 'COMPLETED'
@@ -104,4 +104,18 @@ export interface PaymentCompletedPayload {
   totalAmount: number
   paymentMethod: PaymentMethod
   verifiedAt: string
+}
+
+export interface WaiterAssignmentRequest {
+  requestId: string
+  sessionId: string
+  tableNumber: string
+  requestedAt: string
+}
+
+export interface MyTableSession {
+  sessionId: string
+  tableNumber: string
+  orderCount: number
+  pendingRequestsCount: number
 }

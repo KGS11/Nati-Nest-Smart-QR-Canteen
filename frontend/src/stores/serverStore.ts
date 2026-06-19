@@ -2,13 +2,18 @@ import { create } from 'zustand'
 import {
   ReadyOrder,
   AssistanceRequest,
-  PendingPayment
+  PendingPayment,
+  WaiterAssignmentRequest,
+  MyTableSession
 } from '@/types/server.types'
 
 interface ServerState {
   readyOrders: ReadyOrder[]
   assistanceRequests: AssistanceRequest[]
   pendingPayments: PendingPayment[]
+  assignmentRequests: WaiterAssignmentRequest[]
+  myTables: MyTableSession[]
+  isAcceptingAssignment: boolean
   isLoading: boolean
   error: string | null
   isConnected: boolean
@@ -30,6 +35,12 @@ interface ServerState {
   addPendingPayment: (payment: PendingPayment) => void
   removePendingPayment: (paymentId: string) => void
 
+  setAssignmentRequests: (requests: WaiterAssignmentRequest[]) => void
+  addAssignmentRequest: (request: WaiterAssignmentRequest) => void
+  removeAssignmentRequest: (id: string) => void
+  setMyTables: (tables: MyTableSession[]) => void
+  setAcceptingAssignment: (bool: boolean) => void
+
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   setConnected: (connected: boolean) => void
@@ -42,6 +53,9 @@ export const useServerStore = create<ServerState>()(
     readyOrders: [],
     assistanceRequests: [],
     pendingPayments: [],
+    assignmentRequests: [],
+    myTables: [],
+    isAcceptingAssignment: false,
     isLoading: false,
     error: null,
     isConnected: false,
@@ -99,6 +113,23 @@ export const useServerStore = create<ServerState>()(
           p => p.id !== paymentId
         )
       })),
+
+    setAssignmentRequests: (assignmentRequests) => set({ assignmentRequests }),
+    addAssignmentRequest: (request) =>
+      set(state => ({
+        assignmentRequests: [
+          ...state.assignmentRequests.filter(existing => existing.requestId !== request.requestId),
+          request
+        ]
+      })),
+    removeAssignmentRequest: (id) =>
+      set(state => ({
+        assignmentRequests: state.assignmentRequests.filter(
+          r => r.requestId !== id && r.sessionId !== id
+        )
+      })),
+    setMyTables: (myTables) => set({ myTables }),
+    setAcceptingAssignment: (isAcceptingAssignment) => set({ isAcceptingAssignment }),
 
     setLoading: (isLoading) => set({ isLoading }),
     setError: (error) => set({ error }),

@@ -22,6 +22,12 @@ export default function CustomerBillPage() {
   const [requesting, setRequesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [paymentCompleted, setPaymentCompleted] = useState<boolean>(() => {
+    if (typeof window !== "undefined" && sessionId) {
+      return window.sessionStorage.getItem(`paymentCompleted_${sessionId}`) === "true";
+    }
+    return false;
+  });
 
   const loadBill = useCallback(async () => {
     setError(null);
@@ -32,23 +38,35 @@ export default function CustomerBillPage() {
       ]);
       setBill(billSummary);
       setPayment(paymentStatus);
+      if (paymentStatus?.status === "COMPLETED") {
+        setPaymentCompleted(true);
+        if (typeof window !== "undefined" && sessionId) {
+          window.sessionStorage.setItem(`paymentCompleted_${sessionId}`, "true");
+        }
+      }
     } catch (err) {
       const clientError = err as ClientApiError;
       setError(clientError.message || "Unable to load bill summary.");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [sessionId]);
 
   useEffect(() => {
     loadBill();
   }, [loadBill]);
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !sessionId) return;
 
     const confirmed = () => {
-      router.push("/customer/feedback");
+      setPaymentCompleted(true);
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(`paymentCompleted_${sessionId}`, "true");
+      }
+      setTimeout(() => {
+        router.push("/customer/feedback");
+      }, 1500);
     };
 
     socket.on("payment:confirmed", confirmed);
@@ -56,7 +74,7 @@ export default function CustomerBillPage() {
     return () => {
       socket.off("payment:confirmed", confirmed);
     };
-  }, [clearSession, router, socket]);
+  }, [router, socket, sessionId]);
 
   const requestBill = async () => {
     setRequesting(true);
@@ -148,7 +166,20 @@ export default function CustomerBillPage() {
           )}
         </section>
 
-        {(!payment || payment.status !== "PENDING") && bill && bill.totalAmount > 0 ? (
+        {paymentCompleted ? (
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center shadow-stitch animate-fade-in flex flex-col items-center justify-center">
+            <div className="mb-4 rounded-full bg-green-500/10 px-5 py-4 text-4xl font-bold text-green-400">
+              ✓
+            </div>
+            <h3 className="text-2xl font-bold text-green-400">Payment Completed</h3>
+            <p className="text-sm text-zinc-400 mt-2">
+              Thank you! Your payment has been successfully completed.
+            </p>
+            <p className="text-xs text-zinc-500 mt-4">
+              Redirecting to feedback page...
+            </p>
+          </div>
+        ) : (!payment || payment.status !== "PENDING") && bill && bill.totalAmount > 0 ? (
           <PaymentMethodSelector
             sessionId={sessionId || ""}
             totalAmount={bill.totalAmount}

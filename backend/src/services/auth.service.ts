@@ -68,10 +68,60 @@ export class AuthService {
         throw new AppError("Account inactive", 401);
       }
 
+      // Check if user is currently locked out
+      if (user.lockUntil && user.lockUntil > new Date()) {
+        const remainingMs = user.lockUntil.getTime() - Date.now();
+        const remainingMin = Math.ceil(remainingMs / (60 * 1000));
+        throw new AppError(
+          `Too many failed attempts. Please try again in ${remainingMin} minute${remainingMin > 1 ? "s" : ""}.`,
+          401
+        );
+      }
+
       const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
       if (!isPasswordValid) {
+        const newFailedAttempts = user.failedAttempts + 1;
+        let lockUntil: Date | null = null;
+
+        if (newFailedAttempts >= 15) {
+          lockUntil = new Date(Date.now() + 15 * 60 * 1000);
+        } else if (newFailedAttempts >= 10) {
+          lockUntil = new Date(Date.now() + 5 * 60 * 1000);
+        } else if (newFailedAttempts >= 5) {
+          lockUntil = new Date(Date.now() + 1 * 60 * 1000);
+        }
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            failedAttempts: newFailedAttempts,
+            lastFailedAttempt: new Date(),
+            lockUntil,
+          },
+        });
+
+        if (lockUntil) {
+          const lockMin = newFailedAttempts >= 15 ? 15 : newFailedAttempts >= 10 ? 5 : 1;
+          throw new AppError(
+            `Too many failed attempts. Please try again in ${lockMin} minute${lockMin > 1 ? "s" : ""}.`,
+            401
+          );
+        }
+
         throw new AppError("Invalid credentials", 401);
+      }
+
+      // Reset failed attempts upon successful login
+      if (user.failedAttempts > 0 || user.lockUntil || user.lastFailedAttempt) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            failedAttempts: 0,
+            lastFailedAttempt: null,
+            lockUntil: null,
+          },
+        });
       }
 
       const token = this.createAccessToken(user);
@@ -133,7 +183,7 @@ export class AuthService {
       });
 
       return nextToken;
-    });
+    }, { timeout: 15000 });
 
     return {
       token: this.createAccessToken(storedToken.user),

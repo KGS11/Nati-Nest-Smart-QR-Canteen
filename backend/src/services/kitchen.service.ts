@@ -1,8 +1,22 @@
+/**
+ * KITCHEN WORKFLOW RATIONALE & ARCHITECTURAL DECISION:
+ * 
+ * We maintain the existing two-step flow (ACCEPT -> PREPARING -> READY) instead of collapsing them:
+ * 1. ACCEPT = The cook claims the order and confirms they've seen it. This is a critical state to prevent
+ *    double-claiming or duplicate preparation in multi-station kitchens via compare-and-swap checks.
+ * 2. PREPARING = The cook actively starts preparation of the dish. This provides key signals for operations
+ *    and analytics tracking, enabling accurate calculation of performance metrics:
+ *    - avgAcceptanceTimeMinutes (time to notice/claim order)
+ *    - avgPreparationTimeMinutes (actual preparation duration)
+ * 3. Collapsing these states would lose this timing granularity and disrupt reports generated in reports.service.ts.
+ */
+
 import { OrderItemStatus, OrderStatus, Role } from "@prisma/client";
 import { Server } from "socket.io";
 import { prisma } from "../config/db";
 import { AppError } from "../utils/AppError";
 import { ROOMS } from "../sockets/rooms";
+import { EVENTS } from "../sockets/events";
 
 type KitchenOrder = Awaited<ReturnType<typeof kitchenOrderById>>;
 
@@ -525,6 +539,77 @@ export class KitchenService {
       });
 
       return serializeOrder(updatedOrder);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async markPrepared(orderId: string, userId: string, role: string) {
+    try {
+      const order = await kitchenOrderById(orderId);
+
+      if (!order) {
+        throw new AppError("Order not found", 404);
+      }
+
+      this.checkKitchenOwnership(order, userId, role);
+
+      if (order.status !== OrderStatus.ACCEPTED && order.status !== OrderStatus.PREPARING) {
+        throw new AppError("Only ACCEPTED or PREPARING orders can be marked as prepared.", 400);
+      }
+
+      if (order.session.status !== "ACTIVE") {
+        throw new AppError("Cannot update order — the table session is already closed.", 409);
+      }
+
+      const readyAt = new Date();
+      const updatedOrder = await prisma.order.update({
+        where: { id: orderId },
+        data: { status: OrderStatus.PREPARED, readyAt },
+        include: {
+          session: { include: { table: { select: { tableNumber: true } } } },
+          items: { include: { menuItem: true } },
+        },
+      });
+
+      const serializedOrder = serializeOrder(updatedOrder);
+      const activeItems = serializedOrder.items.filter((item) => item.status === OrderItemStatus.ACTIVE);
+
+      const io = getIo();
+      io.to(ROOMS.kitchen).emit("order:status_updated", {
+        orderId: updatedOrder.id,
+        status: OrderStatus.PREPARED,
+        tableNumber: updatedOrder.session.table.tableNumber,
+        readyAt: updatedOrder.readyAt,
+      });
+
+      const { notifyWaiter } = require("../utils/notification.util") as typeof import("../utils/notification.util");
+
+      await notifyWaiter(updatedOrder.session.id, EVENTS.ORDER_PREPARED, {
+        orderId: updatedOrder.id,
+        sessionId: updatedOrder.session.id,
+        tableNumber: updatedOrder.session.table.tableNumber,
+        readyAt: updatedOrder.readyAt,
+        assignedKitchenId: updatedOrder.assignedKitchenId,
+        assignedKitchenName: updatedOrder.assignedKitchenName,
+        message: `Order ready for Table ${updatedOrder.session.table.tableNumber}`,
+        items: activeItems.map((item) => ({
+          id: item.id,
+          name: item.menuItem.name,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          specialInstructions: item.specialInstructions,
+          status: item.status,
+        })),
+      });
+
+      io.to(ROOMS.session(updatedOrder.session.id)).emit("order:ready", {
+        orderId: updatedOrder.id,
+        message: "Your order is ready and will be delivered shortly.",
+        readyAt: updatedOrder.readyAt,
+      });
+
+      return serializedOrder;
     } catch (error) {
       throw error;
     }
