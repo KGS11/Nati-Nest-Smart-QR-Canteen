@@ -79,14 +79,8 @@ export default function CustomerBillPage() {
     };
   }, [router, socket, sessionId]);
 
-  useEffect(() => {
-    if (paymentCompleted) {
-      const timer = setTimeout(() => {
-        router.push("/customer/feedback");
-      }, 2500);
-      return () => clearTimeout(timer);
-    }
-  }, [paymentCompleted, router]);
+  // No auto-redirect — user must manually navigate to feedback
+  // This prevents the rating page from "refreshing" unexpectedly
 
   useEffect(() => {
     if (bill && isPaymentEligible && bill.totalAmount > 0 && !notified && payment?.status !== "COMPLETED") {
@@ -187,13 +181,28 @@ export default function CustomerBillPage() {
 
         {paymentCompleted ? (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center shadow-stitch animate-fade-in flex flex-col items-center justify-center">
-            <div className="mb-4 text-4xl">
-              ✅
-            </div>
-            <h3 className="text-2xl font-bold text-green-400">Payment Successful</h3>
-            <p className="text-sm text-zinc-400 mt-4">
-              Redirecting to Rating...
+            <div className="mb-4 text-4xl">✅</div>
+            <h3 className="text-2xl font-bold text-green-400">Payment Successful!</h3>
+            <p className="text-sm text-zinc-400 mt-2 mb-6">
+              Thank you for dining with us.
             </p>
+            <button
+              type="button"
+              onClick={() => router.push("/customer/feedback")}
+              className="w-full h-12 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded-xl active:scale-95 transition-all cursor-pointer border-0"
+            >
+              Rate Your Experience
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                clearSession();
+                router.push("/");
+              }}
+              className="text-xs text-zinc-500 hover:text-zinc-300 mt-4 bg-transparent border-0 cursor-pointer"
+            >
+              Skip &amp; Exit
+            </button>
           </div>
         ) : bill && bill.totalAmount > 0 && !isPaymentEligible ? (
           <StatePanel 

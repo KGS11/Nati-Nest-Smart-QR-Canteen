@@ -8,6 +8,7 @@ import path from "path";
 import { Server } from "socket.io";
 import { prisma } from "./config/db";
 import { errorHandler } from "./middlewares/errorHandler";
+import requestLogger from "./middlewares/requestLogger";
 import { apiRateLimit, authRateLimit, securityHeaders } from "./middlewares/security";
 import authRouter from "./routes/auth.routes";
 import cateringRouter from "./routes/catering.routes";
@@ -119,19 +120,24 @@ app.use(
   }),
 );
 app.use(securityHeaders);
+app.use(requestLogger);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.get("/health", async (_request, response) => {
   try {
+    const dbStart = Date.now();
     await prisma.$queryRaw`SELECT 1`;
+    const dbLatencyMs = Date.now() - dbStart;
 
     return response.json({
       status: "ok",
       timestamp: new Date().toISOString(),
       database: "connected",
-      uptime: process.uptime(),
+      uptime: Math.floor(process.uptime()),
+      memoryMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      dbLatencyMs,
       message: "Nati Nest API running",
     });
   } catch (_error) {
@@ -139,7 +145,9 @@ app.get("/health", async (_request, response) => {
       status: "degraded",
       timestamp: new Date().toISOString(),
       database: "disconnected",
-      uptime: process.uptime(),
+      uptime: Math.floor(process.uptime()),
+      memoryMB: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+      dbLatencyMs: null,
       message: "Nati Nest API running with database connectivity issues",
     });
   }

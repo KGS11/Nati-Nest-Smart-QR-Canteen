@@ -62,6 +62,7 @@ export const errorHandler = (
   if (finalStatusCode >= 500 || statusCode >= 500 || isPrismaError) {
     logger.error("Request failed", {
       error,
+      requestId: (request as any).requestId ?? null,
       method: request.method,
       path: request.path,
       statusCode: finalStatusCode,
