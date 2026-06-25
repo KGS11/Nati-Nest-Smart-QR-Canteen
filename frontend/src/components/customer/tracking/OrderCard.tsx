@@ -30,6 +30,7 @@ export function OrderCard({
     ACCEPTED: "border-l-4 border-l-blue-500",
     PREPARING: "border-l-4 border-l-amber-500",
     READY: "border-l-4 border-l-green-500",
+    PREPARED: "border-l-4 border-l-green-500",
     DELIVERED: "border-l-4 border-l-green-400",
     PAID: "border-l-4 border-l-green-500",
     CANCELLED: "border-l-4 border-l-red-500",
@@ -44,6 +45,7 @@ export function OrderCard({
       case "PREPARING":
         return "warning";
       case "READY":
+      case "PREPARED":
       case "DELIVERED":
       case "PAID":
         return "success";

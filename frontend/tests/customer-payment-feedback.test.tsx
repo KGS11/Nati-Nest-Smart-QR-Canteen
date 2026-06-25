@@ -90,15 +90,14 @@ describe("customer payment and feedback components", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Server unavailable");
   });
 
-  it("loads the UPI QR and sends a bill notification after payment", async () => {
+  it("renders the UPI payment UI and sends a bill notification after payment", async () => {
     mocks.requestAssistance.mockResolvedValueOnce({});
 
     render(<UpiPaymentDisplay sessionId="session-1" totalAmount={160} onBack={vi.fn()} />);
 
-    expect(await screen.findByAltText("UPI QR Code")).toHaveAttribute(
-      "src",
-      "https://example.com/upi.png",
-    );
+    // The new UI shows "Online Payment" heading and a scanner button
+    expect(screen.getByText("Online Payment")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open camera scanner/i })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /completed payment/i }));
 
@@ -117,7 +116,9 @@ describe("customer payment and feedback components", () => {
     });
 
     render(<UpiPaymentDisplay sessionId="session-1" totalAmount={160} onBack={vi.fn()} />);
-    await screen.findByAltText("UPI QR Code");
+
+    // Wait for the UI to render
+    expect(screen.getByText("Online Payment")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /completed payment/i }));
     confirmPayment();

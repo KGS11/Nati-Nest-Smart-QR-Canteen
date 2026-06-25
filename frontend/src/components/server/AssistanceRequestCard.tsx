@@ -80,10 +80,10 @@ export default function AssistanceRequestCard({
         }
       case 'BILL':
         return {
-          icon: '🧾',
+          icon: '💰',
           accent: 'text-amber-400',
           badgeBg: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
-          label: 'Bill Requested'
+          label: 'Payment Assistance Required'
         }
       case 'GENERAL':
       default:
@@ -144,23 +144,28 @@ export default function AssistanceRequestCard({
 
       {/* Buttons */}
       <div className="w-full">
-        {isBill && onViewBill ? (
-          <div className="flex gap-2 w-full mt-1">
-            <button
-              type="button"
-              onClick={() => onViewBill(request.sessionId)}
-              className="bg-amber-500 hover:bg-amber-400 text-zinc-950 min-h-[48px] px-4 rounded-xl font-bold flex-1 transition-all active:scale-[0.98] border-0 text-sm"
-            >
-              View Bill & Collect
-            </button>
-            <Button
-              type="button"
-              onClick={handleResolve}
-              disabled={isResolving}
-              className="bg-zinc-800 text-zinc-300 hover:bg-zinc-700 min-h-[48px] px-4 rounded-xl font-semibold border-0 text-xs active:scale-[0.98]"
-            >
-              {isResolving ? <Loader /> : "Resolve"}
-            </Button>
+        {isBill ? (
+          <div className="flex flex-col gap-2 w-full mt-1">
+            <span className="text-xs text-amber-400 font-medium mb-1">Customer is viewing the bill.</span>
+            <div className="flex gap-2 w-full">
+              {onViewBill && (
+                <button
+                  type="button"
+                  onClick={() => onViewBill(request.sessionId)}
+                  className="bg-zinc-800 text-amber-400 hover:bg-zinc-700 min-h-[48px] px-4 rounded-xl font-bold transition-all active:scale-[0.98] border-0 text-sm whitespace-nowrap"
+                >
+                  View Bill
+                </button>
+              )}
+              <Button
+                type="button"
+                onClick={handleResolve}
+                disabled={isResolving}
+                className="bg-amber-500 text-zinc-950 hover:bg-amber-400 min-h-[48px] flex-1 rounded-xl font-bold border-0 text-sm active:scale-[0.98]"
+              >
+                {isResolving ? <Loader /> : "Go to Customer ✓"}
+              </Button>
+            </div>
           </div>
         ) : (
           <button

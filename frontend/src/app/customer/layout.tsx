@@ -35,8 +35,9 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
       );
       
       setShowBillBubble(allDeliveredOrPaid);
-    } catch (err) {
-      console.error("Error checking active orders for bill bubble:", err);
+    } catch (err: any) {
+      setShowBillBubble(false);
+      console.warn("Bill Bubble check skipped:", err?.message || err);
     }
   };
 
@@ -46,7 +47,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
   }, [sessionId]);
 
   useEffect(() => {
-    if (pathname === "/customer/bill") {
+    if (pathname === "/customer/bill" || pathname === "/customer/feedback") {
       setBillBubbleDismissed(true);
       setShowBillBubble(false);
     } else {

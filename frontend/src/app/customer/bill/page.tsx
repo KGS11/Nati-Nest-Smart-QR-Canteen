@@ -11,6 +11,7 @@ import { BillSummary, customerService, PaymentStatusPayload } from "@/services/c
 import { useSessionStore } from "@/stores/sessionStore";
 import { ClientApiError } from "@/types/api";
 import { PaymentMethodSelector } from "@/components/customer/PaymentMethodSelector";
+import { AssistanceType } from "@/types";
 
 export default function CustomerBillPage() {
   const router = useRouter();
@@ -28,6 +29,11 @@ export default function CustomerBillPage() {
     }
     return false;
   });
+  const [notified, setNotified] = useState(false);
+
+  const isPaymentEligible = bill?.orders 
+    ? bill.orders.every(order => ["DELIVERED", "PAID", "CANCELLED"].includes(order.status))
+    : false;
 
   const loadBill = useCallback(async () => {
     setError(null);
@@ -64,9 +70,6 @@ export default function CustomerBillPage() {
       if (typeof window !== "undefined") {
         window.sessionStorage.setItem(`paymentCompleted_${sessionId}`, "true");
       }
-      setTimeout(() => {
-        router.push("/customer/feedback");
-      }, 1500);
     };
 
     socket.on("payment:confirmed", confirmed);
@@ -75,6 +78,22 @@ export default function CustomerBillPage() {
       socket.off("payment:confirmed", confirmed);
     };
   }, [router, socket, sessionId]);
+
+  useEffect(() => {
+    if (paymentCompleted) {
+      const timer = setTimeout(() => {
+        router.push("/customer/feedback");
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [paymentCompleted, router]);
+
+  useEffect(() => {
+    if (bill && isPaymentEligible && bill.totalAmount > 0 && !notified && payment?.status !== "COMPLETED") {
+      customerService.requestAssistance(AssistanceType.BILL).catch(() => {});
+      setNotified(true);
+    }
+  }, [bill, isPaymentEligible, notified, payment?.status]);
 
   const requestBill = async () => {
     setRequesting(true);
@@ -168,36 +187,26 @@ export default function CustomerBillPage() {
 
         {paymentCompleted ? (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center shadow-stitch animate-fade-in flex flex-col items-center justify-center">
-            <div className="mb-4 rounded-full bg-green-500/10 px-5 py-4 text-4xl font-bold text-green-400">
-              ✓
+            <div className="mb-4 text-4xl">
+              ✅
             </div>
-            <h3 className="text-2xl font-bold text-green-400">Payment Completed</h3>
-            <p className="text-sm text-zinc-400 mt-2">
-              Thank you! Your payment has been successfully completed.
-            </p>
-            <p className="text-xs text-zinc-500 mt-4">
-              Redirecting to feedback page...
+            <h3 className="text-2xl font-bold text-green-400">Payment Successful</h3>
+            <p className="text-sm text-zinc-400 mt-4">
+              Redirecting to Rating...
             </p>
           </div>
-        ) : (!payment || payment.status !== "PENDING") && bill && bill.totalAmount > 0 ? (
+        ) : bill && bill.totalAmount > 0 && !isPaymentEligible ? (
+          <StatePanel 
+            title="Order in progress" 
+            message="Your order is still being prepared or waiting for delivery. Payment will be available once your food has been delivered." 
+          />
+        ) : payment?.status !== "COMPLETED" && bill && bill.totalAmount > 0 ? (
           <PaymentMethodSelector
             sessionId={sessionId || ""}
             totalAmount={bill.totalAmount}
             onPaymentRequested={loadBill}
             payment={payment}
           />
-        ) : payment?.status === "PENDING" ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center shadow-stitch">
-            <p className="text-amber-400 font-semibold text-lg animate-pulse mb-2">
-              Payment Pending Verification
-            </p>
-            <p className="text-sm text-zinc-400">
-              The waiter has been notified. Please wait for verification.
-            </p>
-            <div className="flex justify-center mt-6">
-              <Loader label="Waiting..." />
-            </div>
-          </div>
         ) : null}
       </div>
     </div>

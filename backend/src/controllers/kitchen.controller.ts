@@ -71,6 +71,25 @@ export class KitchenController {
     }
   }
 
+  async acceptAndPrepare(request: Request, response: Response, next: NextFunction) {
+    try {
+      const orderId = param(request, "orderId");
+      if (!validateOrderId(orderId, response)) return;
+
+      const staffId = request.user!.userId;
+      const staffName = request.user!.name;
+
+      const order = await kitchenService.acceptAndPrepare(orderId, staffId, staffName);
+      return response.status(200).json({
+        success: true,
+        message: "Order accepted and preparation started",
+        data: { order },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async startPreparing(request: Request, response: Response, next: NextFunction) {
     try {
       const orderId = param(request, "orderId");

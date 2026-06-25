@@ -7,3 +7,6 @@ coverage/
 backend/uploads/
 frontend/test-results/
 *.tsbuildinfo
+
+# Database backups
+backups/

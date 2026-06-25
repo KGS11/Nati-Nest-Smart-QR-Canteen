@@ -78,6 +78,9 @@ const mocks = vi.hoisted(() => {
       update: vi.fn(),
       updateMany: vi.fn(),
     },
+    assistanceRequest: {
+      updateMany: vi.fn(),
+    },
     $transaction: vi.fn(async (arg: unknown) => {
       if (typeof arg === "function") {
         return (arg as (transaction: typeof tx) => unknown)(tx);
@@ -249,7 +252,7 @@ describe("order, payment, and session services", () => {
       status: PaymentStatus.PENDING,
       totalAmount: decimal(160),
     });
-    mocks.prisma.order.findMany.mockResolvedValue([orderWithItems]);
+    mocks.prisma.order.findMany.mockResolvedValue([{ ...orderWithItems, status: OrderStatus.DELIVERED }]);
 
     const result = await paymentService.createPaymentOnBillRequest("session-1");
 

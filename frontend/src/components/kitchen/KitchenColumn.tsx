@@ -9,6 +9,7 @@ interface KitchenColumnProps {
   accentColor: "amber" | "blue" | "green";
   emptyMessage: string;
   onAccept?: (orderId: string) => Promise<void>;
+  onAcceptAndPrepare?: (orderId: string) => Promise<void>;
   onPreparing?: (orderId: string) => Promise<void>;
   onReady?: (orderId: string) => Promise<void>;
   onRelease?: (orderId: string) => Promise<void>;
@@ -33,6 +34,7 @@ export function KitchenColumn({
   accentColor,
   emptyMessage,
   onAccept,
+  onAcceptAndPrepare,
   onPreparing,
   onReady,
   onRelease,
@@ -74,6 +76,7 @@ export function KitchenColumn({
               key={order.id}
               order={order}
               onAccept={onAccept}
+              onAcceptAndPrepare={onAcceptAndPrepare}
               onPreparing={onPreparing}
               onReady={onReady}
               onRelease={onRelease}

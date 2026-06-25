@@ -1,64 +1,139 @@
-# Nati Nest QR Canteen - Backup & Recovery Guide
+# Nati Nest Database Backup & Restore Guide
 
-This guide provides procedures for backing up database data, recovering from system failures, and restoring the system to a healthy state.
+This document explains how the automated Windows PostgreSQL backup system works, how to configure it, and how to safely restore data.
+
+## Prerequisites
+- **PostgreSQL Tools**: Ensure that `pg_dump` and `pg_restore` are installed and available in your system's PATH. If not, install PostgreSQL on Windows and add `C:\Program Files\PostgreSQL\<version>\bin` to your Environment Variables.
+- **Backend .env**: The script automatically reads the `DATABASE_URL` from `backend\.env`. Ensure it is correctly formatted.
+
+## How Backups Work
+The native PowerShell script (`scripts\backup.ps1`) performs the following:
+1. Reads `DATABASE_URL` from the backend `.env` file to securely obtain credentials.
+2. Runs `pg_dump` in custom compressed format (`-Fc`).
+3. Saves a highly compressed backup named `backup-YYYY-MM-DD-HH-mm.backup` in the `backups/` directory.
+4. Cleans up any `.backup` files older than 14 days (Retention Policy).
+5. Logs all success/failure events to `logs/backup.log`.
 
 ---
 
-## 1. Database Backup Process
+## 1. Running a Manual Backup
 
-We recommend automated daily logical backups of your PostgreSQL database using `pg_dump`.
+To manually run a backup at any time:
+1. Open PowerShell as Administrator.
+2. Navigate to your project root.
+3. Run the script:
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+   .\scripts\backup.ps1
+   ```
+4. Check the `./backups` folder for the new file and `./logs/backup.log` to confirm success.
 
-### Automated Daily Backups
-The database administrator should schedule a daily cron job to dump the database schema and data:
+---
 
-```bash
-# Dump command (logical backup)
-pg_dump "$DATABASE_URL" | gzip > /backups/nati_nest_$(date +%F).sql.gz
+## 2. Automating with Windows Task Scheduler (Recommended)
+
+To run the backup completely hands-free every day at 12:00 AM:
+
+1. Open **Task Scheduler** in Windows.
+2. Click **Create Basic Task...** in the right panel.
+3. **Name**: `Nati Nest Database Backup`
+4. **Trigger**: Select **Daily** -> Set time to `12:00:00 AM`.
+5. **Action**: Select **Start a program**.
+6. **Program/script**: Type `powershell.exe`
+7. **Add arguments**: 
+   ```text
+   -WindowStyle Hidden -ExecutionPolicy Bypass -File "C:\Path\To\Your\Project\scripts\backup.ps1"
+   ```
+   *(Ensure you replace the path above with the absolute path to your script).*
+8. **Finish**. Right-click the newly created task, select **Properties**, and check **Run whether user is logged on or not** and **Run with highest privileges**.
+
+---
+
+## 3. Changing Configuration
+
+### Retention Period
+By default, backups older than 14 days are deleted.
+To change this, open `scripts\backup.ps1` and modify:
+```powershell
+$RetentionDays = 14
 ```
 
-### Backup Storage Best Practices
-1.  **Offsite Replication**: Upload backups to secure, private cloud object storage (e.g. AWS S3, Google Cloud Storage) using lifecycle policies.
-2.  **Retention Policy**:
-    *   Daily backups: Keep for 14 days.
-    *   Weekly backups: Keep for 8 weeks.
-    *   Monthly backups: Keep for 12 months.
-3.  **Access Security**: Restrict access to database dumps to server administrators only.
+### Backup Location
+By default, backups are saved to `./backups`.
+To change this, modify:
+```powershell
+$BackupDir = Join-Path $ProjectRoot "backups"
+```
 
 ---
 
-## 2. Database Restore Process
+## 4. Restore Instructions
 
-In the event of database corruption or hardware failure, follow this restoration procedure:
+> [!WARNING]  
+> Restoring a database will completely overwrite existing tables and data. Ensure you understand the impact before proceeding.
 
-### Prerequisites
-*   A clean, running PostgreSQL database instance.
-*   Access to the `.sql.gz` backup file.
+### Method A: Using the Automated Restore Script (Recommended)
 
-### Recovery Command Steps
-1.  Uncompress the database backup:
-    ```bash
-    gunzip -c nati_nest_2026-06-14.sql.gz > restore.sql
-    ```
-2.  Restore the data using the `psql` utility:
-    ```bash
-    psql "$DATABASE_URL" -f restore.sql
-    ```
-3.  Deploy and sync database migrations using Prisma:
-    ```bash
-    npx prisma migrate deploy
-    ```
-4.  Verify connection by loading the system dashboards.
+An automated restore script is available at `scripts/restore.ps1`. This script automatically:
+1. Reads the target `DATABASE_URL` from `backend/.env`.
+2. Validates the backup file.
+3. Automatically applies Neon compatibility flags to prevent ownership and privilege errors.
+
+To run it:
+1. Open PowerShell as Administrator.
+2. Run:
+   ```powershell
+   Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+   .\scripts\restore.ps1 -BackupFile ".\backups\backup-2026-06-25-10-30.backup"
+   ```
 
 ---
 
-## 3. Disaster Recovery & Export Recovery
+### Method B: Manual Restore using CLI (`pg_restore`)
 
-### System Outage Recovery Checklist
-*   [ ] **Server Crash**: Restart backend and frontend Docker containers (`docker-compose restart`).
-*   [ ] **Database Connection Failure**: Check Neon/PostgreSQL cloud service status. Verify that backend environment variables match connection credentials.
-*   [ ] **Socket.IO Disconnections**: If kitchen or waiter boards lose live updates, check if Nginx proxy is forwarding WebSocket headers correctly.
+If you want to manually run the restore via command line, use the following `pg_restore` command to handle Neon PostgreSQL database ownership discrepancies:
 
-### Export Document Recovery
-If the server crashes while generating reports or exports:
-*   Reports and CSV/Excel exports do not write permanent files to server disks. They are generated dynamically from the PostgreSQL database records and piped directly to the client browser response.
-*   If a download fails midway, simply refresh the admin reports page and click the export button again. No files are locked or corrupted on the server.
+```powershell
+pg_restore -d "postgresql://postgres:password@localhost:5432/nati_nest" --clean --if-exists --no-owner --no-privileges ".\backups\backup-2026-06-25-10-30.backup"
+```
+
+**Flags Explained:**
+- `--clean` (`-c`): Drops database objects (tables, views, etc.) before recreating them.
+- `--if-exists`: Uses `IF EXISTS` clauses when dropping objects (avoids errors when restoring into a clean/empty database).
+- `--no-owner` (`-O`): Bypasses restoration of object ownership (critical since roles like `neondb_owner` or `neon_superuser` do not exist locally).
+- `--no-privileges` (`-x`): Prevents restoring access privileges/permissions set in Neon.
+
+> [!NOTE]  
+> It is highly recommended to perform a restore into a newly created empty database to ensure clean data mapping.
+
+---
+
+### Method C: Restore using pgAdmin
+
+When using pgAdmin to restore a Neon backup file into a local database:
+
+1. Right-click your target database -> **Restore...**
+2. In the **General** tab:
+   - **Filename**: Select the path to your `.backup` file.
+3. In the **Restore options** tab:
+   - **Type of objects**: Keep default.
+   - **Do not save**: Check **Owner** (equivalent to `--no-owner`) and **Privilege** (equivalent to `--no-privileges`).
+   - **Clean before restore**: Set to **Yes** (equivalent to `--clean`).
+   - **Only data / Only schema**: Keep default.
+4. In the **Queries** tab:
+   - **Use DROP DATABASE / IF EXISTS**: Set **Include IF EXISTS** to **Yes** (equivalent to `--if-exists`).
+5. Click **Restore**.
+
+---
+
+## 5. Configuring pgAdmin for PostgreSQL 18
+
+If your local server uses PostgreSQL 18 and your backup is created using PostgreSQL 18 client tools, pgAdmin must use matching PostgreSQL 18 binaries to prevent version mismatch errors.
+
+1. Open pgAdmin.
+2. Go to **File** -> **Preferences**.
+3. Expand **Paths** -> **Binary paths**.
+4. Scroll down to **PostgreSQL Binary Path**.
+5. Locate the row for **PostgreSQL 18** (or set it in **Override/Default Binary Path**):
+   - Set the path to: `C:\Program Files\PostgreSQL\18\bin`
+6. Click **Save**.

@@ -21,6 +21,7 @@ export interface CustomerSessionDetails {
 export interface BillSummary {
   tableNumber: string;
   totalAmount: number;
+  orders: Order[];
   itemBreakdown: Array<{
     name: string;
     quantity: number;

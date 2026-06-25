@@ -60,7 +60,7 @@ export interface OrderItem {
 export interface Order {
   id: string;
   tableNumber: number;
-  status: "PLACED" | "PREPARING" | "READY" | "DELIVERED" | "CANCELLED";
+  status: "PLACED" | "ACCEPTED" | "PREPARING" | "READY" | "PREPARED" | "DELIVERED" | "CANCELLED";
   items: Array<{ name: string; quantity: number; price: number }>;
   total: number;
   createdAt: string;

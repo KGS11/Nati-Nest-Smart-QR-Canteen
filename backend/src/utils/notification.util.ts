@@ -10,7 +10,8 @@ const getIo = (): Server => {
 export async function notifyWaiter(
   sessionId: string,
   event: string,
-  payload: Record<string, unknown>
+  payload: Record<string, unknown>,
+  strictAssignedOnly: boolean = false
 ): Promise<void> {
   const session = await prisma.tableSession.findUnique({
     where: { id: sessionId },
@@ -20,7 +21,7 @@ export async function notifyWaiter(
   const io = getIo();
   if (session?.assignedWaiterId) {
     io.to(ROOMS.waiter(session.assignedWaiterId)).emit(event, payload);
-  } else {
+  } else if (!strictAssignedOnly) {
     io.to(ROOMS.server).emit(event, payload);
   }
 }

@@ -1,4 +1,6 @@
 import {
+  AssistanceStatus,
+  AssistanceType,
   OrderItemStatus,
   OrderStatus,
   PaymentMethod,
@@ -120,6 +122,22 @@ export class PaymentService {
       const existingPayment = await prisma.payment.findUnique({
         where: { sessionId },
       });
+
+      const sessionOrders = await prisma.order.findMany({
+        where: {
+          sessionId,
+          status: { not: OrderStatus.CANCELLED },
+        },
+      });
+
+      const hasUndelivered = sessionOrders.some(o => 
+        ([OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY] as OrderStatus[]).includes(o.status)
+      );
+
+      if (hasUndelivered) {
+        throw new AppError("Payment cannot be processed until all orders are delivered.", 400);
+      }
+
       const billSummary = await buildBillSummary(sessionId);
 
       if (existingPayment?.status === PaymentStatus.PENDING) {
@@ -263,6 +281,20 @@ export class PaymentService {
         },
       });
 
+      // Auto-resolve any PENDING BILL assistance requests for this session.
+      // The waiter is already verifying payment — the BILL request resolves naturally.
+      await prisma.assistanceRequest.updateMany({
+        where: {
+          sessionId: payment.session.id,
+          requestType: AssistanceType.BILL,
+          status: AssistanceStatus.PENDING,
+        },
+        data: {
+          status: AssistanceStatus.RESOLVED,
+          resolvedAt: new Date(),
+        },
+      });
+
       await sessionService.clearWaiterAssignment(payment.session.id);
 
       const serializedPayment = serializePayment(updatedPayment);
@@ -359,6 +391,21 @@ export class PaymentService {
 
         if (session.status !== SessionStatus.ACTIVE) {
           throw new AppError("Session has already ended.", 400);
+        }
+
+        const sessionOrders = await prisma.order.findMany({
+          where: {
+            sessionId,
+            status: { not: OrderStatus.CANCELLED },
+          },
+        });
+
+        const hasUndelivered = sessionOrders.some(o => 
+          ([OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY] as OrderStatus[]).includes(o.status)
+        );
+
+        if (hasUndelivered) {
+          throw new AppError("Payment cannot be processed until all orders are delivered.", 400);
         }
 
         const billSummary = await buildBillSummary(sessionId);

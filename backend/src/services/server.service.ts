@@ -496,7 +496,7 @@ export class ServerService {
         createdAt: request.createdAt,
         message: requestMessage(requestType, request.session.table.tableNumber),
         payment: paymentData,
-      });
+      }, requestType === AssistanceType.BILL);
 
       return request;
     } catch (error) {

@@ -201,6 +201,91 @@ export class KitchenService {
     }
   }
 
+  async acceptAndPrepare(orderId: string, staffId: string, staffName: string) {
+    try {
+      const now = new Date();
+
+      const updateResult = await prisma.order.updateMany({
+        where: {
+          id: orderId,
+          status: OrderStatus.PLACED,
+          session: { status: "ACTIVE" },
+        },
+        data: {
+          status: OrderStatus.PREPARING,
+          acceptedAt: now,
+          preparingAt: now,
+          assignedKitchenId: staffId,
+          assignedKitchenName: staffName,
+        },
+      });
+
+      if (updateResult.count === 0) {
+        const existingOrder = await prisma.order.findUnique({
+          where: { id: orderId },
+          include: { session: true },
+        });
+
+        if (!existingOrder) {
+          throw new AppError("Order not found", 404);
+        }
+
+        if (existingOrder.session.status !== "ACTIVE") {
+          throw new AppError("Cannot update order — the table session is already closed.", 409);
+        }
+
+        if (existingOrder.status !== OrderStatus.PLACED) {
+          throw new AppError(
+            `Order already claimed by ${existingOrder.assignedKitchenName || "another kitchen staff"}.`,
+            409
+          );
+        }
+
+        throw new AppError("Failed to claim order.", 400);
+      }
+
+      const updatedOrder = await kitchenOrderById(orderId);
+      if (!updatedOrder) {
+        throw new AppError("Order not found", 404);
+      }
+
+      await prisma.orderAssignmentHistory.create({
+        data: {
+          orderId,
+          staffId,
+          role: Role.KITCHEN,
+          action: "CLAIMED",
+        },
+      });
+
+      const io = getIo();
+      io.to(ROOMS.kitchen).emit("order:status_updated", {
+        orderId: updatedOrder.id,
+        status: OrderStatus.PREPARING,
+        tableNumber: updatedOrder.session.table.tableNumber,
+        acceptedAt: now,
+        preparingAt: now,
+        assignedKitchenId: staffId,
+        assignedKitchenName: staffName,
+      });
+      io.to(ROOMS.kitchen).emit("order:claimed:kitchen", {
+        orderId: updatedOrder.id,
+        assignedKitchenId: staffId,
+        assignedKitchenName: staffName,
+        status: OrderStatus.PREPARING,
+      });
+      io.to(ROOMS.session(updatedOrder.session.id)).emit("order:accepted", {
+        orderId: updatedOrder.id,
+        message: "Your order has been accepted and is being prepared.",
+        acceptedAt: now,
+      });
+
+      return serializeOrder(updatedOrder);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async startPreparing(orderId: string, userId: string, role: string) {
     try {
       const order = await kitchenOrderById(orderId);

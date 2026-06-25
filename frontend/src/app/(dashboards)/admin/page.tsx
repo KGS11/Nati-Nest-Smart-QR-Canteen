@@ -364,7 +364,7 @@ export default function AdminPage() {
                           order.status === "PLACED" && "bg-amber-500/20 text-amber-500",
                           order.status === "ACCEPTED" && "bg-blue-500/20 text-blue-400",
                           order.status === "PREPARING" && "bg-blue-500/20 text-blue-300",
-                          order.status === "READY" && "bg-green-500/20 text-green-400"
+                          (order.status === "READY" || order.status === "PREPARED") && "bg-green-500/20 text-green-400"
                         )}>
                           {order.status}
                         </span>
@@ -409,7 +409,7 @@ export default function AdminPage() {
                           )}>
                             {isWaiterClaimed
                               ? `Claimed: ${order.assignedWaiterName}`
-                              : order.status === "READY"
+                              : (order.status === "READY" || order.status === "PREPARED")
                               ? "Unclaimed Delivery"
                               : "Awaiting Kitchen"}
                           </span>
@@ -427,7 +427,7 @@ export default function AdminPage() {
                         <select
                           className="bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-300 w-full max-w-[180px] focus:outline-none disabled:opacity-50"
                           value={order.assignedWaiterId || ""}
-                          disabled={order.status !== "READY"}
+                          disabled={order.status !== "READY" && order.status !== "PREPARED"}
                           onChange={(e) => handleReassignWaiter(order.id, e.target.value)}
                         >
                           <option value="">Reassign Waiter...</option>
@@ -447,7 +447,7 @@ export default function AdminPage() {
                         >
                           Logs
                         </Button>
-                        {order.status === "READY" && (
+                        {(order.status === "READY" || order.status === "PREPARED") && (
                           <Button
                             type="button"
                             onClick={() => handleForceDeliver(order.id)}

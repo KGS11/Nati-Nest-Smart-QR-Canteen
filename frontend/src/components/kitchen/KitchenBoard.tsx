@@ -305,6 +305,20 @@ export function KitchenBoard() {
       "Failed to accept order.",
     );
 
+  const handleAcceptAndPrepare = (orderId: string) =>
+    updateWithOptimism(
+      orderId,
+      "PREPARING",
+      {
+        acceptedAt: new Date().toISOString(),
+        preparingAt: new Date().toISOString(),
+        assignedKitchenId: user?.id,
+        assignedKitchenName: user?.name,
+      },
+      () => apiClient.patch(`/kitchen/orders/${orderId}/accept-and-prepare`),
+      "Failed to accept order.",
+    );
+
   const handlePrepared = (orderId: string) =>
     updateWithOptimism(
       orderId,
@@ -336,6 +350,7 @@ export function KitchenBoard() {
         accentColor: "amber" as const,
         emptyMessage: "No new orders",
         onAccept: handleAccept,
+        onAcceptAndPrepare: handleAcceptAndPrepare,
       },
       {
         title: "In Progress",

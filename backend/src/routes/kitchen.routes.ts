@@ -11,6 +11,7 @@ router.use(authenticate, authorize(Role.KITCHEN, Role.ADMIN));
 router.get("/orders", kitchenController.getActiveOrders.bind(kitchenController));
 router.get("/orders/:orderId", kitchenController.getOrderDetails.bind(kitchenController));
 router.patch("/orders/:orderId/accept", kitchenController.acceptOrder.bind(kitchenController));
+router.patch("/orders/:orderId/accept-and-prepare", kitchenController.acceptAndPrepare.bind(kitchenController));
 router.patch(
   "/orders/:orderId/preparing",
   kitchenController.startPreparing.bind(kitchenController),

@@ -198,7 +198,7 @@ if (process.env.NODE_ENV !== "test") {
   void verifyDatabaseConnection().finally(() => {
     server.listen(Number(port), "0.0.0.0", () => {
       logger.info(`Nati Nest API listening on port ${port}`);
-      logger.info(`Local Network Access: http://10.171.118.179:${port}`);
+      logger.info(`Local Network Access: http://10.71.211.179:${port}`);
       setInterval(() => {
         void checkAutoReleaseClaims();
       }, 60000);

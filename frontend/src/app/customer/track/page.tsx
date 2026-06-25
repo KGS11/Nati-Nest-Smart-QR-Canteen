@@ -47,6 +47,13 @@ export default function CustomerTrackPage() {
     loadOrders();
   }, [loadOrders]);
 
+  // Sync data whenever socket reconnects to catch any missed events while offline
+  useEffect(() => {
+    if (isConnected) {
+      loadOrders();
+    }
+  }, [isConnected, loadOrders]);
+
   // Set first order as auto-expanded on load
   useEffect(() => {
     if (orders.length > 0 && !expandedId) {
@@ -65,17 +72,23 @@ export default function CustomerTrackPage() {
     const preparing = () => refreshWithMessage("Your order is being prepared.");
     const ready = () => refreshWithMessage("Order is ready!");
     const delivered = () => refreshWithMessage("Enjoy your meal!");
+    const cancelled = (payload: any) => refreshWithMessage(payload.reason ? `Order cancelled: ${payload.reason}` : "Your order was cancelled.");
+    const itemRejected = (payload: any) => refreshWithMessage(`Item unavailable: ${payload.name}.`);
 
     socket.on("order:accepted", accepted);
     socket.on("order:preparing", preparing);
     socket.on("order:ready", ready);
     socket.on("order:delivered", delivered);
+    socket.on("order:cancelled", cancelled);
+    socket.on("order:item_rejected", itemRejected);
 
     return () => {
       socket.off("order:accepted", accepted);
       socket.off("order:preparing", preparing);
       socket.off("order:ready", ready);
       socket.off("order:delivered", delivered);
+      socket.off("order:cancelled", cancelled);
+      socket.off("order:item_rejected", itemRejected);
     };
   }, [loadOrders, socket]);
 

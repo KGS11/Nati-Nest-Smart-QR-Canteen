@@ -25,6 +25,13 @@ export const kitchenService = {
     return response.data.data.order;
   },
 
+  async acceptAndPrepare(orderId: string) {
+    const response = await apiClient.patch<ApiResponse<{ order: Order }>>(
+      `/kitchen/orders/${orderId}/accept-and-prepare`,
+    );
+    return response.data.data.order;
+  },
+
   async startPreparing(orderId: string) {
     const response = await apiClient.patch<ApiResponse<{ order: Order }>>(
       `/kitchen/orders/${orderId}/preparing`,

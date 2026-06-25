@@ -11,6 +11,7 @@ import { cn } from "@/utils/cn";
 interface OrderCardProps {
   order: KitchenOrder;
   onAccept?: (orderId: string) => Promise<void>;
+  onAcceptAndPrepare?: (orderId: string) => Promise<void>;
   onPreparing?: (orderId: string) => Promise<void>;
   onReady?: (orderId: string) => Promise<void>;
   onRelease?: (orderId: string) => Promise<void>;
@@ -26,7 +27,7 @@ const accentClass: Record<KitchenOrder["status"], string> = {
 
 const shortId = (orderId: string) => `#${orderId.replace(/-/g, "").slice(-4).toUpperCase()}`;
 
-export function OrderCard({ order, onAccept, onPreparing, onReady, onRelease }: OrderCardProps) {
+export function OrderCard({ order, onAccept, onAcceptAndPrepare, onPreparing, onReady, onRelease }: OrderCardProps) {
   const { user } = useAuthStore();
   const [isActioning, setIsActioning] = useState(false);
   const [isNew, setIsNew] = useState(
@@ -188,10 +189,10 @@ export function OrderCard({ order, onAccept, onPreparing, onReady, onRelease }: 
                 <button
                   type="button"
                   disabled={isActioning}
-                  onClick={() => runAction(onAccept)}
+                  onClick={() => runAction(onAcceptAndPrepare ?? onAccept)}
                   className="min-h-[52px] md:min-h-[56px] rounded-lg bg-amber-500 px-4 text-sm font-bold text-zinc-950 active:scale-[0.98] disabled:opacity-60"
                 >
-                  {isActioning ? <Loader className="scale-50" /> : "Claim & Accept"}
+                  {isActioning ? <Loader className="scale-50" /> : "Accept & Start Preparing"}
                 </button>
               ) : null}
 

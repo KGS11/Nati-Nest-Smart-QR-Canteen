@@ -26,6 +26,7 @@ const statusIndexMap: Record<OrderStatus, number> = {
   ACCEPTED: 1,
   PREPARING: 2,
   READY: 3,
+  PREPARED: 3,
   DELIVERED: 4,
   PAID: 4,
   CANCELLED: -1,
