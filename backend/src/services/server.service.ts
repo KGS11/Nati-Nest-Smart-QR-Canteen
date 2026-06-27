@@ -9,6 +9,7 @@ import { Server } from "socket.io";
 import { prisma } from "../config/db";
 import { ROOMS } from "../sockets/rooms";
 import { AppError } from "../utils/AppError";
+import { notifyWaiter } from "../utils/notification.util";
 import { paymentService } from "./payment.service";
 
 type ServerOrder = Awaited<ReturnType<typeof serverOrderById>>;
@@ -113,6 +114,42 @@ export class ServerService {
       const orders = await prisma.order.findMany({
         where: whereClause,
         orderBy: { readyAt: "asc" },
+        include: {
+          session: {
+            include: {
+              table: {
+                select: { tableNumber: true },
+              },
+            },
+          },
+          items: {
+            where: { status: OrderItemStatus.ACTIVE },
+            include: { menuItem: true },
+          },
+        },
+      });
+
+      return orders.map((order) => serializeReadyOrder(order));
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getInProgressOrders(userId?: string) {
+    try {
+      const whereClause: any = {
+        status: { in: [OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.PREPARING] },
+      };
+
+      if (userId) {
+        whereClause.session = {
+          assignedWaiterId: userId,
+        };
+      }
+
+      const orders = await prisma.order.findMany({
+        where: whereClause,
+        orderBy: { placedAt: "asc" },
         include: {
           session: {
             include: {
@@ -304,7 +341,6 @@ export class ServerService {
         assignedWaiterName: updatedOrder.assignedWaiterName,
         deliveredBy: staffName,
       };
-      const { notifyWaiter } = require("../utils/notification.util") as typeof import("../utils/notification.util");
       await notifyWaiter(updatedOrder.session.id, "order:status_updated", payload);
       await notifyWaiter(updatedOrder.session.id, "order:delivered", {
         orderId: updatedOrder.id,
@@ -405,7 +441,6 @@ export class ServerService {
         },
       });
 
-      const { notifyWaiter } = require("../utils/notification.util") as typeof import("../utils/notification.util");
       await notifyWaiter(updatedRequest.session.id, "assistance:resolved", {
         requestId: updatedRequest.id,
         tableNumber: updatedRequest.session.table.tableNumber,
@@ -487,7 +522,6 @@ export class ServerService {
         await sessionService.requestWaiterAssignment(sessionId);
       }
 
-      const { notifyWaiter } = require("../utils/notification.util") as typeof import("../utils/notification.util");
       await notifyWaiter(sessionId, "assistance:new", {
         requestId: request.id,
         sessionId,

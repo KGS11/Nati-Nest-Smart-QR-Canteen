@@ -4,11 +4,13 @@ import {
   AssistanceRequest,
   PendingPayment,
   WaiterAssignmentRequest,
-  MyTableSession
+  MyTableSession,
+  InProgressOrder
 } from '@/types/server.types'
 
 interface ServerState {
   readyOrders: ReadyOrder[]
+  inProgressOrders: InProgressOrder[]
   assistanceRequests: AssistanceRequest[]
   pendingPayments: PendingPayment[]
   assignmentRequests: WaiterAssignmentRequest[]
@@ -26,6 +28,11 @@ interface ServerState {
   addReadyOrder: (order: ReadyOrder) => void
   updateReadyOrder: (orderId: string, fields: Partial<ReadyOrder>) => void
   removeReadyOrder: (orderId: string) => void
+
+  setInProgressOrders: (orders: InProgressOrder[]) => void
+  addInProgressOrder: (order: InProgressOrder) => void
+  updateInProgressOrder: (orderId: string, fields: Partial<InProgressOrder>) => void
+  removeInProgressOrder: (orderId: string) => void
 
   setAssistanceRequests: (requests: AssistanceRequest[]) => void
   addAssistanceRequest: (request: AssistanceRequest) => void
@@ -51,6 +58,7 @@ interface ServerState {
 export const useServerStore = create<ServerState>()(
   (set) => ({
     readyOrders: [],
+    inProgressOrders: [],
     assistanceRequests: [],
     pendingPayments: [],
     assignmentRequests: [],
@@ -80,6 +88,25 @@ export const useServerStore = create<ServerState>()(
         readyOrders: state.readyOrders.filter(
           o => o.id !== orderId
         )
+      })),
+
+    setInProgressOrders: (inProgressOrders) => set({ inProgressOrders }),
+    addInProgressOrder: (order) =>
+      set(state => ({
+        inProgressOrders: [
+          order,
+          ...state.inProgressOrders.filter(existing => existing.id !== order.id)
+        ]
+      })),
+    updateInProgressOrder: (orderId, fields) =>
+      set(state => ({
+        inProgressOrders: state.inProgressOrders.map(o =>
+          o.id === orderId ? { ...o, ...fields } : o
+        )
+      })),
+    removeInProgressOrder: (orderId) =>
+      set(state => ({
+        inProgressOrders: state.inProgressOrders.filter(o => o.id !== orderId)
       })),
 
     setAssistanceRequests: (assistanceRequests) =>

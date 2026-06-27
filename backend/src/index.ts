@@ -34,6 +34,7 @@ import { logger } from "./config/logger";
 dotenv.config();
 
 const app = express();
+app.set("trust proxy", 1);
 const server = http.createServer(app);
 const port = process.env.PORT ?? 5000;
 const clientUrl = process.env.CLIENT_URL ?? "http://localhost:3000";
@@ -153,7 +154,7 @@ app.get("/health", async (_request, response) => {
   }
 });
 
-app.use("/api/auth/login", authRateLimit);
+app.use("/api/auth", authRateLimit);
 app.use("/api", apiRateLimit);
 
 app.get("/ready", (_request, response) => {

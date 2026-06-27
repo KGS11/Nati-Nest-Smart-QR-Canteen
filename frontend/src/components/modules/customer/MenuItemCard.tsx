@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { MenuItem } from "@/types/domain";
 import { cn } from "@/utils/cn";
+import { getValidImageUrl } from "@/utils/imageUrl";
 import { MaterialIcon } from "@/components/stitch/MaterialIcon";
 
 interface MenuItemCardProps {
@@ -42,7 +43,7 @@ export function MenuItemCard({
         )}
       >
         <Image
-          src={item.imageUrl || fallbackImage}
+          src={getValidImageUrl(item.imageUrl) || fallbackImage}
           alt={item.name}
           fill
           sizes="(max-width: 768px) 96px, 250px"

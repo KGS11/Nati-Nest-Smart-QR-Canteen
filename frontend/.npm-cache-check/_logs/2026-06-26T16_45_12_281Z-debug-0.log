@@ -1,0 +1,65 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.6.2
+2 info using node@v24.12.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\Kendagannaswamy\Desktop\MY_Project_KGS\frontend\.npmrc
+5 silly config load:file:C:\Users\Kendagannaswamy\.npmrc
+6 silly config load:file:C:\Users\Kendagannaswamy\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm install @emnapi/runtime@1.11.1 @emnapi/core@1.11.1
+8 verbose argv "install" "--save-dev" "@emnapi/runtime@1.11.1" "@emnapi/core@1.11.1" "--package-lock-only" "--no-audit" "--no-fund" "--cache" ".\\.npm-cache-check"
+9 verbose logfile logs-max:10 dir:C:\Users\Kendagannaswamy\Desktop\MY_Project_KGS\frontend\.npm-cache-check\_logs\2026-06-26T16_45_12_281Z-
+10 verbose logfile C:\Users\Kendagannaswamy\Desktop\MY_Project_KGS\frontend\.npm-cache-check\_logs\2026-06-26T16_45_12_281Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:2348810240 maxSize:587202560 maxEntrySize:293601280
+13 silly idealTree buildDeps
+14 silly fetch manifest @emnapi/runtime@1.11.1
+15 silly packumentCache full:https://registry.npmjs.org/@emnapi%2fruntime cache-miss
+16 http fetch GET https://registry.npmjs.org/@emnapi%2fruntime attempt 1 failed with EACCES
+17 http fetch GET https://registry.npmjs.org/@emnapi%2fruntime attempt 2 failed with EACCES
+18 http fetch GET https://registry.npmjs.org/@emnapi%2fruntime attempt 3 failed with EACCES
+19 silly fetch manifest @emnapi/core@1.11.1
+20 silly packumentCache full:https://registry.npmjs.org/@emnapi%2fcore cache-miss
+21 http fetch GET https://registry.npmjs.org/@emnapi%2fcore attempt 1 failed with EACCES
+22 http fetch GET https://registry.npmjs.org/@emnapi%2fcore attempt 2 failed with EACCES
+23 http fetch GET https://registry.npmjs.org/@emnapi%2fcore attempt 3 failed with EACCES
+24 silly placeDep ROOT @emnapi/core@ OK for: nati-nest-frontend@0.1.0 want: 1.11.1
+25 silly placeDep ROOT @emnapi/runtime@ OK for: nati-nest-frontend@0.1.0 want: 1.11.1
+26 verbose type system
+27 verbose stack FetchError: request to https://registry.npmjs.org/@emnapi%2fcore failed, reason: 
+27 verbose stack     at ClientRequest.<anonymous> (C:\Program Files\nodejs\node_modules\npm\node_modules\minipass-fetch\lib\index.js:130:14)
+27 verbose stack     at ClientRequest.emit (node:events:508:28)
+27 verbose stack     at emitErrorEvent (node:_http_client:108:11)
+27 verbose stack     at _destroy (node:_http_client:962:9)
+27 verbose stack     at onSocketNT (node:_http_client:982:5)
+27 verbose stack     at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+28 error code EACCES
+29 error errno EACCES
+30 error FetchError: request to https://registry.npmjs.org/@emnapi%2fcore failed, reason: 
+30 error     at ClientRequest.<anonymous> (C:\Program Files\nodejs\node_modules\npm\node_modules\minipass-fetch\lib\index.js:130:14)
+30 error     at ClientRequest.emit (node:events:508:28)
+30 error     at emitErrorEvent (node:_http_client:108:11)
+30 error     at _destroy (node:_http_client:962:9)
+30 error     at onSocketNT (node:_http_client:982:5)
+30 error     at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+30 error   code: 'EACCES',
+30 error   errno: 'EACCES',
+30 error   type: 'system',
+30 error   requiredBy: '.'
+30 error }
+31 error
+31 error The operation was rejected by your operating system.
+31 error It's possible that the file was already in use (by a text editor or antivirus),
+31 error or that you lack permissions to access it.
+31 error
+31 error If you believe this might be a permissions issue, please double-check the
+31 error permissions of the file and its containing directories, or try running
+31 error the command again as root/Administrator.
+32 silly unfinished npm timer reify 1782492313379
+33 silly unfinished npm timer reify:loadTrees 1782492313379
+34 verbose cwd C:\Users\Kendagannaswamy\Desktop\MY_Project_KGS\frontend
+35 verbose os Windows_NT 10.0.26200
+36 verbose node v24.12.0
+37 verbose npm  v11.6.2
+38 verbose exit 1
+39 verbose code 1
+40 error A complete log of this run can be found in: C:\Users\Kendagannaswamy\Desktop\MY_Project_KGS\frontend\.npm-cache-check\_logs\2026-06-26T16_45_12_281Z-debug-0.log

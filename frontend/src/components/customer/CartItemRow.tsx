@@ -5,6 +5,8 @@ import Image from "next/image";
 import { CartItem } from "@/stores/cartStore";
 import { SpecialInstructionsModal } from "./SpecialInstructionsModal";
 import { MaterialIcon } from "@/components/stitch/MaterialIcon";
+import { formatCurrency } from "@/utils/currency";
+import { getValidImageUrl } from "@/utils/imageUrl";
 
 interface CartItemRowProps {
   item: CartItem;
@@ -26,7 +28,7 @@ export function CartItemRow({
       {item.imageUrl ? (
         <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-zinc-800">
           <Image
-            src={item.imageUrl}
+            src={getValidImageUrl(item.imageUrl)!}
             alt={item.name}
             fill
             sizes="64px"

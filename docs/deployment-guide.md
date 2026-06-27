@@ -15,6 +15,12 @@ DATABASE_URL="postgresql://user:password@host:5432/nati_nest?schema=public&conne
 JWT_SECRET="YOUR_RANDOM_JWT_SECRET_STRING_32_CHARS_MIN"
 CLIENT_URL="https://yourdomain.com"
 APP_TIMEZONE="Asia/Kolkata"
+AUTH_RATE_LIMIT_WINDOW_MS=900000
+AUTH_RATE_LIMIT_MAX=10
+API_RATE_LIMIT_WINDOW_MS=60000
+API_RATE_LIMIT_MAX=200
+SOCKET_RATE_LIMIT_WINDOW_MS=60000
+SOCKET_RATE_LIMIT_MAX=30
 
 # Cloudinary (Optional, for image uploads)
 CLOUDINARY_CLOUD_NAME=your_cloud_name
@@ -23,6 +29,10 @@ CLOUDINARY_API_SECRET=your_api_secret
 ```
 > [!IMPORTANT]
 > Keep `connection_limit=3` (or low numbers) in `DATABASE_URL` when connecting to serverless PostgreSQL databases like Neon to avoid exhausting server connection limits under load.
+
+Rate limit breaches return HTTP `429` with `Content-Type: application/problem+json`, a `Retry-After` header in seconds, and a JSON body containing `type`, `title`, `status`, `detail`, and `instance`. The default in-memory rate limiter is suitable for a single backend instance only; multi-instance deployments require a shared store such as Redis.
+
+The backend uses `trust proxy = 1` so Express and Socket.IO can identify client IPs correctly when deployed behind one reverse proxy. Keep proxy forwarding headers configured and avoid exposing the backend directly without the proxy layer in production.
 
 ### Frontend (`frontend/.env.local`)
 Create a `.env.local` or `.env.production` file in the `frontend/` directory:
@@ -114,6 +124,8 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
     }
 
@@ -123,6 +135,8 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
     }
 
@@ -132,6 +146,8 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
     }
 }
@@ -154,3 +170,5 @@ sudo certbot --nginx -d yourdomain.com
 - [ ] Verify rate limiter values are appropriate for normal restaurant traffic.
 - [ ] Verify database connection pooling handles peak traffic without scaling exhaustively.
 - [ ] Secure WebSocket traffic by serving over Secure WebSockets (`wss://`).
+- [ ] Confirm reverse proxy forwarding headers are set so IP-based rate limiting sees the real client IP.
+- [ ] Track `rate_limit:breach` logs after launch and tune limits for real restaurant traffic.

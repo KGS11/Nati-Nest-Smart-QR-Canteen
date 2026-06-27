@@ -9,6 +9,7 @@ const router = Router();
 router.use(authenticate, authorize(Role.SERVER, Role.ADMIN));
 
 router.get("/orders/ready", serverController.getReadyOrders.bind(serverController));
+router.get("/orders/in-progress", serverController.getInProgressOrders.bind(serverController));
 router.patch("/orders/:orderId/claim", serverController.claimDelivery.bind(serverController));
 router.patch("/orders/:orderId/release", serverController.releaseDelivery.bind(serverController));
 router.patch("/orders/:orderId/deliver", serverController.markDelivered.bind(serverController));

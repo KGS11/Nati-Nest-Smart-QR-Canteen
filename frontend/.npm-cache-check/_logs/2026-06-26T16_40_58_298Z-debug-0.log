@@ -1,0 +1,176 @@
+0 verbose cli C:\Program Files\nodejs\node.exe C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js
+1 info using npm@11.6.2
+2 info using node@v24.12.0
+3 silly config load:file:C:\Program Files\nodejs\node_modules\npm\npmrc
+4 silly config load:file:C:\Users\Kendagannaswamy\Desktop\MY_Project_KGS\frontend\.npmrc
+5 silly config load:file:C:\Users\Kendagannaswamy\.npmrc
+6 silly config load:file:C:\Users\Kendagannaswamy\AppData\Roaming\npm\etc\npmrc
+7 verbose title npm ci
+8 verbose argv "ci" "--dry-run" "--ignore-scripts" "--no-audit" "--no-fund" "--cache" ".\\.npm-cache-check"
+9 verbose logfile logs-max:10 dir:C:\Users\Kendagannaswamy\Desktop\MY_Project_KGS\frontend\.npm-cache-check\_logs\2026-06-26T16_40_58_298Z-
+10 verbose logfile C:\Users\Kendagannaswamy\Desktop\MY_Project_KGS\frontend\.npm-cache-check\_logs\2026-06-26T16_40_58_298Z-debug-0.log
+11 silly logfile done cleaning log files
+12 silly packumentCache heap:2348810240 maxSize:587202560 maxEntrySize:293601280
+13 silly idealTree buildDeps
+14 silly fetch manifest @emnapi/runtime@^1.7.0
+15 silly packumentCache full:https://registry.npmjs.org/@emnapi%2fruntime cache-miss
+16 http fetch GET https://registry.npmjs.org/npm attempt 1 failed with EACCES
+17 http fetch GET https://registry.npmjs.org/@emnapi%2fruntime attempt 1 failed with EACCES
+18 http fetch GET https://registry.npmjs.org/npm attempt 2 failed with EACCES
+19 http fetch GET https://registry.npmjs.org/@emnapi%2fruntime attempt 2 failed with EACCES
+20 http fetch GET https://registry.npmjs.org/npm attempt 3 failed with EACCES
+21 http fetch GET https://registry.npmjs.org/@emnapi%2fruntime attempt 3 failed with EACCES
+22 silly placeDep node_modules/@img/sharp-wasm32 @emnapi/runtime@ OK for: @img/sharp-wasm32@0.34.5 want: ^1.7.0
+23 silly fetch manifest @emnapi/core@^1.7.1
+24 silly packumentCache full:https://registry.npmjs.org/@emnapi%2fcore cache-miss
+25 http fetch GET https://registry.npmjs.org/@emnapi%2fcore attempt 1 failed with EACCES
+26 http fetch GET https://registry.npmjs.org/@emnapi%2fcore attempt 2 failed with EACCES
+27 http fetch GET https://registry.npmjs.org/@emnapi%2fcore attempt 3 failed with EACCES
+28 silly fetch manifest @emnapi/runtime@^1.7.1
+29 silly packumentCache full:https://registry.npmjs.org/@emnapi%2fruntime cache-miss
+30 http fetch GET https://registry.npmjs.org/@emnapi%2fruntime attempt 1 failed with EACCES
+31 http fetch GET https://registry.npmjs.org/@emnapi%2fruntime attempt 2 failed with EACCES
+32 http fetch GET https://registry.npmjs.org/@emnapi%2fruntime attempt 3 failed with EACCES
+33 silly placeDep ROOT @emnapi/core@ OK for: @napi-rs/wasm-runtime@1.1.4 want: ^1.7.1
+34 warn ERESOLVE overriding peer dependency {
+34 warn ERESOLVE   code: 'ERESOLVE',
+34 warn ERESOLVE   edge: {
+34 warn ERESOLVE     type: 'peer',
+34 warn ERESOLVE     name: '@emnapi/core',
+34 warn ERESOLVE     spec: '^1.7.1',
+34 warn ERESOLVE     error: 'INVALID',
+34 warn ERESOLVE     from: {
+34 warn ERESOLVE       name: '@napi-rs/wasm-runtime',
+34 warn ERESOLVE       version: '1.1.4',
+34 warn ERESOLVE       location: 'node_modules/@napi-rs/wasm-runtime',
+34 warn ERESOLVE       isWorkspace: false,
+34 warn ERESOLVE       dependents: [Array]
+34 warn ERESOLVE     }
+34 warn ERESOLVE   },
+34 warn ERESOLVE   dep: {
+34 warn ERESOLVE     name: '@emnapi/core',
+34 warn ERESOLVE     version: undefined,
+34 warn ERESOLVE     errors: [ [FetchError] ],
+34 warn ERESOLVE     package: {},
+34 warn ERESOLVE     whileInstalling: {
+34 warn ERESOLVE       name: '@napi-rs/wasm-runtime',
+34 warn ERESOLVE       version: '1.1.4',
+34 warn ERESOLVE       path: 'C:\\Users\\Kendagannaswamy\\Desktop\\MY_Project_KGS\\frontend\\node_modules\\@napi-rs\\wasm-runtime'
+34 warn ERESOLVE     },
+34 warn ERESOLVE     location: 'node_modules/@emnapi/core',
+34 warn ERESOLVE     isWorkspace: false,
+34 warn ERESOLVE     dependents: [ [Object] ]
+34 warn ERESOLVE   },
+34 warn ERESOLVE   force: false,
+34 warn ERESOLVE   isMine: false,
+34 warn ERESOLVE   strictPeerDeps: false,
+34 warn ERESOLVE   current: {
+34 warn ERESOLVE     name: '@emnapi/core',
+34 warn ERESOLVE     version: undefined,
+34 warn ERESOLVE     errors: [ [FetchError] ],
+34 warn ERESOLVE     package: {},
+34 warn ERESOLVE     location: 'node_modules/@emnapi/core',
+34 warn ERESOLVE     isWorkspace: false,
+34 warn ERESOLVE     dependents: []
+34 warn ERESOLVE   }
+34 warn ERESOLVE }
+35 silly placeDep ROOT @emnapi/runtime@ OK for: @napi-rs/wasm-runtime@1.1.4 want: ^1.7.1
+36 warn ERESOLVE overriding peer dependency {
+36 warn ERESOLVE   code: 'ERESOLVE',
+36 warn ERESOLVE   edge: {
+36 warn ERESOLVE     type: 'peer',
+36 warn ERESOLVE     name: '@emnapi/runtime',
+36 warn ERESOLVE     spec: '^1.7.1',
+36 warn ERESOLVE     error: 'INVALID',
+36 warn ERESOLVE     from: {
+36 warn ERESOLVE       name: '@napi-rs/wasm-runtime',
+36 warn ERESOLVE       version: '1.1.4',
+36 warn ERESOLVE       location: 'node_modules/@napi-rs/wasm-runtime',
+36 warn ERESOLVE       isWorkspace: false,
+36 warn ERESOLVE       dependents: [Array]
+36 warn ERESOLVE     }
+36 warn ERESOLVE   },
+36 warn ERESOLVE   dep: {
+36 warn ERESOLVE     name: '@emnapi/runtime',
+36 warn ERESOLVE     version: undefined,
+36 warn ERESOLVE     errors: [ [FetchError] ],
+36 warn ERESOLVE     package: {},
+36 warn ERESOLVE     whileInstalling: {
+36 warn ERESOLVE       name: '@napi-rs/wasm-runtime',
+36 warn ERESOLVE       version: '1.1.4',
+36 warn ERESOLVE       path: 'C:\\Users\\Kendagannaswamy\\Desktop\\MY_Project_KGS\\frontend\\node_modules\\@napi-rs\\wasm-runtime'
+36 warn ERESOLVE     },
+36 warn ERESOLVE     location: 'node_modules/@emnapi/runtime',
+36 warn ERESOLVE     isWorkspace: false,
+36 warn ERESOLVE     dependents: [ [Object] ]
+36 warn ERESOLVE   },
+36 warn ERESOLVE   force: false,
+36 warn ERESOLVE   isMine: false,
+36 warn ERESOLVE   strictPeerDeps: false,
+36 warn ERESOLVE   current: {
+36 warn ERESOLVE     name: '@emnapi/runtime',
+36 warn ERESOLVE     version: undefined,
+36 warn ERESOLVE     errors: [ [FetchError] ],
+36 warn ERESOLVE     package: {},
+36 warn ERESOLVE     location: 'node_modules/@emnapi/runtime',
+36 warn ERESOLVE     isWorkspace: false,
+36 warn ERESOLVE     dependents: []
+36 warn ERESOLVE   }
+36 warn ERESOLVE }
+37 verbose stack Error: 
+37 verbose stack `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+37 verbose stack
+37 verbose stack Missing: @emnapi/runtime@ from lock file
+37 verbose stack
+37 verbose stack Clean install a project
+37 verbose stack
+37 verbose stack Usage:
+37 verbose stack npm ci
+37 verbose stack
+37 verbose stack Options:
+37 verbose stack [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+37 verbose stack [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+37 verbose stack [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+37 verbose stack [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+37 verbose stack [--no-bin-links] [--no-fund] [--dry-run]
+37 verbose stack [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+37 verbose stack [--workspaces] [--include-workspace-root] [--install-links]
+37 verbose stack
+37 verbose stack aliases: clean-install, ic, install-clean, isntall-clean
+37 verbose stack
+37 verbose stack Run "npm help ci" for more info
+37 verbose stack     at CI.usageError (C:\Program Files\nodejs\node_modules\npm\lib\base-cmd.js:111:26)
+37 verbose stack     at CI.exec (C:\Program Files\nodejs\node_modules\npm\lib\commands\ci.js:70:18)
+37 verbose stack     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+37 verbose stack     at async Npm.exec (C:\Program Files\nodejs\node_modules\npm\lib\npm.js:208:9)
+37 verbose stack     at async module.exports (C:\Program Files\nodejs\node_modules\npm\lib\cli\entry.js:67:5)
+38 error code EUSAGE
+39 error
+39 error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+39 error
+39 error Missing: @emnapi/runtime@ from lock file
+39 error
+39 error Clean install a project
+39 error
+39 error Usage:
+39 error npm ci
+39 error
+39 error Options:
+39 error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+39 error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+39 error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+39 error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+39 error [--no-bin-links] [--no-fund] [--dry-run]
+39 error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+39 error [--workspaces] [--include-workspace-root] [--install-links]
+39 error
+39 error aliases: clean-install, ic, install-clean, isntall-clean
+39 error
+39 error Run "npm help ci" for more info
+40 verbose cwd C:\Users\Kendagannaswamy\Desktop\MY_Project_KGS\frontend
+41 verbose os Windows_NT 10.0.26200
+42 verbose node v24.12.0
+43 verbose npm  v11.6.2
+44 verbose exit 1
+45 verbose code 1
+46 error A complete log of this run can be found in: C:\Users\Kendagannaswamy\Desktop\MY_Project_KGS\frontend\.npm-cache-check\_logs\2026-06-26T16_40_58_298Z-debug-0.log

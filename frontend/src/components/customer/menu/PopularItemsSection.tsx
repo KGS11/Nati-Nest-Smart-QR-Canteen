@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { MenuItem } from "@/types/domain";
 import { useCart } from "@/hooks/useCart";
+import { getValidImageUrl } from "@/utils/imageUrl";
 
 interface PopularItemsSectionProps {
   items: MenuItem[];
@@ -37,9 +38,9 @@ export function PopularItemsSection({ items }: PopularItemsSectionProps) {
               key={item.id}
               className="w-36 flex-shrink-0 bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm"
             >
-              <div className="relative w-full h-28 bg-zinc-800 shrink-0">
+              <div className="relative h-32 w-full bg-zinc-800">
                 <Image
-                  src={item.imageUrl || fallbackImage}
+                  src={getValidImageUrl(item.imageUrl) || fallbackImage}
                   alt={item.name}
                   fill
                   sizes="144px"

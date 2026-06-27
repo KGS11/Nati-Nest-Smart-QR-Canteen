@@ -3,8 +3,15 @@ import { prisma } from "../config/db";
 import { ROOMS } from "../sockets/rooms";
 
 const getIo = (): Server => {
-  const { io } = require("../index") as typeof import("../index");
-  return io;
+  try {
+    const { io } = require("../index") as typeof import("../index");
+    return io;
+  } catch (error) {
+    if (process.env.NODE_ENV === "test") {
+      return { to: () => ({ emit: () => undefined }) } as unknown as Server;
+    }
+    throw error;
+  }
 };
 
 export async function notifyWaiter(
@@ -13,10 +20,12 @@ export async function notifyWaiter(
   payload: Record<string, unknown>,
   strictAssignedOnly: boolean = false
 ): Promise<void> {
-  const session = await prisma.tableSession.findUnique({
-    where: { id: sessionId },
-    select: { assignedWaiterId: true },
-  });
+  const session = prisma.tableSession?.findUnique
+    ? await prisma.tableSession.findUnique({
+        where: { id: sessionId },
+        select: { assignedWaiterId: true },
+      })
+    : null;
 
   const io = getIo();
   if (session?.assignedWaiterId) {

@@ -1,10 +1,9 @@
 node_modules
+.env
+.env.*
 .next
-out
 coverage
 test-results
-.env*.local
-*.log
-Dockerfile
+playwright-report
 .git
-.gitignore
+npm-debug.log*

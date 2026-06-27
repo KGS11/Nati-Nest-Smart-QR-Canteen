@@ -3,6 +3,7 @@ import { Server } from "socket.io";
 import { prisma } from "../config/db";
 import { ROOMS } from "../sockets/rooms";
 import { AppError } from "../utils/AppError";
+import { notifyWaiter } from "../utils/notification.util";
 import { CreateOrderInput } from "../validators/order.validators";
 import { sessionService } from "./session.service";
 
@@ -181,6 +182,24 @@ export class OrderService {
         itemCount: serializedOrder.itemCount,
         placedAt: serializedOrder.placedAt,
         specialNotes: serializedOrder.specialNotes,
+      });
+
+      await notifyWaiter(sessionId, "order:new", {
+        id: serializedOrder.id,
+        status: serializedOrder.status,
+        tableNumber: session.table.tableNumber,
+        sessionId,
+        placedAt: serializedOrder.placedAt,
+        items: serializedOrder.items.map((item) => ({
+          id: item.id,
+          name: item.menuItem.name,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          specialInstructions: item.specialInstructions,
+          status: item.status,
+        })),
+        subtotal: serializedOrder.totalAmount,
+        assignedKitchenName: null,
       });
 
       if (!session.assignedWaiterId) {

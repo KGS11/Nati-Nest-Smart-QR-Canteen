@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button'
 import Loader from '@/components/ui/Loader'
 import ServerConnectionStatus from './ServerConnectionStatus'
 import ReadyOrdersPanel from './ReadyOrdersPanel'
+import IncomingOrdersPanel from './IncomingOrdersPanel'
 import AssistancePanel from './AssistancePanel'
 import PendingPaymentsPanel from './PendingPaymentsPanel'
 import BillSummaryModal from './BillSummaryModal'
@@ -33,7 +34,8 @@ import {
   PaymentBillRequestedPayload,
   PaymentCompletedPayload,
   WaiterAssignmentRequest,
-  MyTableSession
+  MyTableSession,
+  InProgressOrder
 } from '@/types/server.types'
 
 interface ActiveToast {
@@ -97,6 +99,21 @@ interface BackendPendingPayment {
   }
 }
 
+interface BackendInProgressOrder {
+  id: string
+  status: 'PLACED' | 'ACCEPTED' | 'PREPARING'
+  sessionId: string
+  placedAt: string
+  subtotal?: number
+  session: {
+    table: {
+      tableNumber: string
+    }
+  }
+  items: BackendOrderItem[]
+  assignedKitchenName?: string | null
+}
+
 const normalizeItem = (item: BackendOrderItem): ReadyOrderItem => ({
   id: item.id,
   name: item.menuItem.name,
@@ -104,6 +121,19 @@ const normalizeItem = (item: BackendOrderItem): ReadyOrderItem => ({
   unitPrice: item.unitPrice,
   specialInstructions: item.specialInstructions,
   status: item.status
+})
+
+const normalizeInProgressOrder = (order: BackendInProgressOrder): InProgressOrder => ({
+  id: order.id,
+  status: order.status,
+  sessionId: order.sessionId,
+  tableNumber: order.session.table.tableNumber,
+  placedAt: order.placedAt,
+  items: order.items.map(normalizeItem),
+  subtotal:
+    order.subtotal ??
+    order.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
+  assignedKitchenName: order.assignedKitchenName
 })
 
 const normalizeReadyOrder = (order: BackendReadyOrder): ReadyOrder => ({
@@ -147,7 +177,7 @@ export default function ServerBoard() {
   const { user, token, logout } = useAuthStore()
   const store = useServerStore()
   const [toasts, setToasts] = useState<ActiveToast[]>([])
-  const [activeMobileTab, setActiveMobileTab] = useState<'requests' | 'deliver' | 'payments'>('requests')
+  const [activeMobileTab, setActiveMobileTab] = useState<'incoming' | 'requests' | 'deliver' | 'payments'>('requests')
   const [isTipsOpen, setIsTipsOpen] = useState(false)
 
   const addToast = (title: string, type: 'ready' | 'assistance' | 'payment' | 'error') => {
@@ -162,8 +192,9 @@ export default function ServerBoard() {
     store.setLoading(true)
     store.setError(null)
     try {
-      const [ordersRes, assistanceRes, paymentsRes, myTablesRes, assignmentRequestsRes] = await Promise.all([
+      const [ordersRes, inProgressRes, assistanceRes, paymentsRes, myTablesRes, assignmentRequestsRes] = await Promise.all([
         apiClient.get('/server/orders/ready'),
+        apiClient.get('/server/orders/in-progress'),
         apiClient.get('/server/assistance'),
         apiClient.get('/payments/pending'),
         apiClient.get('/server/my-tables'),
@@ -171,12 +202,14 @@ export default function ServerBoard() {
       ])
 
       const orders = (ordersRes.data?.data?.orders || []) as BackendReadyOrder[]
+      const inProgress = (inProgressRes.data?.data?.orders || []) as BackendInProgressOrder[]
       const requests = (assistanceRes.data?.data?.requests || []) as BackendAssistanceRequest[]
       const payments = (paymentsRes.data?.data?.payments || []) as BackendPendingPayment[]
       const myTables = (myTablesRes.data?.data?.myTables || []) as MyTableSession[]
       const assignmentRequests = (assignmentRequestsRes.data?.data?.requests || []) as WaiterAssignmentRequest[]
 
       store.setReadyOrders(orders.map(normalizeReadyOrder))
+      store.setInProgressOrders(inProgress.map(normalizeInProgressOrder))
       store.setAssistanceRequests(requests.map(normalizeAssistanceRequest))
       store.setPendingPayments(payments.map(normalizePendingPayment))
       store.setMyTables(myTables)
@@ -242,6 +275,7 @@ export default function ServerBoard() {
         assignedWaiterName: payload.assignedWaiterName ?? null
       }
       store.addReadyOrder(newOrder)
+      store.removeInProgressOrder(payload.orderId)
       addToast(`Order prepared Table ${payload.tableNumber}`, 'ready')
     }
 
@@ -258,12 +292,20 @@ export default function ServerBoard() {
         assignedWaiterName: payload.assignedWaiterName ?? null
       }
       store.addReadyOrder(newOrder)
+      store.removeInProgressOrder(payload.orderId)
       addToast(`Order ready  Table ${payload.tableNumber}`, 'ready')
     }
 
-    const handleOrderStatusUpdated = (payload: { orderId: string; status: string }) => {
+    const handleOrderStatusUpdated = (payload: { orderId: string; status: string; assignedKitchenName?: string | null }) => {
       if (payload.status === 'DELIVERED') {
         store.removeReadyOrder(payload.orderId)
+      } else if (payload.status === 'CANCELLED') {
+        store.removeInProgressOrder(payload.orderId)
+      } else {
+        store.updateInProgressOrder(payload.orderId, {
+          status: payload.status as any,
+          ...(payload.assignedKitchenName ? { assignedKitchenName: payload.assignedKitchenName } : {})
+        })
       }
     }
 
@@ -349,6 +391,21 @@ export default function ServerBoard() {
       }
     }
 
+    const handleNewOrder = (payload: InProgressOrder) => {
+      const isMyTable = store.myTables.some(t => t.sessionId === payload.sessionId)
+      if (isMyTable) {
+        store.addInProgressOrder(payload)
+        addToast(`New order placed Table ${payload.tableNumber}`, 'ready')
+      }
+    }
+
+    const handleOrderItemsUpdated = (payload: { orderId: string; items: ReadyOrderItem[]; subtotal: number }) => {
+      store.updateInProgressOrder(payload.orderId, {
+        items: payload.items,
+        subtotal: payload.subtotal
+      })
+    }
+
     const handleConnect = () => {
       store.setConnected(true)
       joinServer()
@@ -366,6 +423,8 @@ export default function ServerBoard() {
     socket.on('error', handleError)
     socket.on('order:ready', handleOrderReady)
     socket.on('order:status_updated', handleOrderStatusUpdated)
+    socket.on('order:new', handleNewOrder)
+    socket.on('order:items_updated', handleOrderItemsUpdated)
     socket.on('assistance:new', handleAssistanceNew)
     socket.on('assistance:resolved', handleAssistanceResolved)
     socket.on('payment:bill_requested', handlePaymentBillRequested)
@@ -383,6 +442,8 @@ export default function ServerBoard() {
       socket.off('error', handleError)
       socket.off('order:ready', handleOrderReady)
       socket.off('order:status_updated', handleOrderStatusUpdated)
+      socket.off('order:new', handleNewOrder)
+      socket.off('order:items_updated', handleOrderItemsUpdated)
       socket.off('assistance:new', handleAssistanceNew)
       socket.off('assistance:resolved', handleAssistanceResolved)
       socket.off('payment:bill_requested', handlePaymentBillRequested)
@@ -580,7 +641,12 @@ export default function ServerBoard() {
               </div>
             )}
 
-            <div className="flex-1 flex flex-col lg:grid lg:grid-cols-3 gap-4 min-h-0 overflow-hidden">
+            <div className="flex-1 flex flex-col lg:grid lg:grid-cols-4 gap-4 min-h-0 overflow-hidden">
+              {/* Incoming Active Orders Panel */}
+              <div className="flex flex-col bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden h-[600px] lg:h-full">
+                <IncomingOrdersPanel orders={store.inProgressOrders} />
+              </div>
+
               {/* Ready Orders Panel */}
               <div className="flex flex-col bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden h-[600px] lg:h-full">
                 <ReadyOrdersPanel
@@ -654,6 +720,9 @@ export default function ServerBoard() {
               </div>
             )}
 
+            {activeMobileTab === 'incoming' && (
+              <IncomingOrdersPanel orders={store.inProgressOrders} />
+            )}
             {activeMobileTab === 'requests' && (
               <AssistancePanel
                 requests={store.assistanceRequests}
@@ -688,7 +757,23 @@ export default function ServerBoard() {
         )}
 
         {/* Mobile Tab Bar */}
-        <nav className="fixed bottom-0 left-0 right-0 h-16 bg-zinc-900 border-t border-zinc-800 grid grid-cols-3 pb-safe z-30">
+        <nav className="fixed bottom-0 left-0 right-0 h-16 bg-zinc-900 border-t border-zinc-800 grid grid-cols-4 pb-safe z-30">
+          <button
+            onClick={() => setActiveMobileTab('incoming')}
+            className={cn(
+              "flex flex-col items-center justify-center relative focus:outline-none transition-colors",
+              activeMobileTab === 'incoming' ? "text-amber-400" : "text-zinc-500"
+            )}
+          >
+            <div className="relative flex items-center justify-center">
+              <MaterialIcon name="receipt_long" className="text-xl" />
+              {store.inProgressOrders.length > 0 && (
+                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-zinc-900 animate-pulse" />
+              )}
+            </div>
+            <span className="text-[10px] font-semibold mt-1">Incoming</span>
+          </button>
+
           <button
             onClick={() => setActiveMobileTab('requests')}
             className={cn(

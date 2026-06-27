@@ -30,6 +30,18 @@ export class ServerController {
     }
   }
 
+  async getInProgressOrders(request: Request, response: Response, next: NextFunction) {
+    try {
+      const orders = await serverService.getInProgressOrders(request.user?.userId);
+      return response.status(200).json({
+        success: true,
+        data: { orders, count: orders.length },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async markDelivered(request: Request, response: Response, next: NextFunction) {
     try {
       const orderId = param(request, "orderId");

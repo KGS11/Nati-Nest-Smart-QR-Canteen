@@ -119,3 +119,14 @@ export interface MyTableSession {
   orderCount: number
   pendingRequestsCount: number
 }
+
+export interface InProgressOrder {
+  id: string
+  status: 'PLACED' | 'ACCEPTED' | 'PREPARING'
+  tableNumber: string
+  sessionId: string
+  placedAt: string
+  items: ReadyOrderItem[]
+  subtotal: number
+  assignedKitchenName?: string | null
+}

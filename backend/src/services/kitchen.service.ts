@@ -15,6 +15,7 @@ import { OrderItemStatus, OrderStatus, Role } from "@prisma/client";
 import { Server } from "socket.io";
 import { prisma } from "../config/db";
 import { AppError } from "../utils/AppError";
+import { notifyWaiter } from "../utils/notification.util";
 import { ROOMS } from "../sockets/rooms";
 import { EVENTS } from "../sockets/events";
 
@@ -189,6 +190,13 @@ export class KitchenService {
         assignedKitchenName: staffName,
         status: OrderStatus.ACCEPTED,
       });
+
+      await notifyWaiter(updatedOrder.session.id, "order:status_updated", {
+        orderId: updatedOrder.id,
+        status: OrderStatus.ACCEPTED,
+        assignedKitchenName: staffName,
+      });
+
       io.to(ROOMS.session(updatedOrder.session.id)).emit("order:accepted", {
         orderId: updatedOrder.id,
         message: "Your order has been accepted and will be prepared shortly.",
@@ -280,6 +288,12 @@ export class KitchenService {
         acceptedAt: now,
       });
 
+      await notifyWaiter(updatedOrder.session.id, "order:status_updated", {
+        orderId: updatedOrder.id,
+        status: OrderStatus.PREPARING,
+        assignedKitchenName: staffName,
+      });
+
       return serializeOrder(updatedOrder);
     } catch (error) {
       throw error;
@@ -328,6 +342,11 @@ export class KitchenService {
         orderId: updatedOrder.id,
         message: "Your order is being prepared.",
         preparingAt: updatedOrder.preparingAt,
+      });
+
+      await notifyWaiter(updatedOrder.session.id, "order:status_updated", {
+        orderId: updatedOrder.id,
+        status: OrderStatus.PREPARING,
       });
 
       return serializeOrder(updatedOrder);
@@ -510,6 +529,27 @@ export class KitchenService {
         });
       }
 
+      if (finalOrder.status === OrderStatus.CANCELLED) {
+        await notifyWaiter(finalOrder.session.id, "order:status_updated", {
+          orderId: finalOrder.id,
+          status: OrderStatus.CANCELLED,
+        });
+      } else {
+        const serialized = serializeActiveOrder(finalOrder);
+        await notifyWaiter(finalOrder.session.id, "order:items_updated", {
+          orderId: finalOrder.id,
+          items: serialized.items.map((item) => ({
+            id: item.id,
+            name: item.menuItem.name,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            specialInstructions: item.specialInstructions,
+            status: item.status,
+          })),
+          subtotal: serialized.subtotal,
+        });
+      }
+
       return serializeOrder(finalOrder);
     } catch (error) {
       throw error;
@@ -565,6 +605,11 @@ export class KitchenService {
       io.to(ROOMS.session(finalOrder.session.id)).emit("order:cancelled", {
         orderId: finalOrder.id,
         reason,
+      });
+
+      await notifyWaiter(finalOrder.session.id, "order:status_updated", {
+        orderId: finalOrder.id,
+        status: OrderStatus.CANCELLED,
       });
 
       return serializeOrder(finalOrder);
@@ -667,8 +712,6 @@ export class KitchenService {
         tableNumber: updatedOrder.session.table.tableNumber,
         readyAt: updatedOrder.readyAt,
       });
-
-      const { notifyWaiter } = require("../utils/notification.util") as typeof import("../utils/notification.util");
 
       await notifyWaiter(updatedOrder.session.id, EVENTS.ORDER_PREPARED, {
         orderId: updatedOrder.id,
