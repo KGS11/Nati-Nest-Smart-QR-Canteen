@@ -1,56 +1,22 @@
 import { Role } from "@prisma/client";
-import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
-import { z } from "zod";
 import { prisma } from "../config/db";
 import { ROOMS } from "./rooms";
 
-type StaffJwtPayload = {
-  userId: string;
-  role: Role;
-  name: string;
-};
-
 const kitchenRoles: Role[] = [Role.KITCHEN, Role.ADMIN];
-const joinKitchenSchema = z.object({
-  staffToken: z.string().min(1).optional(),
-});
 
 export const initializeKitchenSockets = (io: Server) => {
   io.on("connection", (socket) => {
-    socket.on("kitchen:join", async (eventPayload: unknown) => {
+    socket.on("kitchen:join", async () => {
       try {
-        const parsedPayload = joinKitchenSchema.safeParse(eventPayload);
-
-        if (!parsedPayload.success) {
-          socket.emit("kitchen:error", { message: "Invalid kitchen join payload" });
-          return;
-        }
-
-        const jwtSecret = process.env.JWT_SECRET;
-        const staffToken = parsedPayload.data.staffToken ?? socket.data.auth?.token;
-
-        if (!staffToken || !jwtSecret) {
-          socket.emit("kitchen:error", { message: "Invalid staff token" });
-          return;
-        }
-
-        let jwtPayload: StaffJwtPayload;
-
-        try {
-          jwtPayload = jwt.verify(staffToken, jwtSecret) as StaffJwtPayload;
-        } catch (_error) {
-          socket.emit("kitchen:error", { message: "Invalid staff token" });
-          return;
-        }
-
-        if (!kitchenRoles.includes(jwtPayload.role)) {
+        const auth = socket.data.auth;
+        if (!auth || auth.type !== "staff" || !kitchenRoles.includes(auth.role)) {
           socket.emit("kitchen:error", { message: "Access denied. Kitchen staff only." });
           return;
         }
 
         const user = await prisma.user.findUnique({
-          where: { id: jwtPayload.userId },
+          where: { id: auth.userId },
           select: { name: true, isActive: true },
         });
 

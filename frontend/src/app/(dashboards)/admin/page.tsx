@@ -197,8 +197,8 @@ export default function AdminPage() {
       {/* Toast Alert Feedback */}
       {(overrideSuccess || overrideError) && (
         <div className={cn(
-          "fixed bottom-6 right-6 z-50 px-5 py-3.5 rounded-xl shadow-2xl border flex items-center justify-between gap-3 text-sm font-bold animate-bounce",
-          overrideSuccess ? "bg-green-500 text-zinc-950 border-green-400" : "bg-red-500 text-white border-red-400"
+          "fixed bottom-6 right-6 z-50 px-5 py-3.5 rounded-xl shadow-2xl border flex items-center justify-between gap-3 text-label-sm font-bold animate-bounce",
+          overrideSuccess ? "bg-semantic_success-500 text-brand-950 border-semantic_success-400" : "bg-semantic_error-500 text-white border-semantic_error-400"
         )}>
           <span>{overrideSuccess || overrideError}</span>
         </div>
@@ -360,11 +360,11 @@ export default function AdminPage() {
                       </td>
                       <td className="p-4">
                         <span className={cn(
-                          "px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider",
-                          order.status === "PLACED" && "bg-amber-500/20 text-amber-500",
-                          order.status === "ACCEPTED" && "bg-blue-500/20 text-blue-400",
-                          order.status === "PREPARING" && "bg-blue-500/20 text-blue-300",
-                          (order.status === "READY" || order.status === "PREPARED") && "bg-green-500/20 text-green-400"
+                          "px-2.5 py-0.5 rounded-full text-label-xs font-bold uppercase tracking-wider",
+                          order.status === "PLACED" && "bg-warning-500/10 border border-warning-500/20 text-warning-400",
+                          order.status === "ACCEPTED" && "bg-info-500/10 border border-info-500/20 text-info-400",
+                          order.status === "PREPARING" && "bg-info-500/10 border border-info-500/20 text-info-300",
+                          (order.status === "READY" || order.status === "PREPARED") && "bg-semantic_success-500/10 border border-semantic_success-500/20 text-semantic_success-400"
                         )}>
                           {order.status}
                         </span>
@@ -372,8 +372,8 @@ export default function AdminPage() {
                       <td className="p-4 space-y-2">
                         <div className="flex items-center gap-2">
                           <span className={cn(
-                            "px-2 py-0.5 rounded-md text-xs font-semibold",
-                            isKitchenClaimed ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20 animate-pulse"
+                            "px-2 py-0.5 rounded-md text-label-xs font-semibold",
+                            isKitchenClaimed ? "bg-info-500/10 text-info-400 border border-info-500/20" : "bg-warning-500/10 text-warning-400 border border-warning-500/20 animate-pulse"
                           )}>
                             {isKitchenClaimed ? `Claimed: ${order.assignedKitchenName}` : "Unclaimed (PLACED)"}
                           </span>
@@ -381,7 +381,7 @@ export default function AdminPage() {
                             <button
                               type="button"
                               onClick={() => handleForceUnclaimKitchen(order.id)}
-                              className="text-xs text-red-500 hover:text-red-400 font-bold bg-transparent border-0 cursor-pointer"
+                              className="text-label-xs text-semantic_error-500 hover:text-semantic_error-400 font-bold bg-transparent border-0 cursor-pointer"
                               title="Force Release Cook Claim"
                             >
                               Release
@@ -389,7 +389,7 @@ export default function AdminPage() {
                           )}
                         </div>
                         <select
-                          className="bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-300 w-full max-w-[180px] focus:outline-none"
+                          className="bg-surface-base border border-border-default rounded px-2 py-1 text-label-xs text-text-primary w-full max-w-[180px] focus:outline-none"
                           value={order.assignedKitchenId || ""}
                           onChange={(e) => handleReassignKitchen(order.id, e.target.value)}
                         >
@@ -404,8 +404,8 @@ export default function AdminPage() {
                       <td className="p-4 space-y-2">
                         <div className="flex items-center gap-2">
                           <span className={cn(
-                            "px-2 py-0.5 rounded-md text-xs font-semibold",
-                            isWaiterClaimed ? "bg-blue-500/10 text-blue-400 border border-blue-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                            "px-2 py-0.5 rounded-md text-label-xs font-semibold",
+                            isWaiterClaimed ? "bg-info-500/10 text-info-400 border border-info-500/20" : "bg-warning-500/10 text-warning-400 border border-warning-500/20"
                           )}>
                             {isWaiterClaimed
                               ? `Claimed: ${order.assignedWaiterName}`
@@ -417,7 +417,7 @@ export default function AdminPage() {
                             <button
                               type="button"
                               onClick={() => handleForceUnclaimWaiter(order.id)}
-                              className="text-xs text-red-500 hover:text-red-400 font-bold bg-transparent border-0 cursor-pointer"
+                              className="text-label-xs text-semantic_error-500 hover:text-semantic_error-400 font-bold bg-transparent border-0 cursor-pointer"
                               title="Force Release Waiter Claim"
                             >
                               Release
@@ -425,7 +425,7 @@ export default function AdminPage() {
                           )}
                         </div>
                         <select
-                          className="bg-zinc-900 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-300 w-full max-w-[180px] focus:outline-none disabled:opacity-50"
+                          className="bg-surface-base border border-border-default rounded px-2 py-1 text-label-xs text-text-primary w-full max-w-[180px] focus:outline-none disabled:opacity-50"
                           value={order.assignedWaiterId || ""}
                           disabled={order.status !== "READY" && order.status !== "PREPARED"}
                           onChange={(e) => handleReassignWaiter(order.id, e.target.value)}
@@ -443,15 +443,16 @@ export default function AdminPage() {
                           type="button"
                           variant="secondary"
                           onClick={() => handleViewHistory(order.id)}
-                          className="min-h-10 text-xs py-1 px-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold border-0 rounded-lg"
+                          className="min-h-10 text-label-xs py-1 px-3 border-0 rounded-lg"
                         >
                           Logs
                         </Button>
                         {(order.status === "READY" || order.status === "PREPARED") && (
                           <Button
                             type="button"
+                            variant="primary"
                             onClick={() => handleForceDeliver(order.id)}
-                            className="min-h-10 text-xs py-1 px-3 bg-green-500 hover:bg-green-400 text-zinc-950 font-bold border-0 rounded-lg"
+                            className="min-h-10 text-label-xs py-1 px-3 border-0 rounded-lg"
                           >
                             Force Deliver
                           </Button>
@@ -469,15 +470,15 @@ export default function AdminPage() {
       {/* Assignment History Logs Modal */}
       {activeHistoryOrderId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-          <div className="w-full max-w-lg rounded-2xl border border-outline-variant bg-zinc-900 p-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-              <h3 className="text-lg font-bold text-zinc-100 flex items-center gap-2">
+          <div className="w-full max-w-lg rounded-2xl border border-border-default bg-surface-base p-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border-default pb-3">
+              <h3 className="text-display-xs font-bold text-text-primary flex items-center gap-2">
                 <span>📋</span> Assignment History Logs
               </h3>
               <button
                 type="button"
                 onClick={() => setActiveHistoryOrderId(null)}
-                className="text-zinc-500 hover:text-zinc-300 text-2xl font-bold bg-transparent border-0 cursor-pointer"
+                className="text-text-tertiary hover:text-text-secondary text-display-sm font-bold bg-transparent border-0 cursor-pointer"
               >
                 &times;
               </button>
@@ -488,30 +489,30 @@ export default function AdminPage() {
                   <Loader label="Loading logs..." />
                 </div>
               ) : historyLogs.length === 0 ? (
-                <p className="text-sm text-zinc-500 text-center py-6">No claim or reassignment events recorded yet.</p>
+                <p className="text-body-sm text-text-tertiary text-center py-6">No claim or reassignment events recorded yet.</p>
               ) : (
                 historyLogs.map((log) => (
-                  <div key={log.id} className="p-3 bg-zinc-950 border border-zinc-850 rounded-xl text-xs space-y-1.5">
+                  <div key={log.id} className="p-3 bg-surface-raised border border-border-default rounded-xl text-label-xs space-y-1.5">
                     <div className="flex justify-between items-center">
                       <span className={cn(
                         "px-2 py-0.5 rounded-full font-bold uppercase tracking-wide",
-                        log.action === "CLAIMED" && "bg-blue-500/10 text-blue-400",
-                        log.action === "REASSIGNED" && "bg-amber-500/10 text-amber-400",
-                        log.action === "RELEASED" && "bg-red-500/10 text-red-400",
-                        log.action === "DELIVERED" && "bg-green-500/10 text-green-400"
+                        log.action === "CLAIMED" && "bg-info-500/10 border border-info-500/20 text-info-400",
+                        log.action === "REASSIGNED" && "bg-warning-500/10 border border-warning-500/20 text-warning-400",
+                        log.action === "RELEASED" && "bg-semantic_error-500/10 border border-semantic_error-500/20 text-semantic_error-400",
+                        log.action === "DELIVERED" && "bg-semantic_success-500/10 border border-semantic_success-500/20 text-semantic_success-400"
                       )}>
                         {log.action}
                       </span>
-                      <span className="text-zinc-500">{new Date(log.timestamp).toLocaleString()}</span>
+                      <span className="text-text-tertiary">{new Date(log.timestamp).toLocaleString()}</span>
                     </div>
-                    <div className="text-zinc-300">
-                      Staff: <span className="font-semibold text-zinc-100">{log.staff?.name || "System/Auto"}</span> ({log.role})
+                    <div className="text-text-secondary">
+                      Staff: <span className="font-semibold text-text-primary">{log.staff?.name || "System/Auto"}</span> ({log.role})
                     </div>
                   </div>
                 ))
               )}
             </div>
-            <div className="mt-6 flex justify-end gap-2 border-t border-zinc-800 pt-4">
+            <div className="mt-6 flex justify-end gap-2 border-t border-border-default pt-4">
               <Button type="button" variant="secondary" onClick={() => setActiveHistoryOrderId(null)} className="min-h-11">
                 Close
               </Button>

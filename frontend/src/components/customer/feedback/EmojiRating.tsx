@@ -53,7 +53,7 @@ export function EmojiRating({ value, onChange }: EmojiRatingProps) {
               <span
                 className={cn(
                   "text-[10px] transition-colors",
-                  isSelected ? "text-amber-400 font-bold" : "text-zinc-500"
+                  isSelected ? "text-accent-400 font-bold" : "text-text-tertiary"
                 )}
               >
                 {item.label}
@@ -78,7 +78,7 @@ export function EmojiRating({ value, onChange }: EmojiRatingProps) {
                 name={isFilled ? "star" : "star_outline"}
                 className={cn(
                   "text-2xl transition-colors",
-                  isFilled ? "text-amber-400" : "text-zinc-700"
+                  isFilled ? "text-accent-400" : "text-text-muted"
                 )}
               />
             </button>
@@ -89,7 +89,7 @@ export function EmojiRating({ value, onChange }: EmojiRatingProps) {
       {value && (
         <div
           className={cn(
-            "text-lg font-bold text-zinc-100 transition-all duration-200",
+            "text-lg font-bold text-text-primary transition-all duration-200",
             animate ? "scale-110 opacity-80" : "scale-100 opacity-100"
           )}
         >

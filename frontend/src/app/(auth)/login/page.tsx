@@ -4,13 +4,12 @@ import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { MaterialIcon } from "@/components/stitch/MaterialIcon";
 import { apiClient } from "@/lib/api-client";
+import { MaterialIcon } from "@/components/stitch/MaterialIcon";
 import { useAuthStore } from "@/stores/authStore";
 import { ApiResponse, ClientApiError } from "@/types/api";
 import { Role, User } from "@/types";
 import { loginSchema, LoginInput } from "@/validators/auth";
-import Loader from "@/components/ui/Loader";
 
 const roleRoutes = {
   [Role.ADMIN]: "/admin",
@@ -18,9 +17,16 @@ const roleRoutes = {
   [Role.KITCHEN]: "/kitchen",
 };
 
+const ROLES = [
+  { role: Role.ADMIN, label: "Admin", icon: "admin_panel_settings" },
+  { role: Role.SERVER, label: "Server", icon: "room_service" },
+  { role: Role.KITCHEN, label: "Kitchen", icon: "soup_kitchen" },
+];
+
 export default function LoginPage() {
   const router = useRouter();
   const { isAuthenticated, login, user } = useAuthStore();
+
   const [apiError, setApiError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role>(Role.ADMIN);
@@ -45,7 +51,7 @@ export default function LoginPage() {
     try {
       const response = await apiClient.post<
         ApiResponse<{ token: string; refreshToken?: string; user: User }>
-      >("/auth/login", { ...credentials, role: selectedRole });
+      >("/auth/login", { phone: credentials.phone, password: credentials.password });
       const { token, refreshToken, user: loggedInUser } = response.data.data;
       login(token, loggedInUser, refreshToken);
       router.replace(roleRoutes[loggedInUser.role]);
@@ -56,165 +62,165 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950 px-4 py-8 font-sans">
-      {/* Background radial glow effect */}
-      <div className="absolute left-[-10%] top-[-10%] h-[40%] w-[40%] rounded-full bg-amber-500/10 opacity-50 blur-[120px]" />
-      <div className="absolute bottom-[-10%] right-[-10%] h-[30%] w-[30%] rounded-full bg-amber-500/5 opacity-50 blur-[100px]" />
+    <main className="flex min-h-screen items-center justify-center overflow-x-hidden bg-neutral-950 px-4 py-8 text-neutral-50 sm:px-6 lg:px-8">
+      <section
+        className="relative w-full max-w-[480px] overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900/95 shadow-2xl shadow-black/40"
+        aria-labelledby="staff-login-title"
+      >
+        <div className="absolute inset-x-0 top-0 h-1 bg-orange-500" />
 
-      <div className="z-10 w-full max-w-md">
-        <div className="relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 p-8 shadow-2xl">
-          
-          {/* Glassmorphic Submitting Overlay */}
-          {isSubmitting && (
-            <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-zinc-950/80 backdrop-blur-md transition-all duration-300">
-              <Loader label="Signing you in..." />
-            </div>
-          )}
-
-          {/* Logo & Header */}
-          <div className="mb-8 flex flex-col items-center">
-            <div className="mb-2 flex items-center gap-2">
-              <MaterialIcon name="restaurant" className="text-3xl text-amber-400" />
-              <h1 className="text-3xl font-extrabold text-zinc-100 tracking-tight">
-                Nati Nest
-              </h1>
-            </div>
-            <p className="text-sm font-medium text-zinc-400">Staff Login</p>
+        {isSubmitting && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-neutral-950/85 px-6 text-center backdrop-blur-sm">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-orange-500 border-t-transparent" />
+            <p className="text-sm font-semibold text-neutral-300">Signing you in...</p>
           </div>
+        )}
 
-          {/* Error Container - Screen Reader Polite */}
-          <div aria-live="polite" className="min-h-[64px] empty:min-h-0">
+        <div className="flex flex-col items-center gap-3 px-5 pb-6 pt-8 text-center sm:px-8 sm:pt-10">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/25">
+            <MaterialIcon name="restaurant" className="text-[30px]" />
+          </div>
+          <div className="space-y-1">
+            <h1 id="staff-login-title" className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+              Nati Nest
+            </h1>
+            <p className="text-sm font-medium text-neutral-400">Staff Login</p>
+          </div>
+        </div>
+
+        <div className="px-5 pb-6 sm:px-8">
+          <div aria-live="polite" className="mb-5">
             {apiError && (
-              <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-red-400 transition-all duration-300">
-                <div className="flex items-center gap-2 text-sm font-bold">
-                  <MaterialIcon name="error" className="text-lg" />
-                  Access Denied
+              <div className="flex items-start gap-3 rounded-2xl border border-red-500/35 bg-red-950/45 px-4 py-3.5 text-left shadow-sm">
+                <MaterialIcon name="error" className="mt-0.5 shrink-0 text-[20px] text-red-300" />
+                <div className="min-w-0">
+                  <p className="text-sm font-bold leading-5 text-red-100">Unable to sign in</p>
+                  <p className="mt-1 break-words text-sm leading-5 text-red-100/80">{apiError}</p>
                 </div>
-                <p className="mt-1 text-xs leading-relaxed text-zinc-300">{apiError}</p>
               </div>
             )}
           </div>
 
-          {/* Login Form */}
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            
-            {/* Access Role Selector */}
-            <div className="space-y-2">
-              <span className="block text-xs font-bold uppercase tracking-wider text-zinc-400">
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)} noValidate>
+            <fieldset className="space-y-3">
+              <legend className="text-xs font-bold uppercase tracking-widest text-neutral-400">
                 Access Role
-              </span>
-              <div className="grid grid-cols-3 gap-1 rounded-xl bg-zinc-950 p-1.5 border border-zinc-850">
-                {[Role.ADMIN, Role.SERVER, Role.KITCHEN].map((role) => {
+              </legend>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {ROLES.map(({ role, label, icon }) => {
                   const isActive = selectedRole === role;
-                  let iconName = "admin_panel_settings";
-                  if (role === Role.SERVER) iconName = "room_service";
-                  if (role === Role.KITCHEN) iconName = "soup_kitchen";
 
                   return (
                     <button
                       key={role}
                       type="button"
                       onClick={() => setSelectedRole(role)}
-                      className={`flex flex-col items-center justify-center rounded-lg py-2.5 transition-all gap-1.5 border-0 ${
+                      className={[
+                        "flex h-16 w-full items-center justify-center gap-2 rounded-2xl border px-3 text-center text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900 sm:h-[78px] sm:flex-col sm:gap-1.5",
                         isActive
-                          ? "bg-amber-500 text-zinc-950 font-bold shadow-md shadow-amber-500/15"
-                          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50"
-                      }`}
+                          ? "border-orange-500 bg-orange-500 text-white shadow-lg shadow-orange-500/25"
+                          : "border-neutral-800 bg-neutral-950 text-neutral-300 hover:border-neutral-700 hover:bg-neutral-800 hover:text-white",
+                      ].join(" ")}
+                      aria-pressed={isActive}
                     >
-                      <MaterialIcon name={iconName} className="text-lg" />
-                      <span className="text-[10px] font-semibold tracking-wider">
-                        {role}
-                      </span>
+                      <MaterialIcon name={icon} className="text-[22px] leading-none" />
+                      <span className="leading-none">{label}</span>
                     </button>
                   );
                 })}
               </div>
-            </div>
+            </fieldset>
 
-            {/* Phone Number Input */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400" htmlFor="phone">
+              <label
+                htmlFor="phone"
+                className="block text-xs font-bold uppercase tracking-widest text-neutral-400"
+              >
                 Phone Number
               </label>
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-zinc-500">
-                  <span className="border-r border-zinc-800 pr-3 text-sm font-bold">+91</span>
-                </div>
+              <div className="flex h-14 overflow-hidden rounded-2xl border border-neutral-700 bg-neutral-950 transition focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/25">
+                <span className="flex h-full items-center border-r border-neutral-800 px-4 text-sm font-bold text-neutral-400">
+                  +91
+                </span>
                 <input
                   id="phone"
                   type="tel"
+                  inputMode="numeric"
                   disabled={isSubmitting}
                   placeholder="9876543210"
-                  className="h-12 w-full rounded-xl border border-zinc-800 bg-zinc-950/60 pl-16 pr-4 text-sm text-zinc-100 outline-none transition-all placeholder:text-zinc-600 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 disabled:opacity-60"
+                  className="h-full min-w-0 flex-1 bg-transparent px-4 text-base font-medium text-white placeholder:text-neutral-600 focus:outline-none disabled:opacity-60"
+                  aria-invalid={Boolean(errors.phone)}
+                  aria-describedby={errors.phone ? "phone-error" : undefined}
                   {...register("phone")}
                 />
               </div>
               {errors.phone && (
-                <p className="text-xs font-medium text-red-400 mt-1" role="alert">
+                <p id="phone-error" className="text-sm font-medium text-red-300" role="alert">
                   {errors.phone.message}
                 </p>
               )}
             </div>
 
-            {/* Password Input */}
             <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400" htmlFor="password">
+              <label
+                htmlFor="password"
+                className="block text-xs font-bold uppercase tracking-widest text-neutral-400"
+              >
                 Staff Password
               </label>
-              <div className="relative">
-                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-zinc-500">
-                  <MaterialIcon name="lock" className="text-lg" />
-                </div>
+              <div className="flex h-14 items-center overflow-hidden rounded-2xl border border-neutral-700 bg-neutral-950 transition focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/25">
+                <span className="flex h-full items-center pl-4 text-neutral-500">
+                  <MaterialIcon name="lock" className="text-[20px]" />
+                </span>
                 <input
                   id="password"
                   type={showPassword ? "text" : "password"}
                   disabled={isSubmitting}
-                  placeholder="••••••••"
-                  className="h-12 w-full rounded-xl border border-zinc-800 bg-zinc-950/60 pl-11 pr-12 text-sm text-zinc-100 outline-none transition-all placeholder:text-zinc-600 focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 disabled:opacity-60"
+                  placeholder="Enter password"
+                  className="h-full min-w-0 flex-1 bg-transparent px-3 pr-2 text-base font-medium text-white placeholder:text-neutral-600 focus:outline-none disabled:opacity-60"
+                  aria-invalid={Boolean(errors.password)}
+                  aria-describedby={errors.password ? "password-error" : undefined}
                   {...register("password")}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword((current) => !current)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-4 text-zinc-500 transition-colors hover:text-zinc-300 border-0 bg-transparent min-w-[44px] justify-end"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="flex h-full w-14 shrink-0 items-center justify-center text-neutral-400 transition hover:bg-neutral-900 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-orange-500"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  <MaterialIcon name={showPassword ? "visibility_off" : "visibility"} className="text-lg" />
+                  <MaterialIcon
+                    name={showPassword ? "visibility_off" : "visibility"}
+                    className="text-[22px]"
+                  />
                 </button>
               </div>
               {errors.password && (
-                <p className="text-xs font-medium text-red-400 mt-1" role="alert">
+                <p id="password-error" className="text-sm font-medium text-red-300" role="alert">
                   {errors.password.message}
                 </p>
               )}
             </div>
 
-            {/* Submit Button */}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-500 font-bold text-zinc-950 shadow-md shadow-amber-500/10 transition-all hover:bg-amber-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 border-0 text-sm"
+              className="flex h-14 w-full items-center justify-center rounded-2xl bg-orange-500 px-5 text-base font-extrabold text-white shadow-lg shadow-orange-500/25 transition hover:bg-orange-400 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 focus-visible:ring-offset-neutral-900"
             >
-              <MaterialIcon name="login" className="text-lg" />
               Sign In
             </button>
           </form>
-
-          {/* Help note */}
-          <div className="mt-8 w-full border-t border-zinc-800/80 pt-6 text-center">
-            <p className="text-xs text-zinc-500 leading-relaxed">
-              Scanning to order? <br /> Use your{" "}
-              <span className="font-semibold text-amber-400">table QR code</span> instead.
-            </p>
-          </div>
         </div>
 
-        {/* Footer info */}
-        <div className="mt-6 flex items-center justify-center gap-1.5 text-zinc-600">
-          <MaterialIcon name="verified_user" className="text-sm" />
-          <span className="text-[11px] font-bold uppercase tracking-wider">Secure Staff Access Only</span>
+        <div className="border-t border-neutral-800 px-5 py-5 text-center sm:px-8">
+          <p className="text-xs leading-relaxed text-neutral-500">
+            Scanning to order?{" "}
+            <span className="font-semibold text-orange-400">Use your table QR code</span>{" "}
+            instead.
+          </p>
         </div>
-      </div>
+      </section>
+
+      <p className="sr-only">Secure staff access only</p>
     </main>
   );
 }

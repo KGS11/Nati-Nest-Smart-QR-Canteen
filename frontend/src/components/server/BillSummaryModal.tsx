@@ -43,7 +43,7 @@ function OrderNotesEditor({ orderId, initialNotes }: { orderId: string; initialN
         placeholder="Add special instructions (e.g. VIP, Spicy)..."
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500"
+        className="flex-1 bg-surface-raised border border-border-primary rounded-lg px-2.5 py-1.5 text-xs text-text-primary placeholder-text-muted focus:outline-none focus:border-accent-500"
       />
       <button
         type="button"
@@ -52,8 +52,8 @@ function OrderNotesEditor({ orderId, initialNotes }: { orderId: string; initialN
         className={cn(
           "px-3 py-1.5 rounded-lg text-xs font-bold transition-all border border-transparent shrink-0",
           saveSuccess
-            ? "bg-green-500 text-zinc-950"
-            : "bg-amber-500 text-zinc-950 hover:bg-amber-400 disabled:opacity-50"
+            ? "bg-semantic_success-500 text-surface-base"
+            : "bg-accent-500 text-surface-base hover:bg-accent-400 disabled:opacity-50"
         )}
       >
         {isSaving ? '...' : saveSuccess ? 'Saved' : 'Save'}
@@ -118,18 +118,18 @@ export default function BillSummaryModal({
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-start justify-center p-4 overflow-y-auto">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full mx-auto mt-20 p-6 max-h-[80vh] overflow-y-auto shadow-2xl relative flex flex-col gap-6">
+      <div className="bg-surface-raised border border-border-primary rounded-2xl max-w-md w-full mx-auto mt-20 p-6 max-h-[80vh] overflow-y-auto shadow-2xl relative flex flex-col gap-6">
         
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-lg font-bold text-zinc-100">Bill Summary</h2>
-            <p className="text-sm text-zinc-400">Table {tableNumber}</p>
+            <h2 className="text-lg font-bold text-text-primary">Bill Summary</h2>
+            <p className="text-sm text-text-secondary">Table {tableNumber}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-200 text-2xl font-bold bg-transparent border-0 cursor-pointer leading-none"
+            className="text-text-secondary hover:text-text-primary text-2xl font-bold bg-transparent border-0 cursor-pointer leading-none"
             aria-label="Close"
           >
             &times;
@@ -150,7 +150,7 @@ export default function BillSummaryModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded-lg text-sm font-semibold transition-colors"
+              className="px-4 py-2 bg-surface-overlay hover:bg-surface-overlay/80 text-text-primary rounded-lg text-sm font-semibold transition-colors"
             >
               Close
             </button>
@@ -161,10 +161,10 @@ export default function BillSummaryModal({
         {!isLoading && !error && bill && (
           <>
             {/* Table */}
-            <div className="border border-zinc-800 rounded-xl overflow-hidden">
+            <div className="border border-border-primary rounded-xl overflow-hidden">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-zinc-800 text-xs font-semibold text-zinc-400 bg-zinc-900/50">
+                  <tr className="border-b border-border-primary text-xs font-semibold text-text-secondary bg-surface-raised/50">
                     <th className="py-2 px-3">Item</th>
                     <th className="py-2 px-3 text-right">Qty</th>
                     <th className="py-2 px-3 text-right">Price</th>
@@ -175,14 +175,14 @@ export default function BillSummaryModal({
                   {bill.itemBreakdown.map((item, idx) => (
                     <tr
                       key={idx}
-                      className={`text-sm text-zinc-300 border-b border-zinc-800/30 last:border-b-0 ${
-                        idx % 2 === 0 ? 'bg-zinc-900' : 'bg-zinc-800/50'
+                      className={`text-sm text-text-secondary border-b border-border-primary/30 last:border-b-0 ${
+                        idx % 2 === 0 ? 'bg-surface-raised' : 'bg-surface-overlay/50'
                       }`}
                     >
                       <td className="py-2.5 px-3 font-medium">{item.name}</td>
                       <td className="py-2.5 px-3 text-right font-semibold">{item.quantity}</td>
                       <td className="py-2.5 px-3 text-right">{formatCurrency(item.unitPrice)}</td>
-                      <td className="py-2.5 px-3 text-right text-amber-400 font-semibold">
+                      <td className="py-2.5 px-3 text-right text-accent-400 font-semibold">
                         {formatCurrency(item.subtotal)}
                       </td>
                     </tr>
@@ -192,26 +192,26 @@ export default function BillSummaryModal({
             </div>
 
             {/* Total Row */}
-            <div className="flex justify-between items-center py-3 px-4 bg-zinc-950/40 border border-zinc-800/80 rounded-xl">
-              <span className="font-semibold text-zinc-100">Total</span>
-              <span className="text-xl font-bold text-amber-400">
+            <div className="flex justify-between items-center py-3 px-4 bg-surface-base/40 border border-border-primary/80 rounded-xl">
+              <span className="font-semibold text-text-primary">Total</span>
+              <span className="text-xl font-bold text-accent-400">
                 {formatCurrency(bill.totalAmount)}
               </span>
             </div>
 
             {/* Active Orders & Notes Section */}
-            <div className="space-y-3 border-t border-zinc-800 pt-4">
-              <h3 className="text-sm font-semibold text-zinc-300 flex items-center gap-1.5">
+            <div className="space-y-3 border-t border-border-primary pt-4">
+              <h3 className="text-sm font-semibold text-text-secondary flex items-center gap-1.5">
                 <span>📝</span> Active Orders Notes
               </h3>
               {bill.orders && bill.orders.length > 0 ? (
                 <div className="space-y-3">
                   {bill.orders.map((ord) => (
-                    <div key={ord.id} className="bg-zinc-950/40 border border-zinc-800 rounded-xl p-3 flex flex-col gap-1.5">
-                      <div className="flex justify-between items-center text-[10px] text-zinc-500 font-semibold uppercase tracking-wider">
+                    <div key={ord.id} className="bg-surface-base/40 border border-border-primary rounded-xl p-3 flex flex-col gap-1.5">
+                      <div className="flex justify-between items-center text-[10px] text-text-tertiary font-semibold uppercase tracking-wider">
                         <span>Order #{ord.id.slice(-6).toUpperCase()}</span>
                       </div>
-                      <div className="text-xs text-zinc-300">
+                      <div className="text-xs text-text-secondary">
                         {ord.items.map(item => `${item.name} (x${item.quantity})`).join(', ')}
                       </div>
                       <OrderNotesEditor orderId={ord.id} initialNotes={(ord as any).specialNotes || ''} />
@@ -219,7 +219,7 @@ export default function BillSummaryModal({
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-zinc-500 italic">No active orders</p>
+                <p className="text-xs text-text-tertiary italic">No active orders</p>
               )}
             </div>
 
@@ -232,12 +232,12 @@ export default function BillSummaryModal({
                     onRequestPaymentVerification(paymentId)
                     onClose()
                   }}
-                  className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold rounded-xl transition-colors text-center text-sm shadow-md"
+                  className="w-full py-3 bg-semantic_success-500 hover:bg-semantic_success-400 text-surface-base font-bold rounded-xl transition-colors text-center text-sm shadow-md"
                 >
                   Verify Payment
                 </button>
               ) : (
-                <p className="text-center text-sm text-zinc-500 italic">
+                <p className="text-center text-sm text-text-tertiary italic">
                   Payment not yet requested
                 </p>
               )}
@@ -250,7 +250,7 @@ export default function BillSummaryModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30 rounded-xl text-sm font-semibold transition-colors bg-transparent cursor-pointer"
+            className="w-full py-2.5 border border-border-primary text-text-secondary hover:text-text-primary hover:bg-surface-overlay/30 rounded-xl text-sm font-semibold transition-colors bg-transparent cursor-pointer"
           >
             Close
           </button>

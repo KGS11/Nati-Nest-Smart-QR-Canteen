@@ -91,7 +91,7 @@ export default function CategoryForm({
           placeholder="0"
           {...register('sortOrder', { valueAsNumber: true })}
         />
-        <p className="text-xs text-zinc-500 mt-1.5 ml-0.5">
+        <p className="text-body-xs text-text-tertiary mt-1.5 ml-0.5">
           Lower numbers appear first
         </p>
       </div>
@@ -102,13 +102,13 @@ export default function CategoryForm({
           type="checkbox"
           id="isActive"
           {...register('isActive')}
-          className="mt-1 h-4 w-4 rounded border-zinc-800 bg-zinc-950 text-amber-500 focus:ring-amber-500/20 accent-amber-500"
+          className="mt-1 h-4 w-4 rounded border-border-primary bg-surface-base text-accent-500 focus:ring-accent-500/20 accent-accent-500"
         />
         <div className="flex flex-col">
-          <label htmlFor="isActive" className="text-sm font-semibold text-zinc-200 cursor-pointer">
+          <label htmlFor="isActive" className="text-sm font-semibold text-text-primary cursor-pointer">
             Category is active
           </label>
-          <span className="text-xs text-zinc-500 mt-0.5">
+          <span className="text-xs text-text-tertiary mt-0.5">
             Inactive categories are hidden from the menu
           </span>
         </div>
@@ -116,7 +116,7 @@ export default function CategoryForm({
 
       {/* Server Error Message */}
       {serverError && (
-        <p className="text-sm text-red-400 font-semibold pt-1">
+        <p className="text-body-sm text-semantic_error-400 font-semibold pt-1">
           {serverError}
         </p>
       )}
@@ -126,7 +126,7 @@ export default function CategoryForm({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold min-h-11 border-0"
+          className="w-full bg-accent-500 hover:bg-accent-400 text-surface-base font-bold min-h-11 border-0"
         >
           {isSubmitting ? (
             <Loader className="!flex-row !gap-1" />
@@ -141,7 +141,7 @@ export default function CategoryForm({
           type="button"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="w-full py-2.5 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30 rounded-xl text-sm font-semibold transition-colors bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full py-2.5 border border-border-primary text-text-secondary hover:text-text-primary hover:bg-surface-overlay/30 rounded-xl text-sm font-semibold transition-colors bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cancel
         </button>

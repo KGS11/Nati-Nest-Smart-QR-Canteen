@@ -38,28 +38,28 @@ export function AssignmentRequestBanner({ requests, onAccept }: AssignmentReques
   }
 
   return (
-    <div className="bg-amber-500/10 border-b border-amber-500/30 p-4 animate-pulse">
+    <div className="bg-accent-500/10 border-b border-accent-500/30 p-4 animate-pulse">
       <div className="max-w-7xl mx-auto flex flex-col gap-3">
-        <h2 className="text-amber-400 font-extrabold text-sm tracking-wider uppercase">
+        <h2 className="text-accent-400 font-extrabold text-sm tracking-wider uppercase">
           🔔 Pending Table Assignments ({requests.length})
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           {requests.map((req) => (
             <div
               key={req.requestId}
-              className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 flex flex-col justify-between gap-3 shadow-md"
+              className="bg-surface-raised border border-border-primary rounded-xl p-3 flex flex-col justify-between gap-3 shadow-md"
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-lg font-black text-zinc-100">Table {req.tableNumber}</h3>
-                  <p className="text-xs text-zinc-400">Request: {formatAge(req.requestedAt)}</p>
+                  <h3 className="text-lg font-black text-text-primary">Table {req.tableNumber}</h3>
+                  <p className="text-xs text-text-secondary">Request: {formatAge(req.requestedAt)}</p>
                 </div>
               </div>
               <Button
                 type="button"
                 onClick={() => handleAcceptClick(req.requestId)}
                 disabled={actioningId !== null}
-                className="w-full min-h-[52px] bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black border-0 rounded-lg active:scale-[0.98] transition-all"
+                className="w-full min-h-[52px] bg-accent-500 hover:bg-accent-400 text-surface-base font-black border-0 rounded-lg active:scale-[0.98] transition-all"
               >
                 {actioningId === req.requestId ? <Loader className="scale-50" /> : `Accept Table ${req.tableNumber}`}
               </Button>

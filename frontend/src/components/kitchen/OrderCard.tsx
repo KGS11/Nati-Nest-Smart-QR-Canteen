@@ -7,6 +7,9 @@ import { OrderItemRow } from "./OrderItemRow";
 import { OrderTimer } from "./OrderTimer";
 import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/utils/cn";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 
 interface OrderCardProps {
   order: KitchenOrder;
@@ -18,11 +21,11 @@ interface OrderCardProps {
 }
 
 const accentClass: Record<KitchenOrder["status"], string> = {
-  PLACED: "border-l-amber-500",
-  ACCEPTED: "border-l-blue-500",
-  PREPARING: "border-l-blue-400",
-  READY: "border-l-green-500",
-  PREPARED: "border-l-green-500",
+  PLACED: "border-l-[6px] border-l-warning-500",
+  ACCEPTED: "border-l-[6px] border-l-info-500",
+  PREPARING: "border-l-[6px] border-l-info-400",
+  READY: "border-l-[6px] border-l-success-500",
+  PREPARED: "border-l-[6px] border-l-success-500",
 };
 
 const shortId = (orderId: string) => `#${orderId.replace(/-/g, "").slice(-4).toUpperCase()}`;
@@ -96,34 +99,34 @@ export function OrderCard({ order, onAccept, onAcceptAndPrepare, onPreparing, on
   );
 
   return (
-    <article
+    <Card
       className={cn(
-        "rounded-xl border border-l-4 border-zinc-800 bg-zinc-900 p-4 md:p-5 shadow-lg shadow-black/20 transition-all duration-200",
-        isAssignedToOther ? "border-l-zinc-700 opacity-60 saturate-50" : accentClass[order.status],
-        isNew && !isAssignedToOther ? "animate-pulse ring-2 ring-amber-500/50" : "",
+        "rounded-2xl border bg-surface-base p-4 md:p-5 shadow-md transition-all duration-200 overflow-hidden relative",
+        isAssignedToOther ? "border-l-border-default opacity-60 saturate-50" : accentClass[order.status],
+        isNew && !isAssignedToOther ? "animate-pulse shadow-[0_0_0_2px_rgba(234,117,15,0.5)]" : "",
       )}
     >
-      <header className="flex items-start justify-between gap-3">
+      <header className="flex items-start justify-between gap-3 mb-2">
         <div>
-          <h3 className="text-xl font-bold text-amber-400">Table {order.tableNumber}</h3>
+          <h3 className="text-display-md font-bold text-text-primary">Table {order.tableNumber}</h3>
           <div className="mt-1">
             <OrderTimer placedAt={order.placedAt} />
           </div>
         </div>
-        <span className="text-xs font-semibold text-zinc-500">{shortId(order.id)}</span>
+        <Badge variant="outline" className="text-label-xs text-text-tertiary">{shortId(order.id)}</Badge>
       </header>
 
       {hasSpecialInstructions && (
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-2.5 text-xs text-amber-400 mt-3 flex items-center gap-1.5 font-medium">
-          <span>📝</span> Special instructions — check items below
+        <div className="bg-warning-500/10 border border-warning-500/20 rounded-lg p-2.5 text-label-sm text-warning-400 mt-3 flex items-center gap-2 font-medium">
+          <span>📝</span> Special instructions — check items
         </div>
       )}
 
       {order.specialNotes && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-2.5 text-xs text-red-400 mt-3 flex items-start gap-1.5 font-bold">
+        <div className="bg-semantic_error-500/10 border border-semantic_error-500/20 rounded-lg p-2.5 text-label-sm text-semantic_error-400 mt-3 flex items-start gap-2 font-bold">
           <span>⚠️</span>
           <div>
-            <span className="uppercase text-[9px] tracking-wider block mb-0.5 text-red-500 font-extrabold">Waiter Note</span>
+            <span className="uppercase text-label-xs tracking-wider block mb-0.5 text-semantic_error-400 font-extrabold">Waiter Note</span>
             <span>{order.specialNotes}</span>
           </div>
         </div>
@@ -131,10 +134,10 @@ export function OrderCard({ order, onAccept, onAcceptAndPrepare, onPreparing, on
 
       {order.assignedKitchenId && (
         <div className={cn(
-          "rounded-xl p-2.5 text-xs font-semibold mt-3 flex items-center gap-1.5",
+          "rounded-lg p-2.5 text-label-sm font-semibold mt-3 flex items-center gap-2",
           isAssignedToOther
-            ? "bg-zinc-800/50 border border-zinc-700 text-zinc-400"
-            : "bg-blue-500/10 border border-blue-500/20 text-blue-400"
+            ? "bg-surface-raised border border-border-default text-text-secondary"
+            : "bg-info-500/10 border border-info-500/20 text-info-400"
         )}>
           <span>🍳</span>
           <span>
@@ -145,9 +148,9 @@ export function OrderCard({ order, onAccept, onAcceptAndPrepare, onPreparing, on
         </div>
       )}
 
-      <div className="my-4 border-t border-zinc-800" />
+      <div className="my-4 border-t border-border-default" />
 
-      <div className={cn("divide-y divide-zinc-800", isAssignedToOther && "pointer-events-none")}>
+      <div className={cn("divide-y divide-border-default", isAssignedToOther && "pointer-events-none")}>
         {order.items.map((item) => (
           <OrderItemRow
             key={item.id}
@@ -162,69 +165,69 @@ export function OrderCard({ order, onAccept, onAcceptAndPrepare, onPreparing, on
         ))}
       </div>
 
-      <footer className="mt-4 flex min-h-12 items-center justify-between gap-3">
-        <span className="text-xs font-semibold text-zinc-400">
+      <footer className="mt-4 flex flex-wrap min-h-12 items-center justify-between gap-3">
+        <span className="text-label-sm font-semibold text-text-tertiary">
           {activeItemCount} {activeItemCount === 1 ? "item" : "items"}
         </span>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full md:w-auto">
           {isAssignedToOther ? (
-            <span className="text-xs font-semibold text-zinc-500 self-center italic">
+            <span className="text-label-sm font-semibold text-text-tertiary self-center italic">
               Assigned to {order.assignedKitchenName}
             </span>
           ) : (
             <>
               {order.status !== "READY" && (
-                <button
-                  type="button"
+                <Button
+                  variant="destructive"
                   disabled={isActioning}
                   onClick={handleRejectOrder}
-                  className="min-h-[52px] md:min-h-[56px] rounded-lg border border-red-500/30 bg-red-500/10 px-3 text-sm font-bold text-red-400 hover:bg-red-500/20 active:scale-[0.98] disabled:opacity-60"
+                  className="min-h-[48px] w-full md:w-auto text-label-md px-4"
                 >
                   Reject
-                </button>
+                </Button>
               )}
 
               {order.status === "PLACED" ? (
-                <button
-                  type="button"
+                <Button
+                  variant="brand"
                   disabled={isActioning}
                   onClick={() => runAction(onAcceptAndPrepare ?? onAccept)}
-                  className="min-h-[52px] md:min-h-[56px] rounded-lg bg-amber-500 px-4 text-sm font-bold text-zinc-950 active:scale-[0.98] disabled:opacity-60"
+                  className="min-h-[48px] w-full md:w-auto text-label-md px-6"
                 >
-                  {isActioning ? <Loader className="scale-50" /> : "Accept & Start Preparing"}
-                </button>
+                  {isActioning ? <Loader className="scale-50" /> : "Accept & Start"}
+                </Button>
               ) : null}
 
               {(order.status === "ACCEPTED" || order.status === "PREPARING") && onRelease ? (
-                <button
-                  type="button"
+                <Button
+                  variant="outline"
                   disabled={isActioning}
                   onClick={() => runAction(onRelease)}
-                  className="min-h-[52px] md:min-h-[56px] rounded-lg border border-zinc-700 bg-zinc-800/30 px-3 text-sm font-bold text-zinc-350 hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-60"
+                  className="min-h-[48px] w-full md:w-auto text-label-md px-4"
                 >
                   {isActioning ? <Loader className="scale-50" /> : "Release"}
-                </button>
+                </Button>
               ) : null}
 
               {(order.status === "ACCEPTED" || order.status === "PREPARING") ? (
-                <button
-                  type="button"
+                <Button
+                  variant="brand"
                   disabled={isActioning}
                   onClick={() => runAction(onReady)}
-                  className="min-h-[52px] md:min-h-[56px] rounded-lg bg-green-500 px-4 text-sm font-bold text-zinc-950 active:scale-[0.98] disabled:opacity-60"
+                  className="min-h-[48px] w-full md:w-auto text-label-md px-6"
                 >
                   {isActioning ? <Loader className="scale-50" /> : "Mark Prepared"}
-                </button>
+                </Button>
               ) : null}
             </>
           )}
         </div>
 
         {(order.status === "READY" || order.status === "PREPARED") && !isAssignedToOther ? (
-          <span className="text-xs font-semibold text-zinc-500">Awaiting delivery</span>
+          <Badge variant="secondary">Awaiting delivery</Badge>
         ) : null}
       </footer>
-    </article>
+    </Card>
   );
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import apiClient from '@/lib/api-client'
 import Loader from '@/components/ui/Loader'
 import { PaymentMethod } from '@/types/server.types'
+import { getValidImageUrl } from '@/utils/imageUrl'
 
 interface PaymentVerificationModalProps {
   paymentId: string
@@ -36,7 +37,7 @@ export default function PaymentVerificationModal({
           const res = await apiClient.get('/settings/upi-qr')
           if (!active) return
           const qrUrl = res.data?.data?.upiQrUrl || res.data?.upiQrUrl || ''
-          setUpiQrUrl(qrUrl)
+          setUpiQrUrl(getValidImageUrl(qrUrl))
         } catch (err: any) {
           if (!active) return
           setLocalError('Failed to load UPI QR code.')
@@ -74,18 +75,18 @@ export default function PaymentVerificationModal({
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-start justify-center p-4 overflow-y-auto">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full mx-auto mt-20 p-6 shadow-2xl relative flex flex-col gap-6">
+      <div className="bg-surface-raised border border-border-primary rounded-2xl max-w-md w-full mx-auto mt-20 p-6 shadow-2xl relative flex flex-col gap-6">
         
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-lg font-bold text-zinc-100">Verify Payment</h2>
-            <p className="text-sm text-zinc-400">Table {tableNumber}</p>
+            <h2 className="text-lg font-bold text-text-primary">Verify Payment</h2>
+            <p className="text-sm text-text-secondary">Table {tableNumber}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-200 text-2xl font-bold bg-transparent border-0 cursor-pointer leading-none"
+            className="text-text-secondary hover:text-text-primary text-2xl font-bold bg-transparent border-0 cursor-pointer leading-none"
             aria-label="Close"
           >
             &times;
@@ -99,8 +100,8 @@ export default function PaymentVerificationModal({
             onClick={() => setSelectedMethod('CASH')}
             className={`flex flex-col items-center justify-center p-5 rounded-xl border-2 transition-all cursor-pointer ${
               selectedMethod === 'CASH'
-                ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-                : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-500'
+                ? 'border-accent-500 bg-accent-500/10 text-accent-400'
+                : 'border-border-secondary bg-surface-overlay text-text-secondary hover:border-border-primary'
             }`}
           >
             <span className="text-3xl mb-2" role="img" aria-label="cash">💵</span>
@@ -112,8 +113,8 @@ export default function PaymentVerificationModal({
             onClick={() => setSelectedMethod('UPI')}
             className={`flex flex-col items-center justify-center p-5 rounded-xl border-2 transition-all cursor-pointer ${
               selectedMethod === 'UPI'
-                ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-                : 'border-zinc-700 bg-zinc-800 text-zinc-400 hover:border-zinc-500'
+                ? 'border-accent-500 bg-accent-500/10 text-accent-400'
+                : 'border-border-secondary bg-surface-overlay text-text-secondary hover:border-border-primary'
             }`}
           >
             <span className="text-3xl mb-2" role="img" aria-label="upi">📱</span>
@@ -123,7 +124,7 @@ export default function PaymentVerificationModal({
 
         {/* Content based on selection */}
         {selectedMethod === 'UPI' && (
-          <div className="bg-zinc-950/40 border border-zinc-800 rounded-xl p-4 text-center">
+          <div className="bg-surface-base/40 border border-border-primary rounded-xl p-4 text-center">
             {isLoadingQr ? (
               <div className="py-6">
                 <Loader label="Loading QR code..." />
@@ -134,9 +135,9 @@ export default function PaymentVerificationModal({
                 <img
                   src={upiQrUrl}
                   alt="UPI QR Code"
-                  className="w-48 h-48 mx-auto bg-white p-2 rounded-lg border border-zinc-800"
+                  className="w-48 h-48 mx-auto bg-white p-2 rounded-lg border border-border-primary"
                 />
-                <p className="text-xs text-zinc-400 mt-1">
+                <p className="text-xs text-text-secondary mt-1">
                   Ask customer to scan and pay
                 </p>
               </div>
@@ -149,8 +150,8 @@ export default function PaymentVerificationModal({
         )}
 
         {selectedMethod === 'CASH' && (
-          <div className="bg-zinc-950/40 border border-zinc-800 rounded-xl p-4 text-center">
-            <p className="text-sm text-zinc-400 font-medium">
+          <div className="bg-surface-base/40 border border-border-primary rounded-xl p-4 text-center">
+            <p className="text-sm text-text-secondary font-medium">
               Confirm customer has paid in cash
             </p>
           </div>
@@ -169,7 +170,7 @@ export default function PaymentVerificationModal({
             type="button"
             onClick={handleVerify}
             disabled={!selectedMethod || isVerifying || (selectedMethod === 'UPI' && !upiQrUrl && !isLoadingQr)}
-            className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded-xl transition-colors text-center text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 bg-accent-500 hover:bg-accent-400 text-surface-base font-bold rounded-xl transition-colors text-center text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isVerifying ? (
               <Loader className="!flex-row !gap-1" />
@@ -181,7 +182,7 @@ export default function PaymentVerificationModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2.5 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30 rounded-xl text-sm font-semibold transition-colors bg-transparent cursor-pointer"
+            className="w-full py-2.5 border border-border-primary text-text-secondary hover:text-text-primary hover:bg-surface-overlay/30 rounded-xl text-sm font-semibold transition-colors bg-transparent cursor-pointer"
           >
             Cancel
           </button>

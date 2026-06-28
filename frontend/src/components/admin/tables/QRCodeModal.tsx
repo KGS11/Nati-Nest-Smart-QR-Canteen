@@ -45,20 +45,20 @@ export function QRCodeModal({ table, onClose, onRegenerate }: QRCodeModalProps) 
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 px-4 py-10">
-      <div className="relative mx-auto w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-900 p-6 text-center shadow-2xl">
+      <div className="relative mx-auto w-full max-w-sm rounded-2xl border border-border-primary bg-surface-raised p-6 text-center shadow-2xl">
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+          className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-text-tertiary transition-colors hover:bg-surface-overlay hover:text-text-primary"
           aria-label="Close QR code modal"
         >
           X
         </button>
 
         <div className="qr-print-area">
-          <p className="hidden text-lg font-bold text-zinc-950 print:block">Nati Nest</p>
-          <h2 className="text-xl font-bold text-zinc-100 print:text-zinc-950">QR Code</h2>
-          <p className="mt-1 text-sm font-semibold text-amber-400 print:text-zinc-950">
+          <p className="hidden text-lg font-bold text-text-inverse print:block">Nati Nest</p>
+          <h2 className="text-xl font-bold text-text-primary print:text-text-inverse">QR Code</h2>
+          <p className="mt-1 text-sm font-semibold text-accent-400 print:text-text-inverse">
             Table {table.tableNumber}
           </p>
 
@@ -71,13 +71,13 @@ export function QRCodeModal({ table, onClose, onRegenerate }: QRCodeModalProps) 
               />
             </div>
           ) : (
-            <div className="mx-auto mt-4 flex h-48 w-48 items-center justify-center rounded-xl bg-zinc-800 text-sm text-zinc-500 print:bg-white print:text-zinc-950">
+            <div className="mx-auto mt-4 flex h-48 w-48 items-center justify-center rounded-xl bg-surface-overlay text-sm text-text-tertiary print:bg-white print:text-surface-base">
               No QR generated
             </div>
           )}
         </div>
 
-        <p className="mt-3 truncate text-xs text-zinc-500" title={tableUrl}>
+        <p className="mt-3 truncate text-xs text-text-tertiary" title={tableUrl}>
           {tableUrl}
         </p>
 

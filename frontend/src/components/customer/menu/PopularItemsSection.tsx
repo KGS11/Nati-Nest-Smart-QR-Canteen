@@ -24,7 +24,7 @@ export function PopularItemsSection({ items }: PopularItemsSectionProps) {
 
   return (
     <div className="py-4">
-      <h2 className="text-base font-bold text-zinc-100 px-4 mb-3 flex items-center gap-1.5">
+      <h2 className="text-display-xs font-bold text-text-primary px-4 mb-3 flex items-center gap-1.5">
         <span>⭐</span> Popular Items
       </h2>
 
@@ -36,9 +36,9 @@ export function PopularItemsSection({ items }: PopularItemsSectionProps) {
           return (
             <div
               key={item.id}
-              className="w-36 flex-shrink-0 bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm"
+              className="w-36 flex-shrink-0 bg-surface-raised border border-border-default rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm"
             >
-              <div className="relative h-32 w-full bg-zinc-800">
+              <div className="relative h-32 w-full bg-surface-base">
                 <Image
                   src={getValidImageUrl(item.imageUrl) || fallbackImage}
                   alt={item.name}
@@ -50,29 +50,29 @@ export function PopularItemsSection({ items }: PopularItemsSectionProps) {
 
               <div className="p-3 flex-1 flex flex-col justify-between">
                 <div>
-                  <h3 className="text-xs font-semibold text-zinc-100 line-clamp-2 leading-tight">
+                  <h3 className="text-label-xs font-semibold text-text-primary line-clamp-2 leading-tight">
                     {item.name}
                   </h3>
-                  <p className="text-sm font-bold text-amber-400 mt-1">
+                  <p className="text-label-sm font-bold text-brand-500 mt-1">
                     ₹{Number(item.price).toFixed(2)}
                   </p>
                 </div>
 
                 <div className="mt-3">
                   {quantity > 0 ? (
-                    <div className="flex items-center justify-between bg-amber-500/10 border border-amber-500/20 rounded-lg h-8 px-1">
+                    <div className="flex items-center justify-between bg-brand-500/10 border border-brand-500/20 rounded-lg h-8 px-1">
                       <button
                         type="button"
                         onClick={() => updateQuantity(item.id, quantity - 1)}
-                        className="text-amber-400 font-bold px-1.5 py-0.5 hover:bg-amber-500/20 rounded text-sm transition-colors focus:outline-none"
+                        className="text-brand-500 font-bold px-1.5 py-0.5 hover:bg-brand-500/20 rounded text-label-sm transition-colors focus:outline-none"
                       >
                         -
                       </button>
-                      <span className="text-amber-400 font-bold text-xs">{quantity}</span>
+                      <span className="text-brand-500 font-bold text-label-xs">{quantity}</span>
                       <button
                         type="button"
                         onClick={() => updateQuantity(item.id, quantity + 1)}
-                        className="text-amber-400 font-bold px-1.5 py-0.5 hover:bg-amber-500/20 rounded text-sm transition-colors focus:outline-none"
+                        className="text-brand-500 font-bold px-1.5 py-0.5 hover:bg-brand-500/20 rounded text-label-sm transition-colors focus:outline-none"
                       >
                         +
                       </button>
@@ -81,7 +81,7 @@ export function PopularItemsSection({ items }: PopularItemsSectionProps) {
                     <button
                       type="button"
                       onClick={() => addItem(item)}
-                      className="w-full h-8 rounded-lg bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold text-xs active:scale-95 transition-all focus:outline-none"
+                      className="w-full h-8 rounded-lg bg-brand-500 hover:bg-brand-400 text-brand-950 font-bold text-label-xs active:scale-95 transition-all focus:outline-none"
                     >
                       Add
                     </button>

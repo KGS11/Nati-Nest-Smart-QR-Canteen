@@ -109,13 +109,17 @@ export class MenuService {
       }
 
       const imageUrl = image ? await uploadImageBuffer(image.buffer) : item.imageUrl;
+      const updateData: Prisma.MenuItemUpdateInput = {};
+      if (data.name !== undefined) updateData.name = data.name.trim();
+      if (data.description !== undefined) updateData.description = data.description;
+      if (data.price !== undefined) updateData.price = data.price;
+      if (data.categoryId !== undefined) updateData.category = { connect: { id: data.categoryId } };
+      if (data.isAvailable !== undefined) updateData.isAvailable = data.isAvailable;
+      updateData.imageUrl = imageUrl;
+
       const updatedItem = await prisma.menuItem.update({
         where: { id },
-        data: {
-          ...data,
-          name: data.name?.trim(),
-          imageUrl,
-        },
+        data: updateData,
         include: { category: true },
       });
 

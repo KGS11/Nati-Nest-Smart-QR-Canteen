@@ -11,17 +11,17 @@ export function Input({ label, error, className, id, ...props }: InputProps) {
 
   return (
     <label className="block space-y-2 text-left">
-      {label ? <span className="text-sm font-medium text-zinc-200">{label}</span> : null}
+      {label ? <span className="text-sm font-medium text-text-primary">{label}</span> : null}
       <input
         id={inputId}
         className={clsx(
-          "h-11 w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 text-sm text-zinc-100 outline-none transition-all duration-200 placeholder:text-zinc-600 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20",
-          error && "border-red-500 focus:border-red-400 focus:ring-red-400/20",
+          "h-11 w-full rounded-lg border border-border-primary bg-surface-base px-3 text-sm text-text-primary outline-none transition-all duration-200 placeholder:text-text-muted focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20",
+          error && "border-semantic_error-500 focus:border-semantic_error-400 focus:ring-semantic_error-400/20",
           className,
         )}
         {...props}
       />
-      {error ? <span className="text-xs text-red-400">{error}</span> : null}
+      {error ? <span className="text-xs text-semantic_error-400">{error}</span> : null}
     </label>
   );
 }

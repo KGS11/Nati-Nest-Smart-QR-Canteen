@@ -47,10 +47,10 @@ export default function ScanPage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 p-6 text-center">
-        <div className="max-w-md rounded-lg border border-red-500/30 bg-red-950/40 p-4">
-          <h2 className="mb-2 text-xl font-semibold text-red-400">Scan Failed</h2>
-          <p className="mb-4 text-sm text-zinc-400">{error}</p>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-surface-base p-6 text-center">
+        <div className="max-w-md rounded-lg border border-semantic_error-500/30 bg-semantic_error-500/10 p-4">
+          <h2 className="mb-2 text-xl font-semibold text-semantic_error-400">Scan Failed</h2>
+          <p className="mb-4 text-sm text-text-secondary">{error}</p>
           <Button onClick={() => router.replace("/")}>Go Back</Button>
         </div>
       </div>
@@ -58,7 +58,7 @@ export default function ScanPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-surface-base">
       <Loader label="Opening Nati Nest canteen dashboard..." />
     </div>
   );

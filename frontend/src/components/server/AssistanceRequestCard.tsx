@@ -81,16 +81,16 @@ export default function AssistanceRequestCard({
       case 'BILL':
         return {
           icon: '💰',
-          accent: 'text-amber-400',
-          badgeBg: 'bg-amber-500/10 border-amber-500/20 text-amber-400',
+          accent: 'text-accent-400',
+          badgeBg: 'bg-accent-500/10 border-accent-500/20 text-accent-400',
           label: 'Payment Assistance Required'
         }
       case 'GENERAL':
       default:
         return {
           icon: '🔔',
-          accent: 'text-zinc-400',
-          badgeBg: 'bg-zinc-500/10 border-zinc-500/20 text-zinc-400',
+          accent: 'text-text-secondary',
+          badgeBg: 'bg-surface-overlay/60 border-border-primary text-text-secondary',
           label: 'Assistance Needed'
         }
     }
@@ -102,9 +102,9 @@ export default function AssistanceRequestCard({
   return (
     <div
       className={cn(
-        "bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col justify-between min-h-[120px] transition-all duration-300",
-        isBill && "bg-amber-500/5 border-amber-500/30",
-        isNew && "ring-2 ring-amber-500/40 animate-pulse"
+        "bg-surface-raised border border-border-primary rounded-2xl p-4 flex flex-col justify-between min-h-[120px] transition-all duration-300",
+        isBill && "bg-accent-500/5 border-accent-500/30",
+        isNew && "ring-2 ring-accent-500/40 animate-pulse"
       )}
     >
       {/* Top row */}
@@ -124,11 +124,11 @@ export default function AssistanceRequestCard({
 
           <div className="flex items-center gap-2">
             {isBill && (
-              <span className="bg-amber-500 text-zinc-950 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0">
+              <span className="bg-accent-500 text-surface-base text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0">
                 Priority
               </span>
             )}
-            <span className="text-[10px] text-zinc-500 font-medium whitespace-nowrap">
+            <span className="text-[10px] text-text-tertiary font-medium whitespace-nowrap">
               {elapsed}
             </span>
           </div>
@@ -136,7 +136,7 @@ export default function AssistanceRequestCard({
 
         {/* Table Number */}
         <div className="mb-4">
-          <span className="text-2xl font-bold text-zinc-100">
+          <span className="text-2xl font-bold text-text-primary">
             Table {request.tableNumber}
           </span>
         </div>
@@ -146,13 +146,13 @@ export default function AssistanceRequestCard({
       <div className="w-full">
         {isBill ? (
           <div className="flex flex-col gap-2 w-full mt-1">
-            <span className="text-xs text-amber-400 font-medium mb-1">Customer is viewing the bill.</span>
+            <span className="text-xs text-accent-400 font-medium mb-1">Customer is viewing the bill.</span>
             <div className="flex gap-2 w-full">
               {onViewBill && (
                 <button
                   type="button"
                   onClick={() => onViewBill(request.sessionId)}
-                  className="bg-zinc-800 text-amber-400 hover:bg-zinc-700 min-h-[48px] px-4 rounded-xl font-bold transition-all active:scale-[0.98] border-0 text-sm whitespace-nowrap"
+                  className="bg-surface-overlay text-accent-400 hover:bg-surface-overlay/80 min-h-[48px] px-4 rounded-xl font-bold transition-all active:scale-[0.98] border-0 text-sm whitespace-nowrap"
                 >
                   View Bill
                 </button>
@@ -161,7 +161,7 @@ export default function AssistanceRequestCard({
                 type="button"
                 onClick={handleResolve}
                 disabled={isResolving}
-                className="bg-amber-500 text-zinc-950 hover:bg-amber-400 min-h-[48px] flex-1 rounded-xl font-bold border-0 text-sm active:scale-[0.98]"
+                className="bg-accent-500 text-surface-base hover:bg-accent-400 min-h-[48px] flex-1 rounded-xl font-bold border-0 text-sm active:scale-[0.98]"
               >
                 {isResolving ? <Loader /> : "Go to Customer ✓"}
               </Button>
@@ -172,7 +172,7 @@ export default function AssistanceRequestCard({
             type="button"
             onClick={handleResolve}
             disabled={isResolving}
-            className="bg-green-500 hover:bg-green-400 text-zinc-950 min-h-[48px] w-full rounded-xl font-bold flex items-center justify-center gap-2 border-0 text-sm active:scale-[0.98] transition-all"
+            className="bg-semantic_success-500 hover:bg-semantic_success-400 text-surface-base min-h-[48px] w-full rounded-xl font-bold flex items-center justify-center gap-2 border-0 text-sm active:scale-[0.98] transition-all"
           >
             {isResolving ? (
               <Loader />

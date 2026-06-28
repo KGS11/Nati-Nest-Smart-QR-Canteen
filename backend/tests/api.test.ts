@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import request from "supertest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Role, SessionStatus } from "@prisma/client";
+import { sessionSignOptions, staffSignOptions } from "../src/utils/jwt.utils";
 
 const mockPrisma = {
   user: {
@@ -121,20 +122,24 @@ vi.mock("../src/services/daily-menu.service", () => ({ dailyMenuService }));
 const { app } = await import("../src/index");
 
 const adminToken = jwt.sign(
-  { userId: "admin-id", role: Role.ADMIN, name: "Admin" },
+  { userId: "admin-id", role: Role.ADMIN },
   process.env.JWT_SECRET!,
+  staffSignOptions("15m"),
 );
 const kitchenToken = jwt.sign(
-  { userId: "kitchen-id", role: Role.KITCHEN, name: "Kitchen" },
+  { userId: "kitchen-id", role: Role.KITCHEN },
   process.env.JWT_SECRET!,
+  staffSignOptions("15m"),
 );
 const serverToken = jwt.sign(
-  { userId: "server-id", role: Role.SERVER, name: "Server" },
+  { userId: "server-id", role: Role.SERVER },
   process.env.JWT_SECRET!,
+  staffSignOptions("15m"),
 );
 const sessionToken = jwt.sign(
   { sessionId: "session-id", tableId: "table-id", tableNumber: "T1" },
-  process.env.JWT_SECRET!,
+  process.env.SESSION_JWT_SECRET!,
+  sessionSignOptions("12h"),
 );
 
 const auth = (token: string) => `Bearer ${token}`;

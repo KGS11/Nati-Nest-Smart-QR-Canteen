@@ -27,6 +27,21 @@ export const useAuthStore = create<AuthState>()(
     {
       name: "nati-nest-staff-auth",
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<AuthState> | undefined;
+
+        return {
+          ...currentState,
+          user: persisted?.user ?? null,
+          isAuthenticated: Boolean(persisted?.isAuthenticated && persisted?.user),
+          token: null,
+          refreshToken: null,
+        };
+      },
     },
   ),
 );

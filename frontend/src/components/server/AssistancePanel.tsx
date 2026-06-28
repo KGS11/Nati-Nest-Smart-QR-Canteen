@@ -89,14 +89,14 @@ export default function AssistancePanel({
   }, [])
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950">
+    <div className="flex flex-col h-full bg-surface-base">
       {/* Panel Header */}
-      <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/40 shrink-0">
-        <h2 className="font-semibold text-zinc-100 text-base">
+      <div className="flex items-center justify-between p-4 border-b border-border-primary bg-surface-raised/40 shrink-0">
+        <h2 className="font-semibold text-text-primary text-base">
           Priority Feed
         </h2>
         <span
-          className={`bg-amber-500/20 text-amber-400 text-xs font-bold px-2.5 py-0.5 rounded-full ${
+          className={`bg-accent-500/20 text-accent-400 text-xs font-bold px-2.5 py-0.5 rounded-full ${
             hasItems ? 'animate-pulse' : ''
           }`}
         >
@@ -108,7 +108,7 @@ export default function AssistancePanel({
       {!hasItems ? (
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
           <span className="text-5xl mb-2 select-none" role="img" aria-label="bell">🔔</span>
-          <p className="text-sm font-medium text-zinc-500">No pending alerts</p>
+          <p className="text-sm font-medium text-text-tertiary">No pending alerts</p>
         </div>
       ) : (
         <div className="space-y-6 overflow-y-auto flex-1 p-3 scrollbar-thin">
@@ -116,7 +116,7 @@ export default function AssistancePanel({
           {/* Section: BILL & PAYMENT (Priority 1 & 2) */}
           {(billRequests.length > 0 || paymentsList.length > 0) && (
             <div className="space-y-3">
-              <div className="text-xs font-bold text-amber-400 uppercase tracking-wider px-1 flex items-center gap-1.5 border-b border-zinc-800/60 pb-1">
+              <div className="text-xs font-bold text-accent-400 uppercase tracking-wider px-1 flex items-center gap-1.5 border-b border-border-primary/60 pb-1">
                 <span>🧾</span> Bill & Payment Verification
               </div>
               <div className="space-y-3">
@@ -134,7 +134,7 @@ export default function AssistancePanel({
                 {paymentsList.map((payment) => (
                   <div
                     key={payment.id}
-                    className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 flex flex-col justify-between min-h-[120px] transition-all duration-300"
+                    className="bg-surface-raised border border-border-primary rounded-2xl p-4 flex flex-col justify-between min-h-[120px] transition-all duration-300"
                   >
                     <div>
                       <div className="flex items-center justify-between mb-3">
@@ -147,12 +147,12 @@ export default function AssistancePanel({
                             {payment.paymentMethod}
                           </span>
                         </div>
-                        <span className="text-[10px] text-zinc-500 font-medium whitespace-nowrap">
+                        <span className="text-[10px] text-text-tertiary font-medium whitespace-nowrap">
                           {getElapsedTime(payment.createdAt)}
                         </span>
                       </div>
                       <div className="mb-4 flex items-baseline justify-between">
-                        <span className="text-2xl font-bold text-zinc-100">
+                        <span className="text-2xl font-bold text-text-primary">
                           Table {payment.tableNumber}
                         </span>
                         <span className="text-lg font-bold text-emerald-400">
@@ -164,7 +164,7 @@ export default function AssistancePanel({
                       <button
                         type="button"
                         onClick={() => onVerifyPayment?.(payment.id, payment.tableNumber)}
-                        className="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 min-h-[48px] w-full rounded-xl font-bold flex items-center justify-center gap-2 border-0 text-sm active:scale-[0.98] transition-all"
+                        className="bg-semantic_success-500 hover:bg-semantic_success-400 text-surface-base min-h-[48px] w-full rounded-xl font-bold flex items-center justify-center gap-2 border-0 text-sm active:scale-[0.98] transition-all"
                       >
                         Verify Payment
                       </button>
@@ -178,7 +178,7 @@ export default function AssistancePanel({
           {/* Section: READY TO DELIVER (Priority 3) */}
           {ordersList.length > 0 && (
             <div className="space-y-3">
-              <div className="text-xs font-bold text-emerald-400 uppercase tracking-wider px-1 flex items-center gap-1.5 border-b border-zinc-800/60 pb-1">
+              <div className="text-xs font-bold text-semantic_success-400 uppercase tracking-wider px-1 flex items-center gap-1.5 border-b border-border-primary/60 pb-1">
                 <span>🍽️</span> Ready to Deliver
               </div>
               <div className="space-y-3">
@@ -199,7 +199,7 @@ export default function AssistancePanel({
           {/* Section: OTHER REQUESTS (Priority 4 & 5) */}
           {(waterRequests.length > 0 || plateRequests.length > 0 || generalRequests.length > 0) && (
             <div className="space-y-3">
-              <div className="text-xs font-bold text-zinc-400 uppercase tracking-wider px-1 flex items-center gap-1.5 border-b border-zinc-800/60 pb-1">
+              <div className="text-xs font-bold text-text-secondary uppercase tracking-wider px-1 flex items-center gap-1.5 border-b border-border-primary/60 pb-1">
                 <span>🔔</span> Other Requests
               </div>
               <div className="space-y-3">

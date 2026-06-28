@@ -28,7 +28,7 @@ export function SpecialInstructionsModal({
 
   const content = (
     <div className="flex flex-col">
-      <h3 className="text-lg font-bold text-zinc-100 mb-2">
+      <h3 className="text-lg font-bold text-text-primary mb-2">
         Add note for {itemName}
       </h3>
       <textarea
@@ -37,9 +37,9 @@ export function SpecialInstructionsModal({
         placeholder="e.g. no sugar, extra spicy, no onion..."
         rows={3}
         maxLength={200}
-        className="w-full bg-zinc-800 border border-zinc-700 rounded-xl p-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+        className="w-full bg-surface-overlay border border-border-secondary rounded-xl p-3 text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-500"
       />
-      <div className="text-right text-xs text-zinc-500 mt-1.5">
+      <div className="text-right text-xs text-text-tertiary mt-1.5">
         {text.length}/200
       </div>
 
@@ -54,8 +54,8 @@ export function SpecialInstructionsModal({
         </Button>
         <Button
           type="button"
-          variant="primary"
-          className="flex-1 bg-amber-500 text-zinc-950 hover:bg-amber-400"
+          variant="brand"
+          className="flex-1 bg-accent-500 text-surface-base hover:bg-accent-400"
           onClick={handleSave}
         >
           Save
@@ -75,7 +75,7 @@ export function SpecialInstructionsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-2xl">
+      <div className="relative z-10 w-full max-w-md bg-surface-raised border border-border-primary rounded-2xl p-6 shadow-2xl">
         {content}
       </div>
     </div>

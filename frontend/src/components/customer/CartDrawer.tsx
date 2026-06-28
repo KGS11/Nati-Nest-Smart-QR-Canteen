@@ -88,33 +88,33 @@ export function CartDrawer() {
       </div>
 
       {items.length > 0 && (
-        <div className="border-t border-zinc-800 pt-4 mt-4 bg-zinc-900 sticky bottom-0">
+        <div className="border-t border-border-default pt-4 mt-4 bg-surface-base sticky bottom-0">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-zinc-400 text-sm">Subtotal</span>
-            <span className="text-xl font-bold text-zinc-100">
+            <span className="text-text-tertiary text-label-sm">Subtotal</span>
+            <span className="text-display-sm font-bold text-text-primary">
               Rs {subtotal.toFixed(2)}
             </span>
           </div>
-          <p className="text-xs text-zinc-500 mb-4">
+          <p className="text-body-xs text-text-tertiary mb-4">
             Taxes and charges included
           </p>
 
           {confirming ? (
-            <div className="bg-zinc-800 border border-zinc-750 rounded-2xl p-4 mb-2 space-y-3">
-              <p className="text-zinc-100 font-semibold text-sm">Confirm your order?</p>
+            <div className="bg-surface-raised border border-border-default rounded-2xl p-4 mb-2 space-y-3">
+              <p className="text-text-primary font-semibold text-label-sm">Confirm your order?</p>
               <div className="flex gap-2">
                 <Button
                   type="button"
-                  variant="secondary"
-                  className="flex-1 min-h-[48px] text-zinc-100"
+                  variant="outline"
+                  className="flex-1 min-h-[48px]"
                   onClick={() => setConfirming(false)}
                 >
                   Cancel
                 </Button>
                 <Button
                   type="button"
-                  variant="primary"
-                  className="flex-1 min-h-[48px] bg-amber-500 text-zinc-950 hover:bg-amber-400"
+                  variant="brand"
+                  className="flex-1 min-h-[48px]"
                   onClick={handlePlaceOrder}
                   disabled={placing}
                 >
@@ -125,8 +125,8 @@ export function CartDrawer() {
           ) : (
             <Button
               type="button"
-              variant="primary"
-              className="w-full h-14 bg-amber-500 text-zinc-950 hover:bg-amber-400 font-semibold text-lg rounded-xl active:scale-95 transition-transform"
+              variant="brand"
+              className="w-full min-h-[56px] text-label-lg rounded-xl"
               onClick={() => setConfirming(true)}
             >
               Place Order - Rs {subtotal.toFixed(2)}
@@ -136,13 +136,13 @@ export function CartDrawer() {
           <div className="flex flex-col gap-2 mt-3">
             <button
               onClick={() => setIsOpen(false)}
-              className="w-full h-11 border border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 text-zinc-300 text-sm font-semibold rounded-xl active:scale-95 transition-transform py-2 focus:outline-none"
+              className="w-full h-11 border border-border-default hover:border-text-tertiary bg-surface-raised/50 text-text-secondary text-label-sm font-semibold rounded-xl active:scale-95 transition-all py-2 focus:outline-none"
             >
               Continue Shopping
             </button>
             <button
               onClick={handleClearCart}
-              className="text-xs text-zinc-500 hover:text-red-400 transition-colors py-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 rounded px-2 mx-auto block mt-1"
+              className="text-label-xs text-text-tertiary hover:text-semantic_error-400 transition-colors py-2 focus:outline-none focus-visible:ring-1 focus-visible:ring-brand-500 rounded px-2 mx-auto block mt-1"
             >
               Clear cart
             </button>

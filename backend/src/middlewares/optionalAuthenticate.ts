@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/db";
 import { AppError } from "../utils/AppError";
+import { getStaffJwtSecret, staffVerifyOptions } from "../utils/jwt.utils";
 
 type JwtPayload = {
   userId: string;
@@ -23,13 +24,8 @@ export const optionalAuthenticate = async (
       return next();
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
-
-    if (!jwtSecret) {
-      throw new AppError("JWT secret is not configured", 500);
-    }
-
-    const payload = jwt.verify(token, jwtSecret) as JwtPayload;
+    const jwtSecret = getStaffJwtSecret();
+    const payload = jwt.verify(token, jwtSecret, staffVerifyOptions) as JwtPayload;
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
       select: { id: true, role: true, name: true, isActive: true },

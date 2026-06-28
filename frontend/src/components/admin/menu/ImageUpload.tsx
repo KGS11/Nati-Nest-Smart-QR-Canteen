@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
+import { getValidImageUrl } from '@/utils/imageUrl'
 
 interface ImageUploadProps {
   currentImageUrl: string | null
@@ -87,11 +88,11 @@ export default function ImageUpload({
     onImageClear()
   }
 
-  const displayImage = previewUrl || currentImageUrl
+  const displayImage = previewUrl || getValidImageUrl(currentImageUrl)
 
   return (
     <div className="space-y-2 text-left">
-      <span className="text-sm font-medium text-zinc-200 block">
+      <span className="text-sm font-medium text-text-primary block">
         Item Image (Optional)
       </span>
 
@@ -104,7 +105,7 @@ export default function ImageUpload({
       />
 
       {displayImage ? (
-        <div className="relative rounded-xl overflow-hidden h-48 border border-zinc-800 bg-zinc-950 flex items-center justify-center">
+        <div className="relative rounded-xl overflow-hidden h-48 border border-border-primary bg-surface-base flex items-center justify-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={displayImage}
@@ -128,17 +129,17 @@ export default function ImageUpload({
           onDrop={handleDrop}
           className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors flex flex-col items-center justify-center min-h-[12rem] ${
             isDragging
-              ? 'border-amber-500 bg-amber-500/5'
-              : 'border-zinc-700 hover:border-amber-500/50 bg-zinc-950/20'
+              ? 'border-accent-500 bg-accent-500/5'
+              : 'border-border-secondary hover:border-accent-500/50 bg-surface-base/20'
           }`}
         >
           <span className="text-3xl mb-3 block" role="img" aria-label="camera">
             📸
           </span>
-          <span className="text-sm text-zinc-300 font-semibold">
+          <span className="text-sm text-text-primary font-semibold">
             Click or drag to upload
           </span>
-          <span className="text-xs text-zinc-500 mt-1.5 font-medium">
+          <span className="text-xs text-text-tertiary mt-1.5 font-medium">
             JPEG, PNG, WebP — max 5MB
           </span>
         </div>

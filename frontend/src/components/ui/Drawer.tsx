@@ -52,16 +52,16 @@ export function Drawer({ isOpen, onClose, children, title }: DrawerProps) {
       {/* Drawer Panel */}
       <div
         className={cn(
-          "relative z-10 h-full w-80 md:w-96 bg-zinc-900 border-l border-zinc-800 flex flex-col shadow-2xl transition-transform duration-300 ease-out",
+          "relative z-10 h-full w-80 md:w-96 bg-surface-raised border-l border-border-default flex flex-col shadow-2xl transition-transform duration-300 ease-out",
           visible ? "translate-x-0" : "translate-x-full"
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-          <h2 className="text-lg font-semibold text-zinc-100">{title || ""}</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-default">
+          <h2 className="text-lg font-semibold text-text-primary">{title || ""}</h2>
           <button
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-200 text-xl font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded p-1"
+            className="text-text-tertiary hover:text-text-secondary text-xl font-bold focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 rounded p-1"
             aria-label="Close drawer"
           >
             &times;
@@ -69,7 +69,7 @@ export function Drawer({ isOpen, onClose, children, title }: DrawerProps) {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 text-zinc-100">
+        <div className="flex-1 overflow-y-auto p-6 text-text-primary">
           {children}
         </div>
       </div>

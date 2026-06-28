@@ -108,27 +108,27 @@ export default function CustomerBillPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-surface">
+      <div className="flex min-h-screen items-center justify-center bg-surface-base">
         <Loader label="Preparing bill..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-surface px-margin-mobile py-lg">
+    <div className="min-h-screen bg-surface-base px-margin-mobile py-lg text-text-primary">
       <header className="mb-lg flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-container font-headline-sm font-bold text-on-primary-container">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-500/10 font-headline-sm font-bold text-accent-500">
             {tableNumber ?? bill?.tableNumber ?? "--"}
           </div>
           <div>
-            <p className="font-label-sm text-label-sm text-on-surface-variant">Nati Nest</p>
-            <h1 className="font-headline-md text-headline-md text-on-surface">Your Bill</h1>
+            <p className="font-label-sm text-label-sm text-text-secondary">Nati Nest</p>
+            <h1 className="font-headline-md text-headline-md text-text-primary">Your Bill</h1>
           </div>
         </div>
         <Link
           href="/customer/menu"
-          className="flex h-touch-min w-touch-min items-center justify-center rounded-full bg-surface-container text-primary"
+          className="flex h-touch-min w-touch-min items-center justify-center rounded-full bg-surface-overlay text-accent-500"
         >
           <MaterialIcon name="restaurant_menu" />
         </Link>
@@ -142,33 +142,33 @@ export default function CustomerBillPage() {
           </div>
         ) : null}
 
-        <section className="rounded-2xl bg-surface-container-lowest p-lg shadow-stitch">
+        <section className="rounded-2xl bg-surface-raised p-lg shadow-md border border-border-primary">
           <div className="flex items-start justify-between">
             <div>
-              <p className="font-label-md text-label-md text-on-surface-variant">Total Amount</p>
-              <h2 className="mt-xs font-display-lg-mobile text-display-lg-mobile font-bold text-primary">
+              <p className="font-label-md text-label-md text-text-secondary">Total Amount</p>
+              <h2 className="mt-xs font-display-lg-mobile text-display-lg-mobile font-bold text-accent-500">
                 Rs {bill?.totalAmount ?? 0}
               </h2>
             </div>
-            <span className="rounded-full bg-surface-container px-sm py-xs font-label-sm text-label-sm text-on-surface-variant">
+            <span className="rounded-full bg-surface-overlay px-sm py-xs font-label-sm text-label-sm text-text-secondary">
               {payment?.status ?? "Not requested"}
             </span>
           </div>
         </section>
 
-        <section className="rounded-2xl bg-surface-container-lowest p-lg shadow-stitch">
-          <h2 className="mb-md font-headline-sm text-headline-sm text-on-surface">Item Breakdown</h2>
+        <section className="rounded-2xl bg-surface-raised p-lg shadow-md border border-border-primary">
+          <h2 className="mb-md font-headline-sm text-headline-sm text-text-primary">Item Breakdown</h2>
           {bill?.itemBreakdown.length ? (
-            <div className="divide-y divide-outline-variant">
+            <div className="divide-y divide-border-primary">
               {bill.itemBreakdown.map((item) => (
                 <div key={item.name} className="flex items-center justify-between gap-md py-md">
                   <div className="min-w-0">
-                    <p className="truncate font-label-md text-label-md text-on-surface">{item.name}</p>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant">
+                    <p className="truncate font-label-md text-label-md text-text-primary">{item.name}</p>
+                    <p className="font-body-sm text-body-sm text-text-secondary">
                       {item.quantity} x Rs {item.unitPrice}
                     </p>
                   </div>
-                  <span className="font-headline-sm text-headline-sm text-primary">
+                  <span className="font-headline-sm text-headline-sm text-accent-500">
                     Rs {item.subtotal}
                   </span>
                 </div>
@@ -180,16 +180,16 @@ export default function CustomerBillPage() {
         </section>
 
         {paymentCompleted ? (
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center shadow-stitch animate-fade-in flex flex-col items-center justify-center">
+          <div className="bg-surface-raised border border-border-primary rounded-2xl p-8 text-center shadow-md animate-fade-in flex flex-col items-center justify-center">
             <div className="mb-4 text-4xl">✅</div>
-            <h3 className="text-2xl font-bold text-green-400">Payment Successful!</h3>
-            <p className="text-sm text-zinc-400 mt-2 mb-6">
+            <h3 className="text-2xl font-bold text-semantic_success-400">Payment Successful!</h3>
+            <p className="text-sm text-text-secondary mt-2 mb-6">
               Thank you for dining with us.
             </p>
             <button
               type="button"
               onClick={() => router.push("/customer/feedback")}
-              className="w-full h-12 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold rounded-xl active:scale-95 transition-all cursor-pointer border-0"
+              className="w-full h-12 bg-accent-500 hover:bg-accent-400 text-surface-base font-bold rounded-xl active:scale-95 transition-all cursor-pointer border-0"
             >
               Rate Your Experience
             </button>
@@ -199,7 +199,7 @@ export default function CustomerBillPage() {
                 clearSession();
                 router.push("/");
               }}
-              className="text-xs text-zinc-500 hover:text-zinc-300 mt-4 bg-transparent border-0 cursor-pointer"
+              className="text-xs text-text-tertiary hover:text-text-primary mt-4 bg-transparent border-0 cursor-pointer"
             >
               Skip &amp; Exit
             </button>

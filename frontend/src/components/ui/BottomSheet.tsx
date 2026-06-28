@@ -88,7 +88,7 @@ export function BottomSheet({
       <div
         ref={sheetRef}
         className={cn(
-          "relative z-10 w-full max-w-md bg-zinc-900 border-t border-zinc-800 rounded-t-3xl max-h-[90vh] overflow-y-auto shadow-2xl transition-transform duration-300 ease-out",
+          "relative z-10 w-full max-w-md bg-surface-raised border-t border-border-default rounded-t-3xl max-h-[90vh] overflow-y-auto shadow-2xl transition-transform duration-300 ease-out",
           visible ? "translate-y-0" : "translate-y-full"
         )}
         style={{
@@ -102,18 +102,18 @@ export function BottomSheet({
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <div className="w-10 h-1 bg-zinc-700 rounded-full mx-auto" />
+          <div className="w-10 h-1 bg-border-default rounded-full mx-auto" />
         </div>
 
         {/* Title */}
         {title && (
-          <div className="text-lg font-semibold text-zinc-100 px-6 pb-4 border-b border-zinc-800">
+          <div className="text-lg font-semibold text-text-primary px-6 pb-4 border-b border-border-default">
             {title}
           </div>
         )}
 
         {/* Content */}
-        <div className="px-4 mt-4 text-zinc-100">
+        <div className="px-4 mt-4 text-text-primary">
           {children}
         </div>
       </div>

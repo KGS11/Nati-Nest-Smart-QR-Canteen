@@ -15,10 +15,18 @@ const joinSessionSchema = z.object({
 const joinSession = async (socket: Socket, payload: JoinSessionPayload) => {
   try {
     const parsedPayload = joinSessionSchema.safeParse(payload);
+    const auth = socket.data.auth;
 
     if (!parsedPayload.success) {
       socket.emit("session:error", {
         message: "Invalid session.",
+      });
+      return;
+    }
+
+    if (!auth || auth.type !== "customer" || auth.sessionId !== parsedPayload.data.sessionId) {
+      socket.emit("session:error", {
+        message: "Access denied for this session.",
       });
       return;
     }

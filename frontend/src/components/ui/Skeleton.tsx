@@ -28,7 +28,7 @@ export function Skeleton({ variant = "text", count = 1, className }: SkeletonPro
       {items.map((_, index) => (
         <div
           key={index}
-          className={cn("bg-zinc-800 animate-pulse", getVariantStyles(), className)}
+          className={cn("bg-surface-raised animate-pulse shadow-sm", getVariantStyles(), className)}
         />
       ))}
     </>
@@ -37,7 +37,7 @@ export function Skeleton({ variant = "text", count = 1, className }: SkeletonPro
 
 export function MenuItemSkeleton() {
   return (
-    <div className="flex items-center gap-4 rounded-2xl bg-zinc-900/50 p-3 border border-zinc-800">
+    <div className="flex items-center gap-4 rounded-2xl bg-surface-base p-3 border border-border-default shadow-sm">
       <Skeleton variant="circle" className="h-20 w-20 shrink-0" />
       <div className="flex-1 space-y-2 py-1">
         <Skeleton variant="text" className="h-5 w-1/3" />
@@ -53,7 +53,7 @@ export function MenuItemSkeleton() {
 
 export function OrderCardSkeleton() {
   return (
-    <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-4 space-y-3">
+    <div className="rounded-2xl bg-surface-base border border-border-default p-4 space-y-3 shadow-sm">
       <div className="flex items-center justify-between">
         <Skeleton variant="text" className="h-5 w-1/4" />
         <Skeleton variant="text" className="h-5 w-16" />
@@ -72,7 +72,7 @@ export function OrderCardSkeleton() {
 
 export function StatCardSkeleton() {
   return (
-    <div className="rounded-2xl bg-zinc-900 border border-zinc-800 p-5 space-y-2">
+    <div className="rounded-2xl bg-surface-base border border-border-default p-5 space-y-2 shadow-sm">
       <Skeleton variant="text" className="h-4 w-1/3" />
       <Skeleton variant="text" className="h-8 w-2/3" />
     </div>

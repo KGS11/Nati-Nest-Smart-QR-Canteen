@@ -2,6 +2,7 @@ import { Role, SessionStatus } from "@prisma/client";
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { prisma } from "../config/db";
+import { getStaffJwtSecret, staffVerifyOptions } from "../utils/jwt.utils";
 import { verifySessionJWT } from "../utils/session.utils";
 
 type JwtPayload = {
@@ -26,19 +27,12 @@ export const authenticate = async (
       });
     }
 
-    const jwtSecret = process.env.JWT_SECRET;
-
-    if (!jwtSecret) {
-      return response.status(500).json({
-        success: false,
-        message: "JWT secret is not configured",
-      });
-    }
+    const jwtSecret = getStaffJwtSecret();
 
     let payload: JwtPayload;
 
     try {
-      payload = jwt.verify(token, jwtSecret) as JwtPayload;
+      payload = jwt.verify(token, jwtSecret, staffVerifyOptions) as JwtPayload;
     } catch (_error) {
       return response.status(401).json({
         success: false,

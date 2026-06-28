@@ -1,47 +1,51 @@
-# Nati Nest QR Canteen Documentation Index
+# Nati Nest Documentation Index
 
-Welcome to the official documentation package for the **Nati Nest Smart QR Canteen Management System**. This documentation is compiled directly from the production source code and database implementation to serve as the single source of truth for the restaurant owner, administrators, and developers.
+This folder contains source-code-backed documentation for the Nati Nest Smart QR Canteen Management System.
 
-Below is the directory of available manuals and technical specifications:
+## Start Here
 
----
+| Document | Audience | Purpose |
+| --- | --- | --- |
+| [../README.md](../README.md) | Everyone | Project overview and quick start |
+| [INSTALLATION.md](INSTALLATION.md) | Developers/operators | Local and Docker setup |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | Operators/devops | Production deployment flow |
+| [HANDOVER_CHECKLIST.md](HANDOVER_CHECKLIST.md) | Owner/release manager | Final launch readiness checklist |
 
-## 📋 Owner Handbook & Status
+## Technical Reference
 
-*   **[Owner Handbook](file:///c:/Users/Kendagannaswamy/Desktop/MY_Project_KGS/docs/owner-handbook.md)**
-    *   *Audience*: Restaurant Owner / General Manager.
-    *   *Contents*: Business benefits, operational flows (customer, kitchen, server, admin), revenue tracking, staff monitoring, and recommendations.
-*   **[Project Status Report](file:///c:/Users/Kendagannaswamy/Desktop/MY_Project_KGS/docs/project-status-report.md)**
-    *   *Audience*: Owners and Auditors.
-    *   *Contents*: Detailed feature audit (Complete, Partial, Missing) and system verification health status.
+| Document | Purpose |
+| --- | --- |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | System architecture, runtime flows, Socket.IO model |
+| [API_REFERENCE.md](API_REFERENCE.md) | REST endpoint inventory |
+| [DATABASE.md](DATABASE.md) | Prisma model and data relationship reference |
+| [ENVIRONMENT.md](ENVIRONMENT.md) | Environment variables and validation |
+| [SECURITY.md](SECURITY.md) | Auth, authorization, rate limits, upload and proxy security |
+| [PRODUCTION_CONFIGURATION.md](PRODUCTION_CONFIGURATION.md) | Docker, Nginx, monitoring, logging, backup notes |
+| [TESTING.md](TESTING.md) | Typecheck, build, test, coverage, E2E commands |
+| [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Development workflow and code ownership map |
+| [RELEASE_PROCESS.md](RELEASE_PROCESS.md) | Release, verification, and rollback process |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution expectations |
+| [CHANGELOG.md](CHANGELOG.md) | Release history template |
 
----
+## Operations and Handover
 
-## 🛠️ Operational Guides (User Manuals)
+| Document | Purpose |
+| --- | --- |
+| [OPERATIONS.md](OPERATIONS.md) | Daily operational runbook |
+| [OWNER_GUIDE.md](OWNER_GUIDE.md) | Owner-friendly system guide |
+| [ADMINISTRATOR_GUIDE.md](ADMINISTRATOR_GUIDE.md) | Admin dashboard workflows |
+| [BACKUP_RECOVERY.md](BACKUP_RECOVERY.md) | Backup and restore process |
+| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Common problems and fixes |
+| [MAINTENANCE.md](MAINTENANCE.md) | Recurring maintenance schedule |
 
-*   **[Customer Guide](file:///c:/Users/Kendagannaswamy/Desktop/MY_Project_KGS/docs/customer-guide.md)**: Scan QR, place orders, track live status, pay via Cash/UPI, and submit feedback.
-*   **[Kitchen Guide](file:///c:/Users/Kendagannaswamy/Desktop/MY_Project_KGS/docs/kitchen-guide.md)**: Receive live orders, claim, prepare, complete, reject items, and manage today's menu.
-*   **[Waiter Guide](file:///c:/Users/Kendagannaswamy/Desktop/MY_Project_KGS/docs/waiter-guide.md)**: Delivery tracking, cash/UPI payment confirmations, tips reports, and general assistance.
-*   **[Admin Guide](file:///c:/Users/Kendagannaswamy/Desktop/MY_Project_KGS/docs/admin-guide.md)**: Analytics dashboard, menu management, reports, Excel/CSV exports, staff registration, and configuration settings.
+## Existing Role Guides
 
----
+The repository also includes focused guides for specific roles:
 
-## ⚙️ Technical Architecture & Operations
-
-*   **[System Architecture](file:///c:/Users/Kendagannaswamy/Desktop/MY_Project_KGS/docs/system-architecture.md)**
-    *   *Audience*: Lead Engineers & Architects.
-    *   *Contents*: Tech stack, database model relations, backend controller/service architecture, Socket.IO rooms, and sequence flows.
-*   **[Deployment Guide](file:///c:/Users/Kendagannaswamy/Desktop/MY_Project_KGS/docs/deployment-guide.md)**
-    *   *Audience*: Devops & System Administrators.
-    *   *Contents*: Installation, environment variables, PostgreSQL seeding, Docker setup, Next.js build steps, and SSL setup.
-*   **[Backup & Recovery Guide](file:///c:/Users/Kendagannaswamy/Desktop/MY_Project_KGS/docs/backup-guide.md)**
-    *   *Audience*: Database Administrators & IT Staff.
-    *   *Contents*: Backup scheduling, database restore operations, and disaster recovery checklists.
-
----
-
-## 🚀 Product Backlog & Roadmap
-
-*   **[Future Roadmap](file:///c:/Users/Kendagannaswamy/Desktop/MY_Project_KGS/docs/future-roadmap.md)**
-    *   *Audience*: Product owners and engineers.
-    *   *Contents*: P0-P3 improvements (e.g. GST billing, inventory integration, SMS notifications).
+- [customer-guide.md](customer-guide.md)
+- [kitchen-guide.md](kitchen-guide.md)
+- [waiter-guide.md](waiter-guide.md)
+- [admin-guide.md](admin-guide.md)
+- [owner-handbook.md](owner-handbook.md)
+- [admin-credentials.md](admin-credentials.md)
+- [upi-configuration.md](upi-configuration.md)

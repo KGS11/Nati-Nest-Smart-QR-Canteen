@@ -4,6 +4,13 @@ import { z } from "zod";
 import { staffService } from "../services/staff.service";
 
 const roleSchema = z.enum([Role.ADMIN, Role.KITCHEN, Role.SERVER] as const);
+const passwordSchema = z
+  .string()
+  .min(8)
+  .max(100)
+  .regex(/[A-Z]/, "Password must include at least one uppercase letter")
+  .regex(/[0-9]/, "Password must include at least one number")
+  .regex(/[^A-Za-z0-9]/, "Password must include at least one special character");
 
 const listQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -19,7 +26,7 @@ const listQuerySchema = z.object({
 const createStaffSchema = z.object({
   name: z.string().trim().min(2).max(100),
   phone: z.string().trim().min(6).max(20),
-  password: z.string().min(6).max(100),
+  password: passwordSchema,
   role: roleSchema,
   isActive: z.boolean().optional(),
 });
@@ -27,7 +34,7 @@ const createStaffSchema = z.object({
 const updateStaffSchema = z.object({
   name: z.string().trim().min(2).max(100).optional(),
   phone: z.string().trim().min(6).max(20).optional(),
-  password: z.string().min(6).max(100).optional(),
+  password: passwordSchema.optional(),
   role: roleSchema.optional(),
   isActive: z.boolean().optional(),
 });

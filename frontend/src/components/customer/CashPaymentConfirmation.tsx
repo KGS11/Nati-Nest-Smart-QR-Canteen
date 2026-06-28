@@ -44,10 +44,10 @@ export function CashPaymentConfirmation({
   if (success) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-8 px-4 animate-fade-in">
-        <div className="mb-4 rounded-full bg-green-500/10 px-5 py-3 text-2xl font-bold text-green-400">Sent</div>
-        <h3 className="text-xl font-bold text-zinc-100">Waiter has been notified!</h3>
-        <p className="text-sm text-zinc-400 mt-2">They will be at your table shortly.</p>
-        <p className="text-lg font-semibold text-amber-400 mt-4">
+        <div className="mb-4 rounded-full bg-semantic_success-500/10 px-5 py-3 text-2xl font-bold text-semantic_success-400">Sent</div>
+        <h3 className="text-xl font-bold text-text-primary">Waiter has been notified!</h3>
+        <p className="text-sm text-text-secondary mt-2">They will be at your table shortly.</p>
+        <p className="text-lg font-semibold text-accent-400 mt-4">
           Your bill total: Rs {totalAmount.toFixed(2)}
         </p>
       </div>
@@ -55,13 +55,13 @@ export function CashPaymentConfirmation({
   }
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col items-center">
-      <span className="text-4xl text-center mb-4 font-bold text-amber-400 select-none">Rs</span>
-      <h3 className="text-xl font-bold text-zinc-100 text-center">Cash Payment</h3>
-      <p className="text-3xl font-bold text-amber-400 text-center mt-2">
+    <div className="bg-surface-raised border border-border-primary rounded-2xl p-6 flex flex-col items-center">
+      <span className="text-4xl text-center mb-4 font-bold text-accent-400 select-none">Rs</span>
+      <h3 className="text-xl font-bold text-text-primary text-center">Cash Payment</h3>
+      <p className="text-3xl font-bold text-accent-400 text-center mt-2">
         Rs {totalAmount.toFixed(2)}
       </p>
-      <p className="text-sm text-zinc-400 text-center mt-3 max-w-xs leading-relaxed">
+      <p className="text-sm text-text-secondary text-center mt-3 max-w-xs leading-relaxed">
         Tap the button below to notify your waiter. They will come to collect your payment.
       </p>
 
@@ -73,10 +73,10 @@ export function CashPaymentConfirmation({
 
       <Button
         type="button"
-        variant="primary"
+        variant="brand"
         disabled={isRequesting}
         onClick={handleNotify}
-        className="h-14 w-full bg-amber-500 text-zinc-950 hover:bg-amber-400 font-semibold text-base mt-8 rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+        className="h-14 w-full bg-accent-500 text-surface-base hover:bg-accent-400 font-semibold text-base mt-8 rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2"
       >
         {isRequesting ? <Loader label="" /> : "Notify Waiter"}
       </Button>
@@ -85,7 +85,7 @@ export function CashPaymentConfirmation({
         type="button"
         onClick={onBack}
         disabled={isRequesting}
-        className="text-sm text-zinc-500 hover:text-zinc-300 font-medium mt-4 focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 rounded px-2 py-1"
+        className="text-sm text-text-tertiary hover:text-text-primary font-medium mt-4 focus:outline-none focus-visible:ring-1 focus-visible:ring-accent-500 rounded px-2 py-1"
       >
          Change payment method
       </button>

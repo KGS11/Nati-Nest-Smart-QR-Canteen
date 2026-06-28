@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ClipboardList, CreditCard, Utensils } from "lucide-react";
-import clsx from "clsx";
+import { cn } from "@/utils/cn";
 
 const items = [
   { href: "/customer/menu", label: "Menu", Icon: Utensils },
@@ -15,20 +15,25 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky bottom-0 grid grid-cols-3 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur">
-      {items.map(({ href, label, Icon }) => (
-        <Link
-          key={href}
-          href={href}
-          className={clsx(
-            "flex min-h-16 flex-col items-center justify-center gap-1 text-xs transition-all duration-200",
-            pathname === href ? "text-amber-400" : "text-zinc-500 hover:text-zinc-200",
-          )}
-        >
-          <Icon className="h-5 w-5" />
-          {label}
-        </Link>
-      ))}
+    <nav className="sticky bottom-0 grid grid-cols-3 border-t border-border-default bg-surface-base/95 backdrop-blur-md pb-safe">
+      {items.map(({ href, label, Icon }) => {
+        const isActive = pathname === href || pathname.startsWith(href + "/");
+        return (
+          <Link
+            key={href}
+            href={href}
+            className={cn(
+              "flex min-h-[64px] flex-col items-center justify-center gap-1 transition-all duration-200",
+              isActive
+                ? "text-brand-500 font-semibold"
+                : "text-text-tertiary hover:text-text-secondary"
+            )}
+          >
+            <Icon className={cn("h-5 w-5", isActive && "fill-brand-500/10")} />
+            <span className="text-label-sm">{label}</span>
+          </Link>
+        );
+      })}
     </nav>
   );
 }

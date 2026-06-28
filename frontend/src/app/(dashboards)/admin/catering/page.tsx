@@ -25,11 +25,11 @@ interface CateringListPayload {
 
 const statuses: FilterStatus[] = ["ALL", "NEW", "CONTACTED", "QUOTED", "WON", "LOST"];
 
-const badgeVariant = (status: CateringLeadStatus) => {
+const badgeVariant = (status: CateringLeadStatus): "warning" | "brand" | "success" | "destructive" => {
   if (status === "NEW") return "warning";
-  if (status === "CONTACTED" || status === "QUOTED") return "info";
+  if (status === "CONTACTED" || status === "QUOTED") return "brand";
   if (status === "WON") return "success";
-  return "danger";
+  return "destructive";
 };
 
 const relativeTime = (dateString: string) => {
@@ -106,7 +106,7 @@ export default function AdminCateringPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 text-zinc-100">
+    <div className="mx-auto max-w-7xl space-y-6 text-text-primary">
       <PageHeader
         title="Catering Enquiries"
         subtitle={`${pagination?.total ?? 0} total enquiries`}
@@ -116,7 +116,7 @@ export default function AdminCateringPage() {
         }}
       />
 
-      <div className="flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4 lg:flex-row lg:items-center">
+      <div className="flex flex-col gap-3 rounded-xl border border-border-default bg-surface-raised p-4 lg:flex-row lg:items-center">
         <div className="flex flex-wrap gap-2">
           {statuses.map((status) => (
             <button
@@ -126,8 +126,8 @@ export default function AdminCateringPage() {
                 setFilter(status);
                 setPage(1);
               }}
-              className={`min-h-11 rounded-lg px-4 text-sm font-bold ${
-                filter === status ? "bg-amber-500 text-zinc-950" : "bg-zinc-800 text-zinc-300"
+              className={`min-h-11 rounded-lg px-4 text-label-sm font-bold transition-all ${
+                filter === status ? "bg-brand-500 text-brand-950" : "bg-surface-overlay text-text-secondary hover:text-text-primary"
               }`}
             >
               {status === "ALL" ? "All" : status}
@@ -138,17 +138,17 @@ export default function AdminCateringPage() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search by name or phone..."
-          className="min-h-11 flex-1 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm text-zinc-100 outline-none focus:border-amber-500"
+          className="min-h-11 flex-1 rounded-xl border border-border-default bg-surface-base px-4 text-label-sm text-text-primary placeholder-text-tertiary outline-none focus:border-brand-500"
         />
       </div>
 
       {exportError ? (
-        <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+        <div role="alert" className="rounded-xl border border-semantic_error-500/30 bg-semantic_error-500/10 p-4 text-body-sm text-semantic_error-200">
           {exportError}
         </div>
       ) : null}
       {error ? (
-        <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-200">
+        <div role="alert" className="rounded-xl border border-semantic_error-500/30 bg-semantic_error-500/10 p-4 text-body-sm text-semantic_error-200">
           {error}
         </div>
       ) : null}
@@ -156,30 +156,30 @@ export default function AdminCateringPage() {
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
-            <div key={index} className="h-44 animate-pulse rounded-xl border border-zinc-800 bg-zinc-900" />
+            <div key={index} className="h-44 animate-pulse rounded-xl border border-border-default bg-surface-raised" />
           ))}
         </div>
       ) : !items.length ? (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-8 text-center">
-          <p className="text-lg font-bold text-zinc-100">No enquiries yet</p>
-          <p className="mt-2 text-sm text-zinc-400">Catering enquiries will appear here.</p>
+        <div className="rounded-2xl border border-border-default bg-surface-raised p-8 text-center">
+          <p className="text-display-xs font-bold text-text-primary">No enquiries yet</p>
+          <p className="mt-2 text-body-sm text-text-tertiary">Catering enquiries will appear here.</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((lead) => (
-            <article key={lead.id} className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+            <article key={lead.id} className="rounded-xl border border-border-default bg-surface-raised p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h2 className="truncate text-base font-bold text-zinc-100">{lead.name}</h2>
-                  <p className="mt-1 text-sm text-zinc-400">{lead.phone}</p>
+                  <h2 className="truncate text-display-xs font-bold text-text-primary">{lead.name}</h2>
+                  <p className="mt-1 text-body-sm text-text-tertiary">{lead.phone}</p>
                 </div>
-                <Badge variant={badgeVariant(lead.status)} size="sm">{lead.status}</Badge>
+                <Badge variant={badgeVariant(lead.status)}>{lead.status}</Badge>
               </div>
-              <div className="mt-4 space-y-2 text-sm text-zinc-300">
+              <div className="mt-4 space-y-2 text-body-sm text-text-secondary">
                 <p>{new Date(lead.eventDate).toLocaleDateString()} - {lead.guestCount} guests</p>
                 <p>{lead.eventType} - {lead.location}</p>
-                {lead.notes ? <p className="line-clamp-2 text-xs text-zinc-500">{lead.notes}</p> : null}
-                <p className="text-xs text-zinc-600">Received {relativeTime(lead.createdAt)}</p>
+                {lead.notes ? <p className="line-clamp-2 text-body-xs text-text-tertiary">{lead.notes}</p> : null}
+                <p className="text-body-xs text-text-tertiary">Received {relativeTime(lead.createdAt)}</p>
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {lead.status === "NEW" ? (
@@ -187,7 +187,7 @@ export default function AdminCateringPage() {
                     type="button"
                     disabled={updatingId === lead.id}
                     onClick={() => void updateStatus(lead, "CONTACTED")}
-                    className="min-h-10 border border-zinc-700 bg-transparent text-zinc-100"
+                    className="min-h-10 border border-border-strong bg-transparent text-text-primary hover:bg-surface-overlay"
                   >
                     Mark Contacted
                   </Button>
@@ -197,7 +197,7 @@ export default function AdminCateringPage() {
                     type="button"
                     disabled={updatingId === lead.id}
                     onClick={() => void updateStatus(lead, "WON")}
-                    className="min-h-10 border border-zinc-700 bg-transparent text-zinc-100"
+                    className="min-h-10 border border-border-strong bg-transparent text-text-primary hover:bg-surface-overlay"
                   >
                     Mark Closed
                   </Button>

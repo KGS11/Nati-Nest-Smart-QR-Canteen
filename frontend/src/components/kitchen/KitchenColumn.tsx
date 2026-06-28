@@ -17,9 +17,9 @@ interface KitchenColumnProps {
 }
 
 const badgeClass = {
-  amber: "bg-amber-500/20 text-amber-400",
-  blue: "bg-blue-500/20 text-blue-400",
-  green: "bg-green-500/20 text-green-400",
+  amber: "bg-warning-500/20 text-warning-400",
+  blue: "bg-info-500/20 text-info-400",
+  green: "bg-success-500/20 text-success-400",
 };
 
 const emptyIcon = {
@@ -41,10 +41,10 @@ export function KitchenColumn({
   flash,
 }: KitchenColumnProps) {
   return (
-    <section className="relative flex min-h-0 min-w-0 flex-1 flex-col rounded-xl border border-zinc-800 bg-zinc-950">
+    <section className="relative flex min-h-0 min-w-0 flex-1 flex-col rounded-2xl border border-border-default bg-surface-raised shadow-inner">
       {flash && (
         <div
-          className="absolute inset-0 bg-amber-500/20 rounded-xl pointer-events-none z-25"
+          className="absolute inset-0 bg-warning-500/20 rounded-2xl pointer-events-none z-25"
           style={{ animation: "flash-amber-pulse 0.5s ease-out forwards" }}
         />
       )}
@@ -54,8 +54,8 @@ export function KitchenColumn({
           to { opacity: 0; }
         }
       `}</style>
-      <header className="flex items-center justify-between p-4">
-        <h2 className="font-semibold text-zinc-100">{title}</h2>
+      <header className="flex items-center justify-between p-4 border-b border-border-default">
+        <h2 className="font-semibold text-display-sm text-text-primary">{title}</h2>
         <span
           key={orders.length}
           className={`animate-pulse rounded-full px-3 py-1 text-sm font-bold ${badgeClass[accentColor]}`}
@@ -66,9 +66,9 @@ export function KitchenColumn({
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
         {orders.length === 0 ? (
-          <div className="flex h-full min-h-56 flex-col items-center justify-center text-center">
-            <div className="text-4xl text-zinc-600">{emptyIcon[accentColor]}</div>
-            <p className="mt-3 text-sm text-zinc-500">{emptyMessage}</p>
+          <div className="flex h-full min-h-[224px] flex-col items-center justify-center text-center">
+            <div className="text-display-2xl text-text-tertiary opacity-50">{emptyIcon[accentColor]}</div>
+            <p className="mt-4 text-body-md font-medium text-text-secondary">{emptyMessage}</p>
           </div>
         ) : (
           orders.map((order) => (

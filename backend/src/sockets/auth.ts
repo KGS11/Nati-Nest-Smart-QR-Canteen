@@ -2,6 +2,7 @@ import { Role, SessionStatus } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { Socket } from "socket.io";
 import { prisma } from "../config/db";
+import { getStaffJwtSecret, staffVerifyOptions } from "../utils/jwt.utils";
 import { verifySessionJWT } from "../utils/session.utils";
 
 type StaffJwtPayload = {
@@ -48,13 +49,8 @@ export const authenticateSocket = async (
     }
 
     if (auth.type === "staff") {
-      const jwtSecret = process.env.JWT_SECRET;
-
-      if (!jwtSecret) {
-        return next(new Error("Socket authentication unavailable"));
-      }
-
-      const payload = jwt.verify(auth.token, jwtSecret) as StaffJwtPayload;
+      const jwtSecret = getStaffJwtSecret();
+      const payload = jwt.verify(auth.token, jwtSecret, staffVerifyOptions) as StaffJwtPayload;
       const user = await prisma.user.findUnique({
         where: { id: payload.userId },
         select: { id: true, name: true, role: true, isActive: true },

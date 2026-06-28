@@ -71,17 +71,17 @@ export function GlobalHelpModal({ isOpen, onClose }: GlobalHelpModalProps) {
         role="dialog"
         aria-modal="true"
         aria-label="Assistance request drawer"
-        className="relative z-10 w-full max-w-md rounded-t-3xl border border-zinc-800 bg-zinc-950 p-6 text-zinc-100 shadow-2xl sm:rounded-2xl animate-slide-up"
+        className="relative z-10 w-full max-w-md rounded-t-3xl border border-border-primary bg-surface-base p-6 text-text-primary shadow-2xl sm:rounded-2xl animate-slide-up"
       >
         <div className="flex items-center justify-between mb-5">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Assistance</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-accent-400">Assistance</span>
             <h2 className="text-xl font-bold mt-0.5">How can we help?</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-800 text-zinc-400 hover:text-zinc-200"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-border-primary text-text-secondary hover:text-text-primary"
             aria-label="Close assistance requests"
           >
             X
@@ -107,19 +107,19 @@ export function GlobalHelpModal({ isOpen, onClose }: GlobalHelpModalProps) {
             type="button"
             disabled={busyType !== null}
             onClick={() => triggerAssistance(AssistanceType.WATER)}
-            className="flex min-h-[60px] w-full items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-left active:scale-[0.98] transition-all hover:border-zinc-700 disabled:opacity-50"
+            className="flex min-h-[60px] w-full items-center justify-between rounded-2xl border border-border-primary bg-surface-raised px-5 py-4 text-left active:scale-[0.98] transition-all hover:border-border-secondary disabled:opacity-50"
           >
             <div className="flex items-center gap-3">
               <MaterialIcon name="water_drop" className="text-blue-400 text-2xl" />
               <div>
-                <h4 className="font-semibold text-zinc-100">Request Water</h4>
-                <p className="text-xs text-zinc-400">Bring drinking water to the table</p>
+                <h4 className="font-semibold text-text-primary">Request Water</h4>
+                <p className="text-xs text-text-secondary">Bring drinking water to the table</p>
               </div>
             </div>
             {busyType === AssistanceType.WATER ? (
               <Loader label="" className="scale-75" />
             ) : (
-              <MaterialIcon name="chevron_right" className="text-zinc-500" />
+              <MaterialIcon name="chevron_right" className="text-text-tertiary" />
             )}
           </button>
 
@@ -127,19 +127,19 @@ export function GlobalHelpModal({ isOpen, onClose }: GlobalHelpModalProps) {
             type="button"
             disabled={busyType !== null}
             onClick={() => triggerAssistance(AssistanceType.PLATE)}
-            className="flex min-h-[60px] w-full items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-left active:scale-[0.98] transition-all hover:border-zinc-700 disabled:opacity-50"
+            className="flex min-h-[60px] w-full items-center justify-between rounded-2xl border border-border-primary bg-surface-raised px-5 py-4 text-left active:scale-[0.98] transition-all hover:border-border-secondary disabled:opacity-50"
           >
             <div className="flex items-center gap-3">
               <MaterialIcon name="restaurant" className="text-orange-400 text-2xl" />
               <div>
-                <h4 className="font-semibold text-zinc-100">Request Plates</h4>
-                <p className="text-xs text-zinc-400">Bring extra dining plates to the table</p>
+                <h4 className="font-semibold text-text-primary">Request Plates</h4>
+                <p className="text-xs text-text-secondary">Bring extra dining plates to the table</p>
               </div>
             </div>
             {busyType === AssistanceType.PLATE ? (
               <Loader label="" className="scale-75" />
             ) : (
-              <MaterialIcon name="chevron_right" className="text-zinc-500" />
+              <MaterialIcon name="chevron_right" className="text-text-tertiary" />
             )}
           </button>
 
@@ -147,19 +147,19 @@ export function GlobalHelpModal({ isOpen, onClose }: GlobalHelpModalProps) {
             type="button"
             disabled={busyType !== null}
             onClick={() => triggerAssistance(AssistanceType.GENERAL)}
-            className="flex min-h-[60px] w-full items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-left active:scale-[0.98] transition-all hover:border-zinc-700 disabled:opacity-50"
+            className="flex min-h-[60px] w-full items-center justify-between rounded-2xl border border-border-primary bg-surface-raised px-5 py-4 text-left active:scale-[0.98] transition-all hover:border-border-secondary disabled:opacity-50"
           >
             <div className="flex items-center gap-3">
-              <MaterialIcon name="support_agent" className="text-amber-400 text-2xl" />
+              <MaterialIcon name="support_agent" className="text-accent-400 text-2xl" />
               <div>
-                <h4 className="font-semibold text-zinc-100">Call Waiter</h4>
-                <p className="text-xs text-zinc-400">General assistance or order help</p>
+                <h4 className="font-semibold text-text-primary">Call Waiter</h4>
+                <p className="text-xs text-text-secondary">General assistance or order help</p>
               </div>
             </div>
             {busyType === AssistanceType.GENERAL ? (
               <Loader label="" className="scale-75" />
             ) : (
-              <MaterialIcon name="chevron_right" className="text-zinc-500" />
+              <MaterialIcon name="chevron_right" className="text-text-tertiary" />
             )}
           </button>
 
@@ -167,19 +167,19 @@ export function GlobalHelpModal({ isOpen, onClose }: GlobalHelpModalProps) {
             type="button"
             disabled={busyType !== null || paymentCompleted}
             onClick={() => triggerAssistance(AssistanceType.BILL)}
-            className="flex min-h-[60px] w-full items-center justify-between rounded-2xl border border-zinc-800 bg-zinc-900 px-5 py-4 text-left active:scale-[0.98] transition-all hover:border-zinc-700 disabled:opacity-50"
+            className="flex min-h-[60px] w-full items-center justify-between rounded-2xl border border-border-primary bg-surface-raised px-5 py-4 text-left active:scale-[0.98] transition-all hover:border-border-secondary disabled:opacity-50"
           >
             <div className="flex items-center gap-3">
               <MaterialIcon name="receipt_long" className="text-emerald-400 text-2xl" />
               <div>
-                <h4 className="font-semibold text-zinc-100">Request Bill</h4>
-                <p className="text-xs text-zinc-400">Get check and proceed to payment</p>
+                <h4 className="font-semibold text-text-primary">Request Bill</h4>
+                <p className="text-xs text-text-secondary">Get check and proceed to payment</p>
               </div>
             </div>
             {busyType === AssistanceType.BILL ? (
               <Loader label="" className="scale-75" />
             ) : (
-              <MaterialIcon name="chevron_right" className="text-zinc-500" />
+              <MaterialIcon name="chevron_right" className="text-text-tertiary" />
             )}
           </button>
         </div>

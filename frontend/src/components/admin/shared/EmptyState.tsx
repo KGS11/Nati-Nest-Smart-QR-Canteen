@@ -18,13 +18,13 @@ export default function EmptyState({ icon, title, description, action }: EmptySt
       <span className="text-4xl mb-4" role="img" aria-label="empty-state-icon">
         {icon}
       </span>
-      <h3 className="text-lg font-medium text-zinc-300">{title}</h3>
-      {description && <p className="text-sm text-zinc-500 mt-1 max-w-sm">{description}</p>}
+      <h3 className="text-lg font-medium text-text-primary">{title}</h3>
+      {description && <p className="text-sm text-text-secondary mt-1 max-w-sm">{description}</p>}
       {action && (
         <Button
           type="button"
           onClick={action.onClick}
-          className="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold px-4 py-2 rounded-lg text-sm mt-4 border-0 min-h-10"
+          className="bg-accent-500 hover:bg-accent-400 text-surface-base font-bold px-4 py-2 rounded-lg text-sm mt-4 border-0 min-h-10"
         >
           {action.label}
         </Button>

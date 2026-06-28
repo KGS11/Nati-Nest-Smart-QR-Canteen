@@ -74,7 +74,7 @@ export default function CustomerFeedbackPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
+      <div className="flex min-h-screen items-center justify-center bg-surface-base">
         <Loader label="Loading feedback..." />
       </div>
     );
@@ -82,7 +82,7 @@ export default function CustomerFeedbackPage() {
 
   if (status?.submitted && rating !== null) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex flex-col justify-center max-w-md mx-auto">
+      <div className="min-h-screen bg-surface-base flex flex-col justify-center max-w-md mx-auto">
         <FeedbackSuccess rating={rating} onContinue={handleSkip} onInquire={() => setIsCateringOpen(true)} />
         <CateringEnquiryForm isOpen={isCateringOpen} onClose={() => setIsCateringOpen(false)} />
       </div>
@@ -90,22 +90,22 @@ export default function CustomerFeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 px-4 py-6 max-w-md mx-auto flex flex-col justify-between">
+    <div className="min-h-screen bg-surface-base px-4 py-6 max-w-md mx-auto flex flex-col justify-between text-text-primary">
       <div>
         {/* Header */}
         <header className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500 font-bold text-zinc-950">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-500 font-bold text-surface-base">
               {tableNumber ?? "--"}
             </div>
             <div>
-              <p className="font-semibold text-xs text-zinc-400">Table {tableNumber ?? "--"}</p>
-              <h1 className="text-xl font-bold text-zinc-100">Feedback</h1>
+              <p className="font-semibold text-xs text-text-secondary">Table {tableNumber ?? "--"}</p>
+              <h1 className="text-xl font-bold text-text-primary">Feedback</h1>
             </div>
           </div>
           <Link
             href="/customer/menu"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-amber-400 hover:text-amber-300"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-raised text-accent-400 hover:text-accent-300"
           >
             <MaterialIcon name="restaurant_menu" />
           </Link>
@@ -119,8 +119,8 @@ export default function CustomerFeedbackPage() {
 
         {/* Content */}
         <div className="text-center mt-4 mb-6">
-          <h2 className="text-2xl font-bold text-zinc-100">How was your experience?</h2>
-          <p className="text-sm text-zinc-400 mt-1">
+          <h2 className="text-2xl font-bold text-text-primary">How was your experience?</h2>
+          <p className="text-sm text-text-secondary mt-1">
             Rate your meal and service for Table {tableNumber ?? "--"}.
           </p>
         </div>
@@ -137,10 +137,10 @@ export default function CustomerFeedbackPage() {
               onChange={(event) => setComment(event.target.value)}
               maxLength={500}
               rows={4}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl p-4 text-zinc-150 placeholder-zinc-600 outline-none transition-all focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-sm leading-relaxed"
+              className="w-full bg-surface-raised border border-border-primary rounded-2xl p-4 text-text-primary placeholder-text-tertiary outline-none transition-all focus:border-accent-500 focus:ring-1 focus:ring-accent-500 text-sm leading-relaxed"
               placeholder="Tell us more (optional)..."
             />
-            <p className="text-right text-[10px] text-zinc-500 mt-1">
+            <p className="text-right text-[10px] text-text-tertiary mt-1">
               {comment.length}/500
             </p>
           </div>
@@ -149,7 +149,7 @@ export default function CustomerFeedbackPage() {
           <Button
             type="submit"
             disabled={submitting || rating === null}
-            className="mt-6 h-14 w-full bg-amber-500 text-zinc-950 hover:bg-amber-400 font-semibold text-base rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+            className="mt-6 h-14 w-full bg-accent-500 text-surface-base hover:bg-accent-400 font-semibold text-base rounded-xl active:scale-95 transition-all flex items-center justify-center gap-2"
           >
             {submitting ? <Loader label="" /> : "Submit Feedback"}
           </Button>
@@ -157,7 +157,7 @@ export default function CustomerFeedbackPage() {
           <button
             type="button"
             onClick={handleSkip}
-            className="text-xs text-zinc-500 hover:text-zinc-300 font-medium py-3 text-center transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500 rounded mt-3"
+            className="text-xs text-text-tertiary hover:text-text-primary font-medium py-3 text-center transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-accent-500 rounded mt-3"
           >
             Skip for now
           </button>

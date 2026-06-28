@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/common/Button";
-import { Input } from "@/components/common/Input";
-import { Toast } from "@/components/common/Toast";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Toast } from "@/components/ui/Toast";
 import { apiClient } from "@/lib/api-client";
 import { useTableStore } from "@/stores/tableStore";
 import { ApiResponse, ClientApiError } from "@/types/api";
@@ -29,11 +31,11 @@ const sortTables = (tables: RestaurantTable[]) =>
 
 function ModalShell({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 px-4 py-16">
-      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 shadow-2xl">
-        <h2 className="mb-5 text-xl font-bold text-zinc-100">{title}</h2>
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-neutral-950/80 backdrop-blur-sm px-4 py-16">
+      <Card className="w-full max-w-md p-6 shadow-2xl border-border-default relative overflow-hidden">
+        <h2 className="mb-6 text-display-sm font-bold text-text-primary tracking-tight">{title}</h2>
         {children}
-      </div>
+      </Card>
     </div>
   );
 }
@@ -42,15 +44,15 @@ function TableGridSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {Array.from({ length: 6 }, (_, index) => (
-        <div
+        <Card
           key={index}
-          className="h-64 animate-pulse rounded-xl border border-zinc-800 bg-zinc-900 p-5"
+          className="h-64 animate-pulse p-5"
         >
-          <div className="h-7 w-28 rounded bg-zinc-800" />
-          <div className="mt-3 h-4 w-20 rounded bg-zinc-800" />
-          <div className="mt-8 h-16 w-16 rounded-lg bg-zinc-800" />
-          <div className="mt-8 h-10 rounded bg-zinc-800" />
-        </div>
+          <div className="h-7 w-28 rounded bg-surface-raised" />
+          <div className="mt-3 h-4 w-20 rounded bg-surface-raised" />
+          <div className="mt-8 h-16 w-16 rounded-xl bg-surface-raised" />
+          <div className="mt-8 h-10 rounded bg-surface-raised" />
+        </Card>
       ))}
     </div>
   );
@@ -66,9 +68,9 @@ function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/50 px-6 py-14 text-center">
-      <h3 className="text-lg font-semibold text-zinc-100">{title}</h3>
-      <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">{description}</p>
+    <div className="rounded-2xl border border-dashed border-border-default bg-surface-raised/50 px-6 py-14 text-center">
+      <h3 className="text-display-sm font-semibold text-text-primary">{title}</h3>
+      <p className="mx-auto mt-2 max-w-md text-body-sm text-text-secondary">{description}</p>
       {action ? <div className="mt-6">{action}</div> : null}
     </div>
   );
@@ -209,38 +211,38 @@ export default function TableGrid() {
   };
 
   return (
-    <section className="min-h-full bg-zinc-950 text-zinc-100">
+    <section className="min-h-full bg-neutral-950 text-neutral-50 md:p-8">
       {toast ? (
         <div className="fixed right-6 top-6 z-[60] w-full max-w-sm">
-          <Toast title={toast.title} message={toast.message} tone={toast.tone} />
+          <Toast title={toast.title} tone={toast.tone} />
         </div>
       ) : null}
 
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-amber-400">
+          <p className="text-label-sm font-bold uppercase tracking-widest text-brand-500">
             Admin Controls
           </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-zinc-100">
+          <h1 className="mt-1 text-display-xl font-black tracking-tight text-text-primary">
             Table Management
           </h1>
-          <p className="mt-2 text-sm text-zinc-400">{totalTables} tables</p>
+          <p className="mt-2 text-body-md font-medium text-text-tertiary">{totalTables} tables</p>
         </div>
-        <Button type="button" onClick={() => openModal({ type: "createTable" })}>
+        <Button variant="brand" type="button" onClick={() => openModal({ type: "createTable" })} className="min-h-[48px] px-6 text-label-md">
           Add Table
         </Button>
       </div>
 
       <div className="mb-6 flex flex-wrap gap-3">
-        <span className="rounded-xl bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-300">
+        <Badge variant="secondary" className="px-4 py-2 text-label-sm">
           {totalTables} Total
-        </span>
-        <span className="rounded-xl bg-green-500/10 px-4 py-2 text-sm font-medium text-green-400">
+        </Badge>
+        <Badge variant="success" className="px-4 py-2 text-label-sm">
           {availableTables} Available
-        </span>
-        <span className="rounded-xl bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-400">
+        </Badge>
+        <Badge variant="warning" className="px-4 py-2 text-label-sm">
           {occupiedTables} Occupied
-        </span>
+        </Badge>
       </div>
 
       <div className="mb-6 max-w-sm">
@@ -253,10 +255,10 @@ export default function TableGrid() {
       </div>
 
       {error ? (
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
-          <h2 className="text-lg font-semibold text-red-300">Unable to load tables</h2>
-          <p className="mt-2 text-sm text-red-200/80">{error}</p>
-          <Button type="button" className="mt-5" onClick={() => void fetchTables()}>
+        <div className="rounded-2xl border border-semantic_error-500/20 bg-semantic_error-500/5 p-6">
+          <h2 className="text-display-sm font-semibold text-semantic_error-400">Unable to load tables</h2>
+          <p className="mt-2 text-body-sm text-semantic_error-300/80">{error}</p>
+          <Button variant="outline" type="button" className="mt-5" onClick={() => void fetchTables()}>
             Retry
           </Button>
         </div>
@@ -272,7 +274,7 @@ export default function TableGrid() {
           title="No tables yet"
           description="Add your first table to get started."
           action={
-            <Button type="button" onClick={() => openModal({ type: "createTable" })}>
+            <Button variant="brand" type="button" onClick={() => openModal({ type: "createTable" })}>
               Add Table
             </Button>
           }

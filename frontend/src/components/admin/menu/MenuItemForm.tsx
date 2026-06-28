@@ -107,13 +107,13 @@ export default function MenuItemForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Category Select */}
       <div className="block space-y-2 text-left">
-        <label htmlFor="categoryId" className="text-sm font-medium text-zinc-200">
+        <label htmlFor="categoryId" className="text-label-sm text-text-primary">
           Category
         </label>
         <select
           id="categoryId"
           {...register('categoryId')}
-          className="bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-xl px-3 py-2.5 w-full focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 text-sm transition-colors cursor-pointer"
+          className="bg-surface-raised border border-border-default text-text-primary rounded-xl px-3 py-2.5 w-full focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/50 text-body-sm transition-colors cursor-pointer"
         >
           <option value="">Select a category</option>
           {categories.map((cat) => (
@@ -123,7 +123,7 @@ export default function MenuItemForm({
           ))}
         </select>
         {errors.categoryId && (
-          <span className="text-xs text-red-400 block mt-1">
+          <span className="text-body-xs text-semantic_error-400 block mt-1">
             {errors.categoryId.message}
           </span>
         )}
@@ -139,18 +139,18 @@ export default function MenuItemForm({
 
       {/* Description */}
       <div className="block space-y-2 text-left">
-        <label htmlFor="description" className="text-sm font-medium text-zinc-200">
-          Description <span className="text-zinc-500 font-normal">(Optional)</span>
+        <label htmlFor="description" className="text-label-sm text-text-primary">
+          Description <span className="text-text-tertiary font-normal">(Optional)</span>
         </label>
         <textarea
           id="description"
           rows={3}
           placeholder="e.g. Spicy grilled chicken pieces..."
           {...register('description')}
-          className="bg-zinc-900 border border-zinc-800 text-zinc-100 rounded-xl px-3 py-2.5 w-full resize-none focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 text-sm transition-colors"
+          className="bg-surface-raised border border-border-default text-text-primary rounded-xl px-3 py-2.5 w-full resize-none focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500/50 text-body-sm transition-colors"
         />
         {errors.description && (
-          <span className="text-xs text-red-400 block mt-1">
+          <span className="text-body-xs text-semantic_error-400 block mt-1">
             {errors.description.message}
           </span>
         )}
@@ -158,22 +158,22 @@ export default function MenuItemForm({
 
       {/* Price Input */}
       <div className="block space-y-2 text-left">
-        <span className="text-sm font-medium text-zinc-200">Price</span>
+        <span className="text-label-sm text-text-primary">Price</span>
         <div className="relative flex items-center">
-          <span className="absolute left-3 text-zinc-500 text-sm font-medium select-none">₹</span>
+          <span className="absolute left-3 text-text-tertiary text-body-sm font-medium select-none">₹</span>
           <input
             type="number"
             step="0.01"
             min="0.01"
             placeholder="0.00"
             {...register('price', { valueAsNumber: true })}
-            className={`pl-8 h-11 w-full rounded-lg border bg-zinc-950 px-3 text-sm text-zinc-100 outline-none transition-all duration-200 placeholder:text-zinc-650 focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 ${
-              errors.price ? 'border-red-500 focus:border-red-400' : 'border-zinc-800'
+            className={`pl-8 h-11 w-full rounded-lg border bg-surface-base px-3 text-body-sm text-text-primary outline-none transition-all duration-200 placeholder:text-text-tertiary focus:border-brand-400 focus:ring-2 focus:ring-brand-400/20 ${
+              errors.price ? 'border-semantic_error-500 focus:border-semantic_error-400' : 'border-border-default'
             }`}
           />
         </div>
         {errors.price && (
-          <span className="text-xs text-red-400 block mt-1">
+          <span className="text-body-xs text-semantic_error-400 block mt-1">
             {errors.price.message}
           </span>
         )}
@@ -198,13 +198,13 @@ export default function MenuItemForm({
           type="checkbox"
           id="isAvailable"
           {...register('isAvailable')}
-          className="mt-1 h-4 w-4 rounded border-zinc-800 bg-zinc-950 text-amber-500 focus:ring-amber-500/20 accent-amber-500"
+          className="mt-1 h-4 w-4 rounded border-border-default bg-surface-raised text-brand-500 focus:ring-brand-500/20 accent-brand-500"
         />
         <div className="flex flex-col">
-          <label htmlFor="isAvailable" className="text-sm font-semibold text-zinc-200 cursor-pointer">
+          <label htmlFor="isAvailable" className="text-label-sm text-text-primary cursor-pointer">
             Item is available
           </label>
-          <span className="text-xs text-zinc-500 mt-0.5">
+          <span className="text-body-xs text-text-tertiary mt-0.5">
             Unavailable items cannot be ordered by customers
           </span>
         </div>
@@ -212,7 +212,7 @@ export default function MenuItemForm({
 
       {/* Server Error Message */}
       {serverError && (
-        <p className="text-sm text-red-400 font-semibold pt-1">
+        <p className="text-body-sm text-semantic_error-400 font-semibold pt-1">
           {serverError}
         </p>
       )}
@@ -221,8 +221,9 @@ export default function MenuItemForm({
       <div className="flex flex-col gap-3 pt-3">
         <Button
           type="submit"
+          variant="brand"
           disabled={isSubmitting}
-          className="w-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold min-h-11 border-0"
+          className="w-full min-h-[44px]"
         >
           {isSubmitting ? (
             <Loader className="!flex-row !gap-1" />
@@ -233,14 +234,15 @@ export default function MenuItemForm({
           )}
         </Button>
 
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={onCancel}
           disabled={isSubmitting}
-          className="w-full py-2.5 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30 rounded-xl text-sm font-semibold transition-colors bg-transparent cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full min-h-[44px]"
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   )

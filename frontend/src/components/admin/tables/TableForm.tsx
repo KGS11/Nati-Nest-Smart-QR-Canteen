@@ -71,16 +71,16 @@ export function TableForm({ table, onSuccess, onCancel }: TableFormProps) {
           error={errors.tableNumber?.message}
           {...register("tableNumber")}
         />
-        <p className="mt-2 text-xs text-zinc-500">This will be encoded in the QR code.</p>
+        <p className="mt-2 text-xs text-text-tertiary">This will be encoded in the QR code.</p>
       </div>
 
       {isEditMode && table?.qrCodeUrl ? (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-300/90">
+        <div className="rounded-xl border border-accent-500/20 bg-accent-500/5 p-3 text-xs text-accent-300/90">
           Changing the table number will automatically regenerate the QR code. Print the new QR
           code and replace the one on the table.
         </div>
       ) : (
-        <div className="rounded-xl bg-zinc-800 p-3 text-xs text-zinc-400">
+        <div className="rounded-xl bg-surface-overlay p-3 text-xs text-text-secondary">
           A QR code will be automatically generated after the table is created.
         </div>
       )}

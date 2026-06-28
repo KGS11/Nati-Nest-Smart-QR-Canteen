@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,7 +10,7 @@ html {
 
 :root {
   color-scheme: dark;
-  background: #09090b;
+  background: #020617; /* neutral-950 */
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --safe-area-top: env(safe-area-inset-top, 0px);
 }
@@ -20,8 +22,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  background: #09090b;
-  color: #f4f4f5;
+  @apply bg-neutral-950 text-neutral-50;
   font-family: Inter, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -67,7 +68,7 @@ input {
   font-family: "Material Symbols Outlined";
   font-weight: normal;
   font-style: normal;
-  font-size: 24px;
+  font-size: 1.25em;
   line-height: 1;
   letter-spacing: normal;
   text-transform: none;
@@ -79,6 +80,8 @@ input {
   -webkit-font-feature-settings: "liga";
   -webkit-font-smoothing: antialiased;
   font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  user-select: none;
+  vertical-align: middle;
 }
 
 .hide-scrollbar::-webkit-scrollbar {

@@ -3,6 +3,8 @@ import { Prisma, Role } from "@prisma/client";
 import { prisma } from "../config/db";
 import { AppError } from "../utils/AppError";
 
+const PASSWORD_HASH_COST = 12;
+
 type StaffListParams = {
   page: number;
   limit: number;
@@ -83,7 +85,7 @@ export class StaffService {
       throw new AppError("Phone number already exists", 409);
     }
 
-    const passwordHash = await bcrypt.hash(data.password, 10);
+    const passwordHash = await bcrypt.hash(data.password, PASSWORD_HASH_COST);
 
     return prisma.user.create({
       data: {
@@ -124,7 +126,7 @@ export class StaffService {
         ...(data.phone !== undefined ? { phone: data.phone.trim() } : {}),
         ...(data.role !== undefined ? { role: data.role } : {}),
         ...(data.isActive !== undefined ? { isActive: data.isActive } : {}),
-        ...(data.password ? { passwordHash: await bcrypt.hash(data.password, 10) } : {}),
+        ...(data.password ? { passwordHash: await bcrypt.hash(data.password, PASSWORD_HASH_COST) } : {}),
       },
       select: staffSelect,
     });

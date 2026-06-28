@@ -1,51 +1,26 @@
+import * as React from "react";
 import { cn } from "@/utils/cn";
 
-interface BadgeProps {
-  variant?: "default" | "success" | "warning" | "danger" | "info";
-  size?: "sm" | "md";
-  children: React.ReactNode;
-  pulse?: boolean;
+export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "default" | "brand" | "secondary" | "outline" | "destructive" | "success" | "warning";
 }
 
-export function Badge({
-  variant = "default",
-  size = "md",
-  children,
-  pulse = false,
-}: BadgeProps) {
-  const variantStyles = {
-    default: "bg-zinc-700 text-zinc-300",
-    success: "bg-green-500/20 text-green-400 border border-green-500/20",
-    warning: "bg-amber-500/20 text-amber-400 border border-amber-500/20",
-    danger: "bg-red-500/20 text-red-400 border border-red-500/20",
-    info: "bg-blue-500/20 text-blue-400 border border-blue-500/20",
-  };
+function Badge({ className, variant = "default", ...props }: BadgeProps) {
+  const baseStyles = "inline-flex items-center rounded-full border px-2.5 py-0.5 text-label-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2";
 
-  const dotStyles = {
-    default: "bg-zinc-400",
-    success: "bg-green-400",
-    warning: "bg-amber-400",
-    danger: "bg-red-400",
-    info: "bg-blue-400",
+  const variants = {
+    default: "border-transparent bg-neutral-900 text-neutral-50 hover:bg-neutral-800",
+    brand: "border-transparent bg-brand-500 text-white hover:bg-brand-600 shadow-sm",
+    secondary: "border-transparent bg-surface-overlay text-text-secondary hover:bg-neutral-800",
+    destructive: "border-transparent bg-semantic_error-500 text-white hover:bg-semantic_error-600 shadow-sm",
+    success: "border-transparent bg-success-500 text-white shadow-sm",
+    warning: "border-transparent bg-warning-500 text-white shadow-sm",
+    outline: "text-neutral-950 border-border-default",
   };
 
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1.5 font-medium rounded-full",
-        size === "sm" ? "px-2.5 py-0.5 text-xs" : "px-3 py-1 text-sm",
-        variantStyles[variant]
-      )}
-    >
-      {pulse && (
-        <span
-          className={cn(
-            "h-1.5 w-1.5 rounded-full animate-pulse",
-            dotStyles[variant]
-          )}
-        />
-      )}
-      {children}
-    </span>
+    <div className={cn(baseStyles, variants[variant], className)} {...props} />
   );
 }
+
+export { Badge };

@@ -6,6 +6,7 @@ import { SessionGuard } from "@/components/guards/SessionGuard";
 import { CustomerBottomNav } from "@/components/customer/CustomerBottomNav";
 import { CartDrawer } from "@/components/customer/CartDrawer";
 import { GlobalHelpModal } from "@/components/customer/GlobalHelpModal";
+import { MaterialIcon } from "@/components/stitch/MaterialIcon";
 import { useCart } from "@/hooks/useCart";
 import { useSocket } from "@/hooks/useSocket";
 import { useSessionStore } from "@/stores/sessionStore";
@@ -70,7 +71,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
 
   return (
     <SessionGuard>
-      <div className="mx-auto min-h-screen max-w-md bg-zinc-950 font-body-md text-zinc-200 pb-24 relative">
+      <div className="mx-auto min-h-screen max-w-md bg-surface-base font-body-md text-text-primary pb-24 relative">
         {children}
         
         <CustomerBottomNav onOpenHelp={() => setIsHelpOpen(true)} />
@@ -85,9 +86,9 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
               setBillBubbleDismissed(true);
               router.push("/customer/bill");
             }}
-            className="fixed bottom-20 right-4 z-50 flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 px-4 py-2.5 rounded-full font-bold shadow-lg shadow-amber-500/20 active:scale-95 transition-all text-sm border-0 cursor-pointer"
+            className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full border-0 bg-accent-500 px-4 py-2.5 text-sm font-bold text-surface-base shadow-lg shadow-accent-500/20 transition-all active:scale-95 hover:bg-accent-400"
           >
-            <span>🧾</span>
+            <MaterialIcon name="receipt_long" className="text-[18px]" />
             <span>View Bill</span>
           </button>
         )}

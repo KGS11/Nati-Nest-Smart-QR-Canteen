@@ -5,10 +5,52 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 
+const detectImageType = (buffer: Buffer): { mime: string; extension: "jpg" | "png" | "webp" } | null => {
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+    return { mime: "image/jpeg", extension: "jpg" };
+  }
+
+  if (
+    buffer.length >= 8 &&
+    buffer[0] === 0x89 &&
+    buffer[1] === 0x50 &&
+    buffer[2] === 0x4e &&
+    buffer[3] === 0x47 &&
+    buffer[4] === 0x0d &&
+    buffer[5] === 0x0a &&
+    buffer[6] === 0x1a &&
+    buffer[7] === 0x0a
+  ) {
+    return { mime: "image/png", extension: "png" };
+  }
+
+  if (
+    buffer.length >= 12 &&
+    buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
+    buffer.subarray(8, 12).toString("ascii") === "WEBP"
+  ) {
+    return { mime: "image/webp", extension: "webp" };
+  }
+
+  return null;
+};
+
+const assertTrustedCloudinaryUrl = (value: string) => {
+  const url = new URL(value);
+  if (url.protocol !== "https:" || url.hostname !== "res.cloudinary.com") {
+    throw new AppError("Image upload returned an untrusted URL", 500);
+  }
+};
+
 export const uploadImageBuffer = async (
   buffer: Buffer,
   folder = "nati-nest-canteen",
 ): Promise<string> => {
+  const imageType = detectImageType(buffer);
+  if (!imageType) {
+    throw new AppError("Invalid image file content", 400);
+  }
+
   const isCloudinaryConfigured =
     process.env.CLOUDINARY_CLOUD_NAME &&
     process.env.CLOUDINARY_CLOUD_NAME !== "your_cloud_name" &&
@@ -17,13 +59,16 @@ export const uploadImageBuffer = async (
 
   if (!isCloudinaryConfigured) {
     try {
-      const uploadsDir = path.join(__dirname, "../../uploads");
+      const uploadsDir = path.resolve(__dirname, "../../uploads");
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
 
-      const filename = `${crypto.randomUUID()}.png`;
-      const filepath = path.join(uploadsDir, filename);
+      const filename = `${crypto.randomUUID()}.${imageType.extension}`;
+      const filepath = path.resolve(uploadsDir, filename);
+      if (!filepath.startsWith(`${uploadsDir}${path.sep}`)) {
+        throw new AppError("Invalid upload path", 500);
+      }
       fs.writeFileSync(filepath, buffer);
 
       const port = process.env.PORT ?? 5000;
@@ -55,6 +100,7 @@ export const uploadImageBuffer = async (
       stream.end(buffer);
     });
 
+    assertTrustedCloudinaryUrl(result.secure_url);
     return result.secure_url;
   } catch (_error) {
     throw new AppError("Image upload failed", 500);

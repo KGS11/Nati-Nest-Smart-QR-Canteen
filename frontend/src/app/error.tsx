@@ -15,9 +15,9 @@ export default function ErrorBoundary({
   }, [error]);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 p-6 text-center">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-surface-base p-6 text-center text-text-primary">
       <h2 className="mb-2 text-2xl font-bold text-red-400">Something went wrong</h2>
-      <p className="mb-6 max-w-sm text-sm text-zinc-400">
+      <p className="mb-6 max-w-sm text-sm text-text-secondary">
         {error.message || "An unexpected system fault occurred while rendering this module."}
       </p>
       <div className="flex gap-4">

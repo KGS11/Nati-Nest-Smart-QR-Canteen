@@ -35,36 +35,36 @@ export function HistoryModal({ onClose }: HistoryModalProps) {
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-start justify-center p-4 overflow-y-auto">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-2xl w-full mx-auto mt-20 p-6 shadow-2xl relative flex flex-col max-h-[80vh]">
+      <div className="bg-surface-raised border border-border-primary rounded-2xl max-w-2xl w-full mx-auto mt-20 p-6 shadow-2xl relative flex flex-col max-h-[80vh]">
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-200 bg-transparent border-0 cursor-pointer text-lg p-2 hover:bg-zinc-800 rounded-xl"
+          className="absolute right-4 top-4 text-text-secondary hover:text-text-primary bg-transparent border-0 cursor-pointer text-lg p-2 hover:bg-surface-overlay rounded-xl"
         >
           ✕
         </button>
 
-        <h3 className="text-xl font-bold text-zinc-100 flex items-center gap-2 mb-2">
+        <h3 className="text-xl font-bold text-text-primary flex items-center gap-2 mb-2">
           <span>📅</span> Daily Menu Audit History
         </h3>
-        <p className="text-xs text-zinc-400 mb-6">
+        <p className="text-xs text-text-secondary mb-6">
           View menu configurations, additions, and removals for any past date.
         </p>
 
-        <div className="flex items-center gap-3 mb-6 bg-zinc-950 p-3 rounded-xl border border-zinc-850">
-          <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+        <div className="flex items-center gap-3 mb-6 bg-surface-base p-3 rounded-xl border border-border-primary">
+          <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
             Select Date:
           </label>
           <input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-sm text-zinc-250 focus:outline-none focus:border-amber-500 text-zinc-100"
+            className="bg-surface-raised border border-border-primary rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent-500 text-text-primary"
           />
         </div>
 
         <div className="flex-1 overflow-y-auto min-h-0 pr-1">
           {isLoading ? (
-            <div className="flex items-center justify-center py-20 text-zinc-500 font-medium">
+            <div className="flex items-center justify-center py-20 text-text-tertiary font-medium">
               <span className="animate-spin mr-2">⏳</span> Loading history...
             </div>
           ) : error ? (
@@ -72,12 +72,12 @@ export function HistoryModal({ onClose }: HistoryModalProps) {
               {error}
             </div>
           ) : historyItems.length === 0 ? (
-            <div className="text-center py-20 text-zinc-500">
+            <div className="text-center py-20 text-text-tertiary">
               No menu session was configured on this date.
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="hidden sm:grid sm:grid-cols-4 gap-2 text-xs font-bold uppercase tracking-wider text-zinc-500 pb-2 border-b border-zinc-850 px-2">
+              <div className="hidden sm:grid sm:grid-cols-4 gap-2 text-xs font-bold uppercase tracking-wider text-text-tertiary pb-2 border-b border-border-primary px-2">
                 <span>Item</span>
                 <span>Category</span>
                 <span>Added By</span>
@@ -87,22 +87,22 @@ export function HistoryModal({ onClose }: HistoryModalProps) {
                 {historyItems.map((item) => (
                   <div
                     key={item.dailyMenuId}
-                    className="grid sm:grid-cols-4 gap-2 text-sm bg-zinc-950/40 border border-zinc-850 p-3 rounded-xl hover:border-zinc-800 transition-all"
+                    className="grid sm:grid-cols-4 gap-2 text-sm bg-surface-base/40 border border-border-primary p-3 rounded-xl hover:border-border-secondary transition-all"
                   >
                     <div>
-                      <div className="font-bold text-zinc-200">{item.name}</div>
-                      <div className="text-xs text-amber-500 font-semibold mt-0.5">
+                      <div className="font-bold text-text-primary">{item.name}</div>
+                      <div className="text-xs text-accent-500 font-semibold mt-0.5">
                         ₹{item.price.toFixed(2)}
                       </div>
                     </div>
-                    <div className="text-xs text-zinc-450 flex items-center">
+                    <div className="text-xs text-text-tertiary flex items-center">
                       {item.category}
                     </div>
-                    <div className="text-xs text-zinc-450 flex flex-col justify-center">
-                      <span className="font-medium text-zinc-300">
+                    <div className="text-xs text-text-tertiary flex flex-col justify-center">
+                      <span className="font-medium text-text-primary">
                         {item.addedBy}
                       </span>
-                      <span className="text-[10px] text-zinc-500">
+                      <span className="text-[10px] text-text-tertiary">
                         {new Date(item.addedAt).toLocaleTimeString("en-IN", {
                           hour: "numeric",
                           minute: "2-digit",
@@ -115,7 +115,7 @@ export function HistoryModal({ onClose }: HistoryModalProps) {
                           <span className="text-red-400 font-semibold">
                             Removed
                           </span>
-                          <span className="text-[10px] text-zinc-500">
+                          <span className="text-[10px] text-text-tertiary">
                             By {item.removedBy} at{" "}
                             {new Date(item.removedAt).toLocaleTimeString(
                               "en-IN",
@@ -136,7 +136,7 @@ export function HistoryModal({ onClose }: HistoryModalProps) {
           )}
         </div>
 
-        <div className="mt-6 border-t border-zinc-850 pt-4 flex justify-end shrink-0">
+        <div className="mt-6 border-t border-border-primary pt-4 flex justify-end shrink-0">
           <Button variant="secondary" onClick={onClose} className="rounded-xl px-6">
             Close
           </Button>

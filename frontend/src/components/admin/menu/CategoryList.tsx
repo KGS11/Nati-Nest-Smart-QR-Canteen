@@ -108,7 +108,7 @@ export default function CategoryList() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 p-6 overflow-y-auto">
+    <div className="flex flex-col h-full bg-surface-base p-6 overflow-y-auto">
       {/* Page Header */}
       <PageHeader
         title="Menu Categories"
@@ -125,10 +125,10 @@ export default function CategoryList() {
           {[...Array(6)].map((_, idx) => (
             <div
               key={idx}
-              className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 animate-pulse"
+              className="bg-surface-raised border border-border-primary rounded-xl p-4 animate-pulse"
             >
-              <div className="h-5 bg-zinc-800 rounded w-3/4 mb-3" />
-              <div className="h-4 bg-zinc-800 rounded w-1/2" />
+              <div className="h-5 bg-surface-overlay rounded w-3/4 mb-3" />
+              <div className="h-4 bg-surface-overlay rounded w-1/2" />
             </div>
           ))}
         </div>
@@ -166,16 +166,16 @@ export default function CategoryList() {
       {(store.activeModal?.type === 'createCategory' ||
         store.activeModal?.type === 'editCategory') && (
         <div className="fixed inset-0 bg-black/80 z-40 flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 relative shadow-2xl">
+          <div className="bg-surface-raised border border-border-primary rounded-2xl w-full max-w-md p-6 relative shadow-2xl">
             <button
               type="button"
               onClick={store.closeModal}
-              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-200 text-2xl font-bold bg-transparent border-0 cursor-pointer leading-none"
+              className="absolute top-4 right-4 text-text-secondary hover:text-text-primary text-2xl font-bold bg-transparent border-0 cursor-pointer leading-none"
               aria-label="Close"
             >
               &times;
             </button>
-            <h2 className="text-lg font-bold text-zinc-100 mb-4">
+            <h2 className="text-lg font-bold text-text-primary mb-4">
               {store.activeModal.type === 'createCategory' ? 'Add Category' : 'Edit Category'}
             </h2>
             <CategoryForm
@@ -214,7 +214,7 @@ export default function CategoryList() {
             <button
               type="button"
               onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
-              className="absolute top-3 right-3 text-zinc-400 hover:text-zinc-200 text-xs bg-transparent border-0 cursor-pointer font-bold p-1 leading-none"
+              className="absolute top-3 right-3 text-text-secondary hover:text-text-primary text-xs bg-transparent border-0 cursor-pointer font-bold p-1 leading-none"
               aria-label="Dismiss"
             >
               ✕

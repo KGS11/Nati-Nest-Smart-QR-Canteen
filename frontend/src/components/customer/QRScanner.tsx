@@ -161,26 +161,26 @@ export function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
   return (
     <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col">
       <div className="flex-1 flex flex-col justify-center p-4">
-        <div className="bg-zinc-900 rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/10 w-full max-w-sm mx-auto">
-          <div className="p-4 border-b border-zinc-800 text-center relative">
-            <h3 className="text-zinc-100 font-bold flex items-center justify-center gap-2">
-              <Camera className="w-5 h-5 text-amber-500" />
+        <div className="bg-surface-raised rounded-3xl overflow-hidden shadow-2xl ring-1 ring-white/10 w-full max-w-sm mx-auto">
+          <div className="p-4 border-b border-border-primary text-center relative">
+            <h3 className="text-text-primary font-bold flex items-center justify-center gap-2">
+              <Camera className="w-5 h-5 text-accent-500" />
               Scan Merchant QR
             </h3>
             <button
               onClick={onClose}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-text-secondary hover:text-text-primary"
             >
               Cancel
             </button>
           </div>
 
           <div className="flex flex-col items-center justify-center p-6 text-center w-full">
-            <Camera className="w-16 h-16 text-amber-500 mb-4 opacity-80" />
-            <h4 className="text-white font-semibold text-lg mb-2">
+            <Camera className="w-16 h-16 text-accent-500 mb-4 opacity-80" />
+            <h4 className="text-text-primary font-semibold text-lg mb-2">
               Capture QR Code
             </h4>
-            <p className="text-zinc-400 text-sm leading-relaxed mb-6">
+            <p className="text-text-secondary text-sm leading-relaxed mb-6">
               Tap the button below to open your camera and take a clear photo of
               the merchant's UPI QR code.
             </p>
@@ -194,7 +194,7 @@ export function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
             )}
 
             {/* Camera capture button */}
-            <label className="relative cursor-pointer bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold py-4 px-6 rounded-xl flex items-center gap-2 transition-all active:scale-95 w-full justify-center">
+            <label className="relative cursor-pointer bg-accent-500 hover:bg-accent-400 text-surface-base font-bold py-4 px-6 rounded-xl flex items-center gap-2 transition-all active:scale-95 w-full justify-center">
               <input
                 type="file"
                 accept="image/*"
@@ -217,7 +217,7 @@ export function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
             </label>
 
             {/* Gallery option */}
-            <label className="relative cursor-pointer text-amber-400 hover:text-amber-300 font-medium text-sm mt-4 underline">
+            <label className="relative cursor-pointer text-accent-400 hover:text-accent-300 font-medium text-sm mt-4 underline">
               <input
                 type="file"
                 accept="image/*"
@@ -229,8 +229,8 @@ export function QRScanner({ onScanSuccess, onClose }: QRScannerProps) {
             </label>
           </div>
 
-          <div className="p-4 bg-zinc-900/50 border-t border-zinc-800">
-            <p className="text-zinc-500 text-xs text-center">
+          <div className="p-4 bg-surface-raised/50 border-t border-border-primary">
+            <p className="text-text-tertiary text-xs text-center">
               Take a clear, well-lit photo of the QR code. Hold steady and avoid
               glare.
             </p>

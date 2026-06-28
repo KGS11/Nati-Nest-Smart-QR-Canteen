@@ -27,7 +27,7 @@ export default function DeliverOrderCard({
   const [isClaiming, setIsClaiming] = useState(false)
   const [isReleasing, setIsReleasing] = useState(false)
   const [elapsedText, setElapsedText] = useState('')
-  const [elapsedColor, setElapsedColor] = useState('text-green-400')
+  const [elapsedColor, setElapsedColor] = useState('text-semantic_success-400')
 
   const isAssignedToMe = order.assignedWaiterId === user?.id
   const isAssignedToOther = !!(order.assignedWaiterId && order.assignedWaiterId !== user?.id)
@@ -50,11 +50,11 @@ export default function DeliverOrderCard({
       const diffMins = Math.floor(diffMs / 60000)
       
       if (diffMins >= 10) {
-        setElapsedColor('text-red-400')
+        setElapsedColor('text-semantic_error-400')
       } else if (diffMins >= 5) {
-        setElapsedColor('text-amber-400')
+        setElapsedColor('text-accent-400')
       } else {
-        setElapsedColor('text-green-400')
+        setElapsedColor('text-semantic_success-400')
       }
 
       if (diffMins === 0) {
@@ -145,21 +145,21 @@ export default function DeliverOrderCard({
         transition: touchStartX === null ? "transform 0.2s ease-out" : "none",
       }}
       className={cn(
-        "bg-zinc-900 border border-zinc-800 border-l-4 rounded-2xl p-4 flex flex-col gap-3 shadow-md transition-all select-none",
-        isAssignedToOther ? "border-l-zinc-700 opacity-60 saturate-50" : "border-l-green-500",
-        swipeTranslation > 80 && "border-green-500/60 bg-green-500/5"
+        "bg-surface-raised border border-border-primary border-l-4 rounded-2xl p-4 flex flex-col gap-3 shadow-md transition-all select-none",
+        isAssignedToOther ? "border-l-border-strong opacity-60 saturate-50" : "border-l-semantic_success-500",
+        swipeTranslation > 80 && "border-semantic_success-500/60 bg-semantic_success-500/5"
       )}
     >
       <div className="flex items-start justify-between">
         <div className="flex flex-col">
-          <span className="text-xl font-bold text-amber-400">
+          <span className="text-xl font-bold text-accent-400">
             Table {order.tableNumber}
           </span>
           <span className={`text-xs font-semibold ${elapsedColor}`}>
             {elapsedText}
           </span>
         </div>
-        <span className="text-xs font-mono text-zinc-500">
+        <span className="text-xs font-mono text-text-tertiary">
           #{shortId}
         </span>
       </div>
@@ -168,8 +168,8 @@ export default function DeliverOrderCard({
         <div className={cn(
           "rounded-xl p-2.5 text-xs font-semibold flex items-center gap-1.5",
           isAssignedToOther
-            ? "bg-zinc-800/50 border border-zinc-700 text-zinc-400"
-            : "bg-blue-500/10 border border-blue-500/20 text-blue-400"
+            ? "bg-surface-overlay/50 border border-border-strong text-text-secondary"
+            : "bg-info-500/10 border border-info-500/20 text-info-400"
         )}>
           <span>👤</span>
           <span>
@@ -186,8 +186,8 @@ export default function DeliverOrderCard({
             key={item.id}
             className={`text-sm flex justify-between ${
               item.status === 'REJECTED'
-                ? 'line-through text-zinc-500'
-                : 'text-zinc-300'
+                ? 'line-through text-text-tertiary'
+                : 'text-text-secondary'
             }`}
           >
             <span className="truncate max-w-[200px]">
@@ -199,14 +199,14 @@ export default function DeliverOrderCard({
           </div>
         ))}
         {overflowCount > 0 && (
-          <div className="text-xs text-zinc-500 font-medium italic">
+          <div className="text-xs text-text-tertiary font-medium italic">
             +{overflowCount} more item{overflowCount > 1 ? 's' : ''}...
           </div>
         )}
       </div>
 
       {isAssignedToMe && swipeCount < 3 && (
-        <div className="text-[10px] text-zinc-500 text-right animate-pulse select-none">
+        <div className="text-[10px] text-text-tertiary text-right animate-pulse select-none">
           → swipe right to deliver
         </div>
       )}
@@ -215,7 +215,7 @@ export default function DeliverOrderCard({
         <button
           type="button"
           onClick={() => onViewBill(order.sessionId)}
-          className="text-sm font-semibold text-amber-400 hover:text-amber-300 transition-colors bg-transparent border-0 cursor-pointer min-h-[48px] px-2"
+          className="text-sm font-semibold text-accent-400 hover:text-accent-300 transition-colors bg-transparent border-0 cursor-pointer min-h-[48px] px-2"
         >
           View Bill
         </button>
@@ -225,14 +225,14 @@ export default function DeliverOrderCard({
             type="button"
             onClick={handleClaim}
             disabled={isClaiming}
-            className="bg-amber-500 text-zinc-955 hover:bg-amber-400 min-h-[48px] px-4 rounded-xl font-semibold flex items-center justify-center gap-2 border-0 active:scale-95 transition-all text-sm animate-pulse"
+            className="bg-accent-500 text-surface-base hover:bg-accent-400 min-h-[48px] px-4 rounded-xl font-semibold flex items-center justify-center gap-2 border-0 active:scale-95 transition-all text-sm animate-pulse"
           >
             {isClaiming ? <Loader className="!flex-row !gap-1 scale-75" /> : 'Claim Delivery'}
           </Button>
         )}
 
         {isAssignedToOther && (
-          <span className="text-xs font-semibold text-zinc-500 italic">
+          <span className="text-xs font-semibold text-text-tertiary italic">
             Claimed by {order.assignedWaiterName}
           </span>
         )}
@@ -244,7 +244,7 @@ export default function DeliverOrderCard({
               variant="secondary"
               onClick={handleRelease}
               disabled={isReleasing}
-              className="border border-zinc-700 bg-zinc-800/30 text-zinc-350 hover:bg-zinc-800 min-h-[48px] px-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+              className="border border-border-strong bg-surface-overlay/30 text-text-secondary hover:bg-surface-overlay min-h-[48px] px-3 rounded-xl font-semibold flex items-center justify-center gap-2"
             >
               {isReleasing ? <Loader className="scale-50" /> : 'Release'}
             </Button>
@@ -253,7 +253,7 @@ export default function DeliverOrderCard({
               type="button"
               onClick={handleDeliver}
               disabled={isDelivering}
-              className="bg-green-500 text-zinc-950 hover:bg-green-400 min-h-[48px] px-4 rounded-xl font-semibold flex items-center justify-center gap-2 border-0 active:scale-95 transition-all text-sm"
+              className="bg-semantic_success-500 text-surface-base hover:bg-semantic_success-400 min-h-[48px] px-4 rounded-xl font-semibold flex items-center justify-center gap-2 border-0 active:scale-95 transition-all text-sm"
             >
               {isDelivering ? (
                 <Loader className="!flex-row !gap-1" />

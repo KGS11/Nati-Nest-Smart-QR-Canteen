@@ -365,35 +365,36 @@ export function KitchenBoard() {
   );
 
   return (
-    <div className="min-h-screen bg-zinc-955 text-zinc-100">
+    <div className="min-h-screen bg-neutral-950 text-neutral-50">
       {/* Mobile/Tablet Portrait Layout */}
       <div className="flex h-screen flex-col md:hidden">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-800 bg-zinc-900 px-4">
-          <h1 className="text-lg font-bold text-zinc-100">Kitchen</h1>
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-border-default bg-surface-base px-4">
+          <h1 className="text-display-sm font-bold text-text-primary">Kitchen</h1>
           <div className="flex items-center gap-3">
             <AudioAlert isEnabled={isEnabled} onToggle={setEnabled} />
             <Button
               type="button"
+              variant="primary"
               onClick={() => setIsMenuOpen(true)}
-              className="min-h-10 text-xs px-3 py-1 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold border-0"
+              className="min-h-10 text-label-sm px-3 py-1"
             >
               Menu
             </Button>
-            <Button type="button" variant="secondary" onClick={logout} className="min-h-10 text-xs px-3 py-1">
+            <Button type="button" variant="secondary" onClick={logout} className="min-h-10 text-label-sm px-3 py-1">
               Logout
             </Button>
           </div>
         </header>
 
         {/* View Mode Switcher for Mobile */}
-        <div className="flex bg-zinc-900 px-4 py-2 border-b border-zinc-855 shrink-0 gap-2">
+        <div className="flex bg-surface-raised px-4 py-2 border-b border-border-default shrink-0 gap-2">
           <button
             onClick={() => setViewMode("available")}
             className={cn(
-              "flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all",
+              "flex-1 py-1.5 text-label-xs font-bold rounded-lg border transition-all",
               viewMode === "available"
-                ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                : "border-zinc-800 text-zinc-400 hover:text-zinc-300"
+                ? "bg-brand-500/10 border-brand-500/30 text-brand-500"
+                : "border-border-default text-text-tertiary hover:text-text-secondary"
             )}
           >
             Available
@@ -401,10 +402,10 @@ export function KitchenBoard() {
           <button
             onClick={() => setViewMode("my-orders")}
             className={cn(
-              "flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all",
+              "flex-1 py-1.5 text-label-xs font-bold rounded-lg border transition-all",
               viewMode === "my-orders"
-                ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                : "border-zinc-800 text-zinc-400 hover:text-zinc-300"
+                ? "bg-brand-500/10 border-brand-500/30 text-brand-500"
+                : "border-border-default text-text-tertiary hover:text-text-secondary"
             )}
           >
             My Claims ({myActiveClaimsCount})
@@ -412,12 +413,12 @@ export function KitchenBoard() {
         </div>
 
         {/* Horizontal Tab Bar */}
-        <div className="grid grid-cols-2 bg-zinc-900 border-b border-zinc-800 shrink-0 text-center text-sm font-semibold relative z-10">
+        <div className="grid grid-cols-2 bg-surface-raised border-b border-border-default shrink-0 text-center text-label-sm font-semibold relative z-10">
           <button
             onClick={() => setActiveTab("PLACED")}
             className={cn(
               "py-3 border-b-2 transition-colors focus:outline-none",
-              activeTab === "PLACED" ? "border-amber-500 text-amber-400" : "border-transparent text-zinc-500"
+              activeTab === "PLACED" ? "border-brand-500 text-brand-500" : "border-transparent text-text-tertiary"
             )}
           >
             New Orders ({incoming.length})
@@ -426,7 +427,7 @@ export function KitchenBoard() {
             onClick={() => setActiveTab("IN_PROGRESS")}
             className={cn(
               "py-3 border-b-2 transition-colors focus:outline-none",
-              activeTab === "IN_PROGRESS" ? "border-amber-500 text-amber-400" : "border-transparent text-zinc-500"
+              activeTab === "IN_PROGRESS" ? "border-brand-500 text-brand-500" : "border-transparent text-text-tertiary"
             )}
           >
             In Progress ({preparing.length})
@@ -477,18 +478,18 @@ export function KitchenBoard() {
 
       {/* Desktop/Landscape Tablet Layout */}
       <div className="hidden md:flex h-screen flex-col">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-800 bg-zinc-900 px-6">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-border-default bg-surface-base px-6">
           <div className="flex items-center gap-6">
-            <h1 className="text-xl font-bold text-zinc-100">Kitchen Dashboard</h1>
-            <div className="flex bg-zinc-950 p-1 rounded-xl border border-zinc-850">
+            <h1 className="text-display-md font-bold text-text-primary tracking-tight">Kitchen Dashboard</h1>
+            <div className="flex bg-surface-raised p-1 rounded-xl border border-border-default">
               <button
                 type="button"
                 onClick={() => setViewMode("available")}
                 className={cn(
-                  "px-4 py-1.5 text-xs font-bold rounded-lg transition-all",
+                  "px-4 py-1.5 text-label-sm font-bold rounded-lg transition-all",
                   viewMode === "available"
-                    ? "bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20"
-                    : "text-zinc-400 hover:text-zinc-300"
+                    ? "bg-brand-500 text-white shadow-md shadow-brand-500/20"
+                    : "text-text-secondary hover:text-text-primary"
                 )}
               >
                 Available Orders
@@ -497,10 +498,10 @@ export function KitchenBoard() {
                 type="button"
                 onClick={() => setViewMode("my-orders")}
                 className={cn(
-                  "px-4 py-1.5 text-xs font-bold rounded-lg transition-all",
+                  "px-4 py-1.5 text-label-sm font-bold rounded-lg transition-all",
                   viewMode === "my-orders"
-                    ? "bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20"
-                    : "text-zinc-400 hover:text-zinc-300"
+                    ? "bg-brand-500 text-white shadow-md shadow-brand-500/20"
+                    : "text-text-secondary hover:text-text-primary"
                 )}
               >
                 My Claims ({myActiveClaimsCount})
@@ -511,14 +512,15 @@ export function KitchenBoard() {
             <AudioAlert isEnabled={isEnabled} onToggle={setEnabled} />
             <Button
               type="button"
+              variant="primary"
               onClick={() => setIsMenuOpen(true)}
-              className="min-h-12 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold border-0"
+              className="min-h-10 px-4"
             >
               Manage Menu
             </Button>
             <KitchenConnectionStatus isConnected={isConnectedStore} />
-            <span className="text-sm font-medium text-zinc-400">{user?.name ?? "Kitchen Staff"}</span>
-            <Button type="button" variant="secondary" onClick={logout} className="min-h-12">
+            <span className="text-label-md font-medium text-text-secondary">{user?.name ?? "Kitchen Staff"}</span>
+            <Button type="button" variant="secondary" onClick={logout} className="min-h-10 px-4">
               Logout
             </Button>
           </div>
@@ -534,12 +536,12 @@ export function KitchenBoard() {
         {isLoading ? (
           <main className="flex min-h-0 flex-1 gap-4 overflow-hidden p-4">
             <div className="flex-1 space-y-4">
-              <div className="h-6 w-24 bg-zinc-800 rounded animate-pulse mb-3" />
+              <div className="h-6 w-24 bg-surface-raised rounded animate-pulse mb-3" />
               <OrderCardSkeleton />
               <OrderCardSkeleton />
             </div>
             <div className="flex-1 space-y-4">
-              <div className="h-6 w-24 bg-zinc-800 rounded animate-pulse mb-3" />
+              <div className="h-6 w-24 bg-surface-raised rounded animate-pulse mb-3" />
               <OrderCardSkeleton />
               <OrderCardSkeleton />
             </div>
@@ -548,8 +550,8 @@ export function KitchenBoard() {
 
         {!isLoading && error ? (
           <div className="flex flex-1 items-center justify-center p-6">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6 text-center">
-              <p className="text-red-450">{error}</p>
+            <div className="rounded-xl border border-border-default bg-surface-raised p-6 text-center">
+              <p className="text-semantic_error-400">{error}</p>
               <Button type="button" onClick={fetchOrders} className="mt-4 min-h-12">
                 Retry
               </Button>

@@ -25,28 +25,28 @@ export function DailyMenuHeader({
   }) : "...";
 
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-zinc-800 pb-6 mb-6">
+    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border-default pb-6 mb-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-100 md:text-3xl">
+        <h1 className="text-display-md font-bold tracking-tight text-text-primary md:text-display-lg">
           Today's Menu
         </h1>
-        <p className="mt-1 text-sm text-zinc-400">
+        <p className="mt-1 text-body-sm text-text-tertiary">
           Configure available items for customer order taking. Master catalog is unaffected.
         </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-850 rounded-xl px-4 py-2 text-sm select-none">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-zinc-500">Active:</span>
-          <span className="font-semibold text-zinc-200">{formattedDate}</span>
-          <span className="text-zinc-400 font-bold">({totalItems})</span>
+        <div className="flex items-center gap-2 bg-surface-raised border border-border-default rounded-xl px-4 py-2 text-label-sm select-none">
+          <span className="w-2 h-2 rounded-full bg-semantic_success-500 animate-pulse" />
+          <span className="text-text-tertiary">Active:</span>
+          <span className="font-semibold text-text-secondary">{formattedDate}</span>
+          <span className="text-text-tertiary font-bold">({totalItems})</span>
         </div>
 
         <Button
           variant="secondary"
           onClick={onHistoryClick}
-          className="rounded-xl border border-zinc-800 hover:border-zinc-700 gap-2 shrink-0 min-h-11"
+          className="rounded-xl border border-border-default hover:border-border-hover gap-2 shrink-0 min-h-11"
         >
           <span>📅</span> History
         </Button>
@@ -55,7 +55,7 @@ export function DailyMenuHeader({
           variant="primary"
           onClick={onCopyClick}
           disabled={isCopyDisabled}
-          className="rounded-xl gap-2 font-bold shrink-0 min-h-11 shadow-lg shadow-amber-500/10"
+          className="rounded-xl gap-2 font-bold shrink-0 min-h-11 shadow-lg shadow-brand-500/10"
         >
           {isCopying ? (
             <span className="inline-block animate-spin mr-1">⏳</span>

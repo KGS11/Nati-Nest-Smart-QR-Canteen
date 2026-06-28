@@ -32,27 +32,27 @@ export default function ReadyOrdersPanel({
   )
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950">
+    <div className="flex flex-col h-full bg-surface-base">
       {/* Panel Header */}
-      <div className="flex flex-col border-b border-zinc-800 bg-zinc-900/40 shrink-0">
+      <div className="flex flex-col border-b border-border-primary bg-surface-raised/40 shrink-0">
         <div className="flex items-center justify-between p-4 pb-2">
-          <h2 className="font-semibold text-zinc-100 text-base flex items-center gap-2">
+          <h2 className="font-semibold text-text-primary text-base flex items-center gap-2">
             Ready for Delivery
           </h2>
-          <span className="bg-green-500/20 text-green-400 text-xs font-bold px-2.5 py-0.5 rounded-full">
+          <span className="bg-semantic_success-500/20 text-semantic_success-400 text-xs font-bold px-2.5 py-0.5 rounded-full">
             {orders.length}
           </span>
         </div>
 
         {/* View Mode Switcher */}
-        <div className="flex p-2 gap-2 bg-zinc-950/40 border-t border-zinc-850">
+        <div className="flex p-2 gap-2 bg-surface-base/40 border-t border-border-primary">
           <button
             onClick={() => setViewMode('available')}
             className={cn(
               "flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all",
               viewMode === 'available'
-                ? "bg-green-500/10 border-green-500/30 text-green-400"
-                : "border-zinc-850 text-zinc-400 hover:text-zinc-350"
+                ? "bg-semantic_success-500/10 border-semantic_success-500/30 text-semantic_success-400"
+                : "border-border-primary text-text-secondary hover:text-text-primary"
             )}
           >
             Available
@@ -62,8 +62,8 @@ export default function ReadyOrdersPanel({
             className={cn(
               "flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all",
               viewMode === 'my-deliveries'
-                ? "bg-green-500/10 border-green-500/30 text-green-400"
-                : "border-zinc-850 text-zinc-400 hover:text-zinc-350"
+                ? "bg-semantic_success-500/10 border-semantic_success-500/30 text-semantic_success-400"
+                : "border-border-primary text-text-secondary hover:text-text-primary"
             )}
           >
             My Deliveries ({myDeliveries.length})
@@ -74,8 +74,8 @@ export default function ReadyOrdersPanel({
       {/* Panel Content */}
       {sortedOrders.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <span className="text-5xl text-green-400 mb-2" role="img" aria-label="done">✓</span>
-          <p className="text-sm font-medium text-zinc-500">
+          <span className="text-5xl text-semantic_success-400 mb-2" role="img" aria-label="done">✓</span>
+          <p className="text-sm font-medium text-text-tertiary">
             {viewMode === 'my-deliveries' ? 'No active claims' : 'All orders delivered'}
           </p>
         </div>

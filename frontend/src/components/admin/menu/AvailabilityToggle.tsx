@@ -42,10 +42,10 @@ export default function AvailabilityToggle({
       disabled={isToggling}
       className={`px-2.5 py-1 rounded-full text-xs font-semibold cursor-pointer select-none transition-all duration-250 flex items-center justify-center gap-1.5 border min-h-7 ${
         isToggling
-          ? 'bg-zinc-800 text-zinc-500 border-zinc-700 cursor-not-allowed'
+          ? 'bg-surface-overlay text-text-tertiary border-border-secondary cursor-not-allowed'
           : isAvailable
-          ? 'bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30'
-          : 'bg-zinc-700 text-zinc-400 border-zinc-600 hover:bg-zinc-650'
+          ? 'bg-semantic_success-500/20 text-semantic_success-400 border-semantic_success-500/30 hover:bg-semantic_success-500/30'
+          : 'bg-surface-overlay text-text-secondary border-border-primary hover:bg-surface-overlay/80'
       }`}
     >
       {isToggling ? (

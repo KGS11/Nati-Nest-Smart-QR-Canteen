@@ -148,7 +148,7 @@ export default function MenuItemList() {
   const totalItemsCount = store.pagination?.total ?? 0
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 p-6 overflow-y-auto">
+    <div className="flex flex-col h-full bg-surface-base p-6 overflow-y-auto">
       {/* Page Header */}
       <PageHeader
         title="Menu Items"
@@ -171,7 +171,7 @@ export default function MenuItemList() {
         <select
           value={store.selectedCategoryId ?? ''}
           onChange={handleCategoryFilterChange}
-          className="bg-zinc-900 border border-zinc-800 text-zinc-105 rounded-xl px-3 py-2 h-10 w-full sm:w-48 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50 text-sm transition-colors cursor-pointer"
+          className="bg-surface-raised border border-border-primary text-text-primary rounded-xl px-3 py-2 h-10 w-full sm:w-48 focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500/50 text-sm transition-colors cursor-pointer"
         >
           <option value="">All Categories</option>
           {store.categories.map((cat) => (
@@ -188,13 +188,13 @@ export default function MenuItemList() {
           {[...Array(8)].map((_, idx) => (
             <div
               key={idx}
-              className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden animate-pulse"
+              className="bg-surface-raised border border-border-primary rounded-xl overflow-hidden animate-pulse"
             >
-              <div className="h-40 bg-zinc-800" />
+              <div className="h-40 bg-surface-overlay" />
               <div className="p-4 space-y-2">
-                <div className="h-4 bg-zinc-800 rounded w-1/3" />
-                <div className="h-5 bg-zinc-800 rounded w-2/3" />
-                <div className="h-4 bg-zinc-800 rounded w-full" />
+                <div className="h-4 bg-surface-overlay rounded w-1/3" />
+                <div className="h-5 bg-surface-overlay rounded w-2/3" />
+                <div className="h-4 bg-surface-overlay rounded w-full" />
               </div>
             </div>
           ))}
@@ -251,16 +251,16 @@ export default function MenuItemList() {
       {(store.activeModal?.type === 'createItem' ||
         store.activeModal?.type === 'editItem') && (
         <div className="fixed inset-0 bg-black/80 z-40 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-6 relative shadow-2xl my-8">
+          <div className="bg-surface-raised border border-border-primary rounded-2xl w-full max-w-md p-6 relative shadow-2xl my-8">
             <button
               type="button"
               onClick={store.closeModal}
-              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-200 text-2xl font-bold bg-transparent border-0 cursor-pointer leading-none"
+              className="absolute top-4 right-4 text-text-secondary hover:text-text-primary text-2xl font-bold bg-transparent border-0 cursor-pointer leading-none"
               aria-label="Close"
             >
               &times;
             </button>
-            <h2 className="text-lg font-bold text-zinc-100 mb-4">
+            <h2 className="text-lg font-bold text-text-primary mb-4">
               {store.activeModal.type === 'createItem' ? 'Add Menu Item' : 'Edit Menu Item'}
             </h2>
             <MenuItemForm
@@ -300,7 +300,7 @@ export default function MenuItemList() {
             <button
               type="button"
               onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
-              className="absolute top-3 right-3 text-zinc-400 hover:text-zinc-200 text-xs bg-transparent border-0 cursor-pointer font-bold p-1 leading-none"
+              className="absolute top-3 right-3 text-text-secondary hover:text-text-primary text-xs bg-transparent border-0 cursor-pointer font-bold p-1 leading-none"
               aria-label="Dismiss"
             >
               ✕

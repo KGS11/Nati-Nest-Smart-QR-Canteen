@@ -47,7 +47,7 @@ export function CustomerBottomNav({ onOpenHelp }: CustomerBottomNavProps) {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-zinc-900/95 border-t border-zinc-800 backdrop-blur-md grid grid-cols-5 pb-safe z-45 max-w-md mx-auto rounded-t-2xl shadow-2xl">
+    <nav className="fixed bottom-0 left-0 right-0 h-16 bg-surface-raised/95 border-t border-border-primary backdrop-blur-md grid grid-cols-5 pb-safe z-45 max-w-md mx-auto rounded-t-2xl shadow-2xl">
       {navItems.map((item, index) => {
         const isButton = item.onClick !== undefined;
         const active = item.active;
@@ -59,11 +59,11 @@ export function CustomerBottomNav({ onOpenHelp }: CustomerBottomNavProps) {
                 name={item.icon}
                 className={cn(
                   "text-xl transition-all duration-200",
-                  active ? "text-amber-400 scale-110 font-bold" : "text-zinc-500 group-hover:text-zinc-350"
+                  active ? "text-accent-400 scale-110 font-bold" : "text-text-tertiary group-hover:text-text-primary"
                 )}
               />
               {item.badge !== undefined && (
-                <span className="absolute -top-2 -right-3.5 bg-amber-500 text-zinc-950 font-extrabold text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center border border-zinc-900 shadow-md">
+                <span className="absolute -top-2 -right-3.5 bg-accent-500 text-surface-base font-extrabold text-[9px] w-4.5 h-4.5 rounded-full flex items-center justify-center border border-border-primary shadow-md">
                   {item.badge}
                 </span>
               )}
@@ -71,7 +71,7 @@ export function CustomerBottomNav({ onOpenHelp }: CustomerBottomNavProps) {
             <span
               className={cn(
                 "text-[10px] font-semibold mt-1 tracking-wide",
-                active ? "text-amber-400 font-bold" : "text-zinc-500"
+                active ? "text-accent-400 font-bold" : "text-text-tertiary"
               )}
             >
               {item.label}

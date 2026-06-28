@@ -30,7 +30,7 @@ export function CategoryTabBar({
   }, [activeCategory]);
 
   return (
-    <div className="sticky top-0 z-20 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/50 w-full">
+    <div className="sticky top-0 z-20 bg-neutral-950/80 backdrop-blur-md border-b border-border-default w-full">
       <div
         ref={containerRef}
         className="hide-scrollbar flex overflow-x-auto gap-2 px-4 py-3"
@@ -40,10 +40,10 @@ export function CategoryTabBar({
           data-active={activeCategory === null}
           onClick={() => onSelect(null)}
           className={cn(
-            "flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all active:scale-95",
+            "flex-shrink-0 px-4 py-2 rounded-full text-label-sm font-medium transition-all active:scale-95",
             activeCategory === null
-              ? "bg-amber-500 text-zinc-950"
-              : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+              ? "bg-brand-500 text-brand-950"
+              : "bg-surface-raised text-text-tertiary hover:bg-surface-base hover:text-text-primary"
           )}
         >
           All
@@ -56,10 +56,10 @@ export function CategoryTabBar({
             data-active={activeCategory === category.id}
             onClick={() => onSelect(category.id)}
             className={cn(
-              "flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all active:scale-95",
+              "flex-shrink-0 px-4 py-2 rounded-full text-label-sm font-medium transition-all active:scale-95",
               activeCategory === category.id
-                ? "bg-amber-500 text-zinc-950"
-                : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                ? "bg-brand-500 text-brand-950"
+                : "bg-surface-raised text-text-tertiary hover:bg-surface-base hover:text-text-primary"
             )}
           >
             {category.name}

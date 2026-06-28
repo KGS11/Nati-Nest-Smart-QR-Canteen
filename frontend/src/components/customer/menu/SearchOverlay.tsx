@@ -56,11 +56,11 @@ export function SearchOverlay({
   });
 
   return (
-    <div className="fixed inset-0 z-50 bg-zinc-950 flex flex-col p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-neutral-950 flex flex-col p-4 overflow-y-auto">
       <div className="flex items-center gap-3 mb-6">
         <button
           onClick={onClose}
-          className="text-amber-400 font-bold text-2xl p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 rounded-lg shrink-0"
+          className="text-brand-500 font-bold text-display-sm p-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-lg shrink-0"
           aria-label="Back to menu"
         >
           ←
@@ -72,14 +72,14 @@ export function SearchOverlay({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search menu..."
-            className="w-full h-12 bg-zinc-900 border border-zinc-800 rounded-xl px-4 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="w-full h-12 bg-surface-raised border border-border-default rounded-xl px-4 text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
       </div>
 
       <div className="flex-1 space-y-4">
         {debouncedQuery.trim() === "" ? (
-          <div className="text-center text-zinc-500 py-12">
+          <div className="text-center text-text-tertiary py-12">
             Type to search delicious dishes...
           </div>
         ) : filteredItems.length > 0 ? (

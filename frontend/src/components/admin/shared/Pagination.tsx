@@ -39,12 +39,12 @@ export default function Pagination({ pagination, onPageChange }: PaginationProps
   const pages = getPages()
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 py-4 border-t border-zinc-800 shrink-0">
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 py-4 border-t border-border-primary shrink-0">
       {/* Left indicator */}
-      <span className="text-sm text-zinc-400">
-        Showing <span className="font-semibold text-zinc-200">{start}</span>–
-        <span className="font-semibold text-zinc-200">{end}</span> of{' '}
-        <span className="font-semibold text-zinc-200">{total}</span> items
+      <span className="text-sm text-text-secondary">
+        Showing <span className="font-semibold text-text-primary">{start}</span>–
+        <span className="font-semibold text-text-primary">{end}</span> of{' '}
+        <span className="font-semibold text-text-primary">{total}</span> items
       </span>
 
       {/* Right controls */}
@@ -54,7 +54,7 @@ export default function Pagination({ pagination, onPageChange }: PaginationProps
           type="button"
           disabled={page === 1}
           onClick={() => onPageChange(page - 1)}
-          className="bg-zinc-800 text-zinc-300 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg text-sm transition-colors border-0 cursor-pointer"
+          className="bg-surface-overlay text-text-secondary hover:bg-surface-overlay/80 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg text-sm transition-colors border-0 cursor-pointer"
         >
           Previous
         </button>
@@ -63,7 +63,7 @@ export default function Pagination({ pagination, onPageChange }: PaginationProps
         {pages.map((p, idx) => {
           if (p === '...') {
             return (
-              <span key={`ell-${idx}`} className="text-zinc-500 px-2 select-none">
+              <span key={`ell-${idx}`} className="text-text-tertiary px-2 select-none">
                 ...
               </span>
             )
@@ -79,8 +79,8 @@ export default function Pagination({ pagination, onPageChange }: PaginationProps
               onClick={() => onPageChange(pageNum)}
               className={`px-3 py-1.5 rounded-lg text-sm transition-colors font-medium border-0 cursor-pointer ${
                 isCurrent
-                  ? 'bg-amber-500 text-zinc-950 font-bold'
-                  : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                  ? 'bg-accent-500 text-surface-base font-bold'
+                  : 'bg-surface-overlay text-text-secondary hover:bg-surface-overlay/80'
               }`}
             >
               {pageNum}
@@ -93,7 +93,7 @@ export default function Pagination({ pagination, onPageChange }: PaginationProps
           type="button"
           disabled={page === totalPages}
           onClick={() => onPageChange(page + 1)}
-          className="bg-zinc-800 text-zinc-300 hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg text-sm transition-colors border-0 cursor-pointer"
+          className="bg-surface-overlay text-text-secondary hover:bg-surface-overlay/80 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg text-sm transition-colors border-0 cursor-pointer"
         >
           Next
         </button>

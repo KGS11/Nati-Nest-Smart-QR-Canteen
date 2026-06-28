@@ -37,10 +37,10 @@ export function FullMenuPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden p-5">
-      <div className="flex items-center justify-between mb-4 border-b border-zinc-900 pb-3">
-        <h3 className="text-lg font-bold text-zinc-200">Master Catalogue</h3>
-        <span className="text-xs text-zinc-500 font-medium">Add items to today's menu</span>
+    <div className="flex flex-col h-full bg-surface-base border border-surface-raised rounded-2xl overflow-hidden p-5">
+      <div className="flex items-center justify-between mb-4 border-b border-surface-raised pb-3">
+        <h3 className="text-lg font-bold text-text-primary">Master Catalogue</h3>
+        <span className="text-xs text-text-tertiary font-medium">Add items to today's menu</span>
       </div>
 
       <div className="space-y-4 mb-5">
@@ -50,12 +50,12 @@ export function FullMenuPanel({
             placeholder="Search catalogue items..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-amber-500 transition-colors"
+            className="w-full bg-surface-raised border border-border-primary rounded-xl px-4 py-2.5 text-sm text-text-primary placeholder-text-tertiary focus:outline-none focus:border-accent-500 transition-colors"
           />
           {searchQuery && (
             <button
               onClick={() => onSearchChange("")}
-              className="absolute right-3 top-2.5 text-zinc-500 hover:text-zinc-300 bg-transparent border-0 cursor-pointer text-sm"
+              className="absolute right-3 top-2.5 text-text-tertiary hover:text-text-primary bg-transparent border-0 cursor-pointer text-sm"
             >
               ✕
             </button>
@@ -67,8 +67,8 @@ export function FullMenuPanel({
             onClick={() => onCategorySelect(null)}
             className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 cursor-pointer border transition-all ${
               selectedCategoryId === null
-                ? "bg-amber-500 border-amber-500 text-zinc-950 font-bold"
-                : "bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-zinc-200"
+                ? "bg-accent-500 border-accent-500 text-surface-base font-bold"
+                : "bg-surface-raised border-border-primary text-text-secondary hover:text-text-primary"
             }`}
           >
             All
@@ -79,8 +79,8 @@ export function FullMenuPanel({
               onClick={() => onCategorySelect(cat.id)}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 cursor-pointer border transition-all ${
                 selectedCategoryId === cat.id
-                  ? "bg-amber-500 border-amber-500 text-zinc-950 font-bold"
-                  : "bg-zinc-900 border-zinc-850 text-zinc-400 hover:text-zinc-200"
+                  ? "bg-accent-500 border-accent-500 text-surface-base font-bold"
+                  : "bg-surface-raised border-border-primary text-text-secondary hover:text-text-primary"
               }`}
             >
               {cat.name}
@@ -90,14 +90,14 @@ export function FullMenuPanel({
       </div>
 
       {isLoading ? (
-        <div className="flex-1 flex items-center justify-center py-20 text-zinc-500 font-medium">
+        <div className="flex-1 flex items-center justify-center py-20 text-text-tertiary font-medium">
           <span className="animate-spin mr-2">⏳</span> Loading Catalogue...
         </div>
       ) : categories.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center text-center py-20 border border-dashed border-zinc-850 rounded-xl px-4">
-          <span className="text-4xl text-zinc-600 mb-3">🔍</span>
-          <h4 className="font-bold text-zinc-300 text-base">No Items Found</h4>
-          <p className="text-xs text-zinc-500 max-w-[280px] mt-1">
+        <div className="flex-1 flex flex-col items-center justify-center text-center py-20 border border-dashed border-border-primary rounded-xl px-4">
+          <span className="text-4xl text-text-muted mb-3">🔍</span>
+          <h4 className="font-bold text-text-primary text-base">No Items Found</h4>
+          <p className="text-xs text-text-tertiary max-w-[280px] mt-1">
             Try adjusting your search query or selecting a different category.
           </p>
         </div>
@@ -105,7 +105,7 @@ export function FullMenuPanel({
         <div className="flex-1 overflow-y-auto space-y-6 max-h-[500px] pr-1.5 scrollbar-thin">
           {categories.map((category) => (
             <div key={category.id} className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 bg-zinc-900/40 px-2.5 py-1 rounded border border-zinc-850/30">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-text-tertiary bg-surface-raised/40 px-2.5 py-1 rounded border border-border-primary/30">
                 {category.name}
               </h4>
               <div className="grid gap-3">

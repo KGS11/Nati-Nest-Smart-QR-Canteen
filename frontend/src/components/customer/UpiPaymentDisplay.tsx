@@ -113,10 +113,10 @@ export function UpiPaymentDisplay({
   if (paymentConfirmed) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-10 px-4 animate-fade-in">
-        <div className="mb-4 rounded-full bg-green-500/10 px-5 py-3 text-3xl font-bold text-green-400">Paid</div>
-        <h3 className="text-2xl font-bold text-green-400">Payment Confirmed!</h3>
-        <p className="text-zinc-100 font-medium mt-2">Thank you for dining with us!</p>
-        <p className="text-sm text-zinc-400 mt-1">Your session is now complete.</p>
+        <div className="mb-4 rounded-full bg-semantic_success-500/10 px-5 py-3 text-3xl font-bold text-semantic_success-400">Paid</div>
+        <h3 className="text-2xl font-bold text-semantic_success-400">Payment Confirmed!</h3>
+        <p className="text-text-primary font-medium mt-2">Thank you for dining with us!</p>
+        <p className="text-sm text-text-secondary mt-1">Your session is now complete.</p>
       </div>
     );
   }
@@ -124,9 +124,9 @@ export function UpiPaymentDisplay({
   if (paymentRequested) {
     return (
       <div className="flex flex-col items-center justify-center text-center py-10 px-4 animate-fade-in">
-        <div className="mb-4 rounded-full bg-blue-500/10 px-5 py-3 text-2xl font-bold text-blue-400 animate-pulse">Sent</div>
-        <h3 className="text-xl font-bold text-zinc-100">Payment notification sent!</h3>
-        <p className="text-sm text-zinc-400 mt-2 max-w-xs leading-relaxed">
+        <div className="mb-4 rounded-full bg-info-500/10 px-5 py-3 text-2xl font-bold text-info-450 animate-pulse">Sent</div>
+        <h3 className="text-xl font-bold text-text-primary">Payment notification sent!</h3>
+        <p className="text-sm text-text-secondary mt-2 max-w-xs leading-relaxed">
           Waiter will verify and confirm shortly. You will receive a confirmation here.
         </p>
         <div className="flex items-center gap-2 mt-6 justify-center">
@@ -137,26 +137,26 @@ export function UpiPaymentDisplay({
   }
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col items-center max-w-md mx-auto w-full">
-      <h3 className="text-lg font-bold text-zinc-100 text-center">
+    <div className="bg-surface-raised border border-border-primary rounded-2xl p-6 flex flex-col items-center max-w-md mx-auto w-full">
+      <h3 className="text-lg font-bold text-text-primary text-center">
         Online Payment
       </h3>
-      <p className="text-2xl font-bold text-amber-400 text-center mt-1 mb-6">
+      <p className="text-2xl font-bold text-accent-400 text-center mt-1 mb-6">
         Rs {totalAmount.toFixed(2)}
       </p>
 
       {!scannedUpiLink ? (
         <div className="w-full flex flex-col items-center space-y-6">
-          <div className="bg-zinc-800/50 rounded-xl p-5 w-full text-center border border-zinc-700/50">
-            <h4 className="text-zinc-200 font-semibold mb-2">Option 1: Scan & Pay</h4>
-            <p className="text-sm text-zinc-400 mb-4">
+          <div className="bg-surface-overlay/50 rounded-xl p-5 w-full text-center border border-border-primary/50">
+            <h4 className="text-text-primary font-semibold mb-2">Option 1: Scan & Pay</h4>
+            <p className="text-sm text-text-secondary mb-4">
               Use your phone's camera to scan the restaurant's physical payment QR code. We'll automatically fill in the amount.
             </p>
             <Button
               type="button"
-              variant="primary"
+              variant="brand"
               onClick={() => setShowScanner(true)}
-              className="w-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold border-0 flex items-center justify-center gap-2"
+              className="w-full bg-accent-500 hover:bg-accent-400 text-surface-base font-bold border-0 flex items-center justify-center gap-2"
             >
               <Camera className="w-4 h-4" />
               Open Camera Scanner
@@ -164,22 +164,22 @@ export function UpiPaymentDisplay({
           </div>
           
           <div className="w-full flex items-center gap-4">
-            <div className="h-px bg-zinc-800 flex-1" />
-            <span className="text-xs text-zinc-500 uppercase font-bold tracking-wider">OR</span>
-            <div className="h-px bg-zinc-800 flex-1" />
+            <div className="h-px bg-border-primary flex-1" />
+            <span className="text-xs text-text-tertiary uppercase font-bold tracking-wider">OR</span>
+            <div className="h-px bg-border-primary flex-1" />
           </div>
 
-          <div className="bg-zinc-800/50 rounded-xl p-5 w-full text-center border border-zinc-700/50">
-            <h4 className="text-zinc-200 font-semibold mb-2">Option 2: Enter UPI ID</h4>
-            <p className="text-sm text-zinc-400 mb-4">
+          <div className="bg-surface-overlay/50 rounded-xl p-5 w-full text-center border border-border-primary/50">
+            <h4 className="text-text-primary font-semibold mb-2">Option 2: Enter UPI ID</h4>
+            <p className="text-sm text-text-secondary mb-4">
               Type the merchant's UPI ID (shown on their QR code sticker) and pay directly.
             </p>
             {!showManualEntry ? (
               <Button
                 type="button"
-                variant="primary"
+                variant="brand"
                 onClick={() => setShowManualEntry(true)}
-                className="w-full bg-blue-500 hover:bg-blue-400 text-zinc-950 font-bold border-0 flex items-center justify-center gap-2"
+                className="w-full bg-info-500 hover:bg-info-400 text-surface-base font-bold border-0 flex items-center justify-center gap-2"
               >
                 <PenLine className="w-4 h-4" />
                 Enter UPI ID Manually
@@ -191,15 +191,15 @@ export function UpiPaymentDisplay({
                   placeholder="e.g. merchant@upi"
                   value={manualUpiId}
                   onChange={(e) => setManualUpiId(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-600 rounded-lg px-4 py-3 text-zinc-100 text-center text-lg placeholder:text-zinc-600 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                  className="w-full bg-surface-base border border-border-secondary rounded-lg px-4 py-3 text-text-primary text-center text-lg placeholder:text-text-muted focus:border-accent-500 focus:outline-none focus:ring-1 focus:ring-accent-500/50"
                   autoFocus
                 />
                 <Button
                   type="button"
-                  variant="primary"
+                  variant="brand"
                   onClick={handleManualSubmit}
                   disabled={!manualUpiId.trim()}
-                  className="w-full bg-green-500 hover:bg-green-400 text-zinc-950 font-bold border-0 disabled:opacity-50"
+                  className="w-full bg-semantic_success-500 hover:bg-semantic_success-400 text-surface-base font-bold border-0 disabled:opacity-50"
                 >
                   Pay Rs {totalAmount.toFixed(2)}
                 </Button>
@@ -208,36 +208,36 @@ export function UpiPaymentDisplay({
           </div>
 
           <div className="w-full flex items-center gap-4">
-            <div className="h-px bg-zinc-800 flex-1" />
-            <span className="text-xs text-zinc-500 uppercase font-bold tracking-wider">OR</span>
-            <div className="h-px bg-zinc-800 flex-1" />
+            <div className="h-px bg-border-primary flex-1" />
+            <span className="text-xs text-text-tertiary uppercase font-bold tracking-wider">OR</span>
+            <div className="h-px bg-border-primary flex-1" />
           </div>
 
-          <div className="bg-zinc-800/50 rounded-xl p-5 w-full text-center border border-zinc-700/50">
-            <h4 className="text-zinc-200 font-semibold mb-2">Option 3: Pay Manually</h4>
-            <p className="text-sm text-zinc-400 mb-4">
+          <div className="bg-surface-overlay/50 rounded-xl p-5 w-full text-center border border-border-primary/50">
+            <h4 className="text-text-primary font-semibold mb-2">Option 3: Pay Manually</h4>
+            <p className="text-sm text-text-secondary mb-4">
               Open Google Pay, PhonePe, or Paytm directly, scan the restaurant's physical QR code, pay Rs {totalAmount.toFixed(2)}, and tap the button below.
             </p>
           </div>
         </div>
       ) : (
         <div className="w-full flex flex-col items-center py-4">
-          <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 w-full text-center mb-6">
-            <p className="text-green-400 font-semibold mb-1">QR Code Scanned Successfully!</p>
-            <p className="text-xs text-green-400/80">Click below to open your UPI app.</p>
+          <div className="bg-semantic_success-500/10 border border-semantic_success-500/20 rounded-xl p-4 w-full text-center mb-6">
+            <p className="text-semantic_success-400 font-semibold mb-1">QR Code Scanned Successfully!</p>
+            <p className="text-xs text-semantic_success-400/80">Click below to open your UPI app.</p>
           </div>
           <Button
             type="button"
-            variant="primary"
+            variant="brand"
             onClick={executePaymentLink}
-            className="h-14 w-full bg-blue-500 hover:bg-blue-400 text-zinc-950 font-bold text-base rounded-xl active:scale-95 transition-all flex items-center justify-center border-0"
+            className="h-14 w-full bg-info-500 hover:bg-info-400 text-surface-base font-bold text-base rounded-xl active:scale-95 transition-all flex items-center justify-center border-0"
           >
             Pay Rs {totalAmount.toFixed(2)} Now
           </Button>
           <button
             type="button"
             onClick={() => setScannedUpiLink(null)}
-            className="text-sm text-zinc-500 hover:text-zinc-300 mt-6 underline bg-transparent border-0 cursor-pointer"
+            className="text-sm text-text-tertiary hover:text-text-primary mt-6 underline bg-transparent border-0 cursor-pointer"
           >
             Scan a different QR code
           </button>
@@ -253,10 +253,10 @@ export function UpiPaymentDisplay({
 
       <Button
         type="button"
-        variant="primary"
+        variant="brand"
         disabled={isRequestingPayment}
         onClick={handlePaid}
-        className="h-14 w-full bg-green-500 hover:bg-green-400 text-zinc-950 font-semibold text-base mt-8 rounded-xl active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed border-0"
+        className="h-14 w-full bg-semantic_success-500 hover:bg-semantic_success-400 text-surface-base font-semibold text-base mt-8 rounded-xl active:scale-95 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed border-0"
       >
         {isRequestingPayment ? <Loader label="" /> : "I've Completed Payment"}
       </Button>
@@ -265,7 +265,7 @@ export function UpiPaymentDisplay({
         type="button"
         onClick={onBack}
         disabled={isRequestingPayment}
-        className="text-sm text-zinc-500 hover:text-zinc-300 font-medium mt-4 bg-transparent border-0 cursor-pointer"
+        className="text-sm text-text-tertiary hover:text-text-primary font-medium mt-4 bg-transparent border-0 cursor-pointer"
       >
         Change payment method
       </button>

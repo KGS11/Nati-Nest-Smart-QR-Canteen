@@ -53,7 +53,7 @@ export function AudioAlert({ isEnabled, onToggle }: AudioAlertProps) {
       <button
         type="button"
         onClick={() => onToggle(!isEnabled)}
-        className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 rounded-xl px-3 py-2 flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 text-sm font-semibold"
+        className="bg-surface-overlay hover:bg-surface-overlay/80 text-text-primary rounded-xl px-3 py-2 flex items-center gap-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500 text-sm font-semibold"
         aria-label={isEnabled ? "Disable audio alerts" : "Enable audio alerts"}
       >
         <span className="text-base select-none">
@@ -65,7 +65,7 @@ export function AudioAlert({ isEnabled, onToggle }: AudioAlertProps) {
       </button>
 
       {!unlocked && isEnabled && (
-        <span className="text-[10px] text-amber-400 font-medium animate-pulse">
+        <span className="text-[10px] text-accent-400 font-medium animate-pulse">
           Tap anywhere to enable audio
         </span>
       )}

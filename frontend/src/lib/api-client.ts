@@ -9,6 +9,7 @@ export const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
   timeout: 10000,
 });
 
@@ -61,7 +62,7 @@ apiClient.interceptors.response.use(
     if (status === 401 && !originalRequest?._retry) {
       const authState = useAuthStore.getState();
 
-      if (authState.refreshToken) {
+      if (authState.refreshToken || authState.isAuthenticated) {
         originalRequest._retry = true;
         try {
           const refreshResponse = await apiClient.post("/auth/refresh", {

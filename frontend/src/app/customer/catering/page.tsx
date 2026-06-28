@@ -54,11 +54,11 @@ export default function CustomerCateringPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col bg-zinc-950 px-4 py-6 text-zinc-100">
+    <main className="mx-auto flex min-h-screen max-w-md flex-col bg-surface-base px-4 py-6 text-text-primary">
       <header className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-wide text-amber-400">Nati Nest</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-accent-400">Nati Nest</p>
         <h1 className="mt-1 text-2xl font-bold">Plan a catering event</h1>
-        <p className="mt-2 text-sm text-zinc-400">
+        <p className="mt-2 text-sm text-text-secondary">
           Tell us the basics and our team will contact you with options.
         </p>
       </header>
@@ -76,7 +76,7 @@ export default function CustomerCateringPage() {
           value={form.name}
           onChange={(event) => update("name", event.target.value)}
           placeholder="Your name"
-          className="min-h-12 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-sm outline-none focus:border-amber-400"
+          className="min-h-12 w-full rounded-xl border border-border-primary bg-surface-raised px-4 text-sm outline-none focus:border-accent-500"
         />
         <input
           required
@@ -85,12 +85,12 @@ export default function CustomerCateringPage() {
           value={form.phone}
           onChange={(event) => update("phone", event.target.value)}
           placeholder="10 digit phone"
-          className="min-h-12 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-sm outline-none focus:border-amber-400"
+          className="min-h-12 w-full rounded-xl border border-border-primary bg-surface-raised px-4 text-sm outline-none focus:border-accent-500"
         />
         <select
           value={form.eventType}
           onChange={(event) => update("eventType", event.target.value as CateringLeadPayload["eventType"])}
-          className="min-h-12 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-sm outline-none focus:border-amber-400"
+          className="min-h-12 w-full rounded-xl border border-border-primary bg-surface-raised px-4 text-sm outline-none focus:border-accent-500"
         >
           {eventTypes.map((type) => (
             <option key={type} value={type}>
@@ -103,7 +103,7 @@ export default function CustomerCateringPage() {
           type="date"
           value={form.eventDate}
           onChange={(event) => update("eventDate", event.target.value)}
-          className="min-h-12 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-sm outline-none focus:border-amber-400"
+          className="min-h-12 w-full rounded-xl border border-border-primary bg-surface-raised px-4 text-sm outline-none focus:border-accent-500"
         />
         <input
           required
@@ -113,7 +113,7 @@ export default function CustomerCateringPage() {
           value={form.guestCount}
           onChange={(event) => update("guestCount", Number(event.target.value))}
           placeholder="Guest count"
-          className="min-h-12 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-sm outline-none focus:border-amber-400"
+          className="min-h-12 w-full rounded-xl border border-border-primary bg-surface-raised px-4 text-sm outline-none focus:border-accent-500"
         />
         <input
           required
@@ -121,21 +121,21 @@ export default function CustomerCateringPage() {
           value={form.location}
           onChange={(event) => update("location", event.target.value)}
           placeholder="Event location"
-          className="min-h-12 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-sm outline-none focus:border-amber-400"
+          className="min-h-12 w-full rounded-xl border border-border-primary bg-surface-raised px-4 text-sm outline-none focus:border-accent-500"
         />
         <textarea
           value={form.notes}
           maxLength={500}
           onChange={(event) => update("notes", event.target.value)}
           placeholder="Notes, menu ideas, or timing"
-          className="min-h-28 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-amber-400"
+          className="min-h-28 w-full rounded-xl border border-border-primary bg-surface-raised px-4 py-3 text-sm outline-none focus:border-accent-500"
         />
-        <Button type="submit" disabled={submitting} className="min-h-12 w-full bg-amber-500 text-zinc-950">
+        <Button type="submit" disabled={submitting} className="min-h-12 w-full bg-accent-500 text-surface-base">
           {submitting ? "Submitting..." : "Submit Request"}
         </Button>
       </form>
 
-      <Link href="/customer/menu" className="mt-4 text-center text-sm text-zinc-400">
+      <Link href="/customer/menu" className="mt-4 text-center text-sm text-text-secondary">
         Back to menu
       </Link>
     </main>

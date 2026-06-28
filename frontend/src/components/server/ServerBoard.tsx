@@ -541,21 +541,21 @@ export default function ServerBoard() {
   }
 
   return (
-    <div className="h-screen w-screen bg-zinc-955 text-zinc-100 flex flex-col overflow-hidden">
+    <div className="h-screen w-screen bg-surface-base text-text-primary flex flex-col overflow-hidden">
       {/* Top Bar */}
-      <header className="h-16 shrink-0 bg-zinc-900 border-b border-zinc-800 flex items-center justify-between px-6 z-10">
-        <h1 className="text-xl font-bold text-zinc-100">Waiter Dashboard</h1>
+      <header className="h-16 shrink-0 bg-surface-raised border-b border-border-primary flex items-center justify-between px-6 z-10">
+        <h1 className="text-xl font-bold text-text-primary">Waiter Dashboard</h1>
         <div className="flex items-center gap-4">
           <ServerConnectionStatus isConnected={store.isConnected} />
           <Button
             type="button"
             variant="secondary"
             onClick={() => setIsTipsOpen(true)}
-            className="min-h-10 text-xs bg-amber-500 hover:bg-amber-400 text-zinc-950 border-0 font-bold"
+            className="min-h-10 text-xs bg-accent-500 hover:bg-accent-400 text-surface-base border-0 font-bold"
           >
             Tips Report
           </Button>
-          <span className="text-sm font-medium text-zinc-400">
+          <span className="text-sm font-medium text-text-secondary">
             {user?.name ?? 'Waiter Staff'}
           </span>
           <Button type="button" variant="secondary" onClick={logout} className="min-h-10 text-xs">
@@ -583,18 +583,18 @@ export default function ServerBoard() {
         {store.isLoading ? (
           <main className="flex-1 overflow-hidden p-4">
             <div className="grid grid-cols-3 gap-4 h-full">
-              <div className="flex flex-col bg-zinc-950 rounded-xl border border-zinc-800 p-4 space-y-4">
-                <div className="h-6 w-32 bg-zinc-800 rounded animate-pulse" />
+              <div className="flex flex-col bg-surface-base rounded-xl border border-border-primary p-4 space-y-4">
+                <div className="h-6 w-32 bg-surface-overlay rounded animate-pulse" />
                 <OrderCardSkeleton />
                 <OrderCardSkeleton />
               </div>
-              <div className="flex flex-col bg-zinc-950 rounded-xl border border-zinc-800 p-4 space-y-4">
-                <div className="h-6 w-32 bg-zinc-800 rounded animate-pulse" />
+              <div className="flex flex-col bg-surface-base rounded-xl border border-border-primary p-4 space-y-4">
+                <div className="h-6 w-32 bg-surface-overlay rounded animate-pulse" />
                 <OrderCardSkeleton />
                 <OrderCardSkeleton />
               </div>
-              <div className="flex flex-col bg-zinc-950 rounded-xl border border-zinc-800 p-4 space-y-4">
-                <div className="h-6 w-32 bg-zinc-800 rounded animate-pulse" />
+              <div className="flex flex-col bg-surface-base rounded-xl border border-border-primary p-4 space-y-4">
+                <div className="h-6 w-32 bg-surface-overlay rounded animate-pulse" />
                 <OrderCardSkeleton />
                 <OrderCardSkeleton />
               </div>
@@ -602,7 +602,7 @@ export default function ServerBoard() {
           </main>
         ) : !store.isLoading && store.error ? (
           <div className="flex-1 flex items-center justify-center p-6">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-6 text-center max-w-sm w-full">
+            <div className="rounded-xl border border-border-primary bg-surface-raised p-6 text-center max-w-sm w-full">
               <p className="text-red-400 text-sm mb-4 font-semibold">{store.error}</p>
               <Button type="button" onClick={fetchAllData} className="w-full">
                 Retry
@@ -613,21 +613,21 @@ export default function ServerBoard() {
           <main className="flex-1 overflow-hidden p-4 md:overflow-y-auto lg:overflow-hidden flex flex-col gap-4">
             {/* My Active Tables Grid */}
             {store.myTables.length > 0 && (
-              <div className="shrink-0 bg-zinc-950/40 border border-zinc-800 rounded-xl p-4">
-                <h2 className="text-sm font-extrabold text-zinc-400 tracking-wider uppercase mb-3 flex items-center gap-2">
-                  <MaterialIcon name="table_restaurant" className="text-amber-500" />
+              <div className="shrink-0 bg-surface-base/40 border border-border-primary rounded-xl p-4">
+                <h2 className="text-sm font-extrabold text-text-secondary tracking-wider uppercase mb-3 flex items-center gap-2">
+                  <MaterialIcon name="table_restaurant" className="text-accent-500" />
                   My Active Tables ({store.myTables.length})
                 </h2>
                 <div className="flex flex-wrap gap-3">
                   {store.myTables.map((table) => (
                     <div
                       key={table.sessionId}
-                      className="bg-zinc-900/60 border border-zinc-800 rounded-lg px-4 py-3 flex items-center justify-between gap-4 min-w-[160px]"
+                      className="bg-surface-raised/60 border border-border-primary rounded-lg px-4 py-3 flex items-center justify-between gap-4 min-w-[160px]"
                     >
                       <div>
-                        <div className="text-base font-black text-zinc-100">Table {table.tableNumber}</div>
-                        <div className="text-xs text-zinc-400">
-                          {table.orderCount} order{table.orderCount !== 1 ? 's' : ''}
+                        <div className="text-base font-black text-text-primary">Table {table.tableNumber}</div>
+                        <div className="text-xs text-text-secondary">
+                           {table.orderCount} order{table.orderCount !== 1 ? 's' : ''}
                         </div>
                       </div>
                       {table.pendingRequestsCount > 0 && (
@@ -643,12 +643,12 @@ export default function ServerBoard() {
 
             <div className="flex-1 flex flex-col lg:grid lg:grid-cols-4 gap-4 min-h-0 overflow-hidden">
               {/* Incoming Active Orders Panel */}
-              <div className="flex flex-col bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden h-[600px] lg:h-full">
+              <div className="flex flex-col bg-surface-base rounded-xl border border-border-primary overflow-hidden h-[600px] lg:h-full">
                 <IncomingOrdersPanel orders={store.inProgressOrders} />
               </div>
 
               {/* Ready Orders Panel */}
-              <div className="flex flex-col bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden h-[600px] lg:h-full">
+              <div className="flex flex-col bg-surface-base rounded-xl border border-border-primary overflow-hidden h-[600px] lg:h-full">
                 <ReadyOrdersPanel
                   orders={store.readyOrders}
                   onDeliver={handleDeliver}
@@ -659,7 +659,7 @@ export default function ServerBoard() {
               </div>
 
               {/* Assistance Requests Panel */}
-              <div className="flex flex-col bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden h-[600px] lg:h-full">
+              <div className="flex flex-col bg-surface-base rounded-xl border border-border-primary overflow-hidden h-[600px] lg:h-full">
                 <AssistancePanel
                   requests={store.assistanceRequests}
                   onResolve={handleResolveAssistance}
@@ -674,7 +674,7 @@ export default function ServerBoard() {
               </div>
 
               {/* Pending Payments Panel */}
-              <div className="flex flex-col bg-zinc-950 rounded-xl border border-zinc-800 overflow-hidden p-4 h-[600px] lg:h-full">
+              <div className="flex flex-col bg-surface-base rounded-xl border border-border-primary overflow-hidden p-4 h-[600px] lg:h-full">
                 <PendingPaymentsPanel
                   payments={store.pendingPayments}
                   onVerifyPayment={handleOpenPaymentVerification}
@@ -687,7 +687,7 @@ export default function ServerBoard() {
       </div>
 
       {/* Mobile view block (Below 768px) */}
-      <div className="flex-1 flex flex-col md:hidden overflow-hidden relative bg-zinc-950">
+      <div className="flex-1 flex flex-col md:hidden overflow-hidden relative bg-surface-base">
         {store.isLoading ? (
           <div className="p-4 space-y-4">
             <OrderCardSkeleton />
@@ -699,18 +699,18 @@ export default function ServerBoard() {
           <div className="flex-1 overflow-y-auto pb-24">
             {/* My Active Tables Grid for Mobile */}
             {store.myTables.length > 0 && (
-              <div className="bg-zinc-900/40 border-b border-zinc-800 p-4">
-                <h2 className="text-xs font-extrabold text-zinc-400 tracking-wider uppercase mb-2 flex items-center gap-1.5">
-                  <MaterialIcon name="table_restaurant" className="text-amber-500 text-sm" />
+              <div className="bg-surface-raised/40 border-b border-border-primary p-4">
+                <h2 className="text-xs font-extrabold text-text-secondary tracking-wider uppercase mb-2 flex items-center gap-1.5">
+                  <MaterialIcon name="table_restaurant" className="text-accent-500 text-sm" />
                   My Active Tables ({store.myTables.length})
                 </h2>
                 <div className="flex flex-wrap gap-2">
                   {store.myTables.map((table) => (
                     <div
                       key={table.sessionId}
-                      className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 flex items-center gap-2 text-xs"
+                      className="bg-surface-raised border border-border-primary rounded-lg px-3 py-2 flex items-center gap-2 text-xs"
                     >
-                      <span className="font-bold text-zinc-100">T{table.tableNumber}</span>
+                      <span className="font-bold text-text-primary">T{table.tableNumber}</span>
                       {table.pendingRequestsCount > 0 && (
                         <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
                       )}
@@ -757,18 +757,18 @@ export default function ServerBoard() {
         )}
 
         {/* Mobile Tab Bar */}
-        <nav className="fixed bottom-0 left-0 right-0 h-16 bg-zinc-900 border-t border-zinc-800 grid grid-cols-4 pb-safe z-30">
+        <nav className="fixed bottom-0 left-0 right-0 h-16 bg-surface-raised border-t border-border-primary grid grid-cols-4 pb-safe z-30">
           <button
             onClick={() => setActiveMobileTab('incoming')}
             className={cn(
               "flex flex-col items-center justify-center relative focus:outline-none transition-colors",
-              activeMobileTab === 'incoming' ? "text-amber-400" : "text-zinc-500"
+              activeMobileTab === 'incoming' ? "text-accent-400" : "text-text-tertiary"
             )}
           >
             <div className="relative flex items-center justify-center">
               <MaterialIcon name="receipt_long" className="text-xl" />
               {store.inProgressOrders.length > 0 && (
-                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-amber-500 ring-2 ring-zinc-900 animate-pulse" />
+                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-accent-500 ring-2 ring-surface-base animate-pulse" />
               )}
             </div>
             <span className="text-[10px] font-semibold mt-1">Incoming</span>
@@ -778,13 +778,13 @@ export default function ServerBoard() {
             onClick={() => setActiveMobileTab('requests')}
             className={cn(
               "flex flex-col items-center justify-center relative focus:outline-none transition-colors",
-              activeMobileTab === 'requests' ? "text-amber-400" : "text-zinc-500"
+              activeMobileTab === 'requests' ? "text-accent-400" : "text-text-tertiary"
             )}
           >
             <div className="relative flex items-center justify-center">
               <MaterialIcon name="support_agent" className="text-xl" />
               {store.assistanceRequests.length > 0 && (
-                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-zinc-900 animate-pulse" />
+                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-surface-base animate-pulse" />
               )}
             </div>
             <span className="text-[10px] font-semibold mt-1">Requests</span>
@@ -794,13 +794,13 @@ export default function ServerBoard() {
             onClick={() => setActiveMobileTab('deliver')}
             className={cn(
               "flex flex-col items-center justify-center relative focus:outline-none transition-colors",
-              activeMobileTab === 'deliver' ? "text-amber-400" : "text-zinc-500"
+              activeMobileTab === 'deliver' ? "text-accent-400" : "text-text-tertiary"
             )}
           >
             <div className="relative flex items-center justify-center">
               <MaterialIcon name="restaurant" className="text-xl" />
               {store.readyOrders.length > 0 && (
-                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-zinc-900 animate-pulse" />
+                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-surface-base animate-pulse" />
               )}
             </div>
             <span className="text-[10px] font-semibold mt-1">Deliver</span>
@@ -810,13 +810,13 @@ export default function ServerBoard() {
             onClick={() => setActiveMobileTab('payments')}
             className={cn(
               "flex flex-col items-center justify-center relative focus:outline-none transition-colors",
-              activeMobileTab === 'payments' ? "text-amber-400" : "text-zinc-500"
+              activeMobileTab === 'payments' ? "text-accent-400" : "text-text-tertiary"
             )}
           >
             <div className="relative flex items-center justify-center">
               <MaterialIcon name="payments" className="text-xl" />
               {store.pendingPayments.length > 0 && (
-                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-zinc-900 animate-pulse" />
+                <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-surface-base animate-pulse" />
               )}
             </div>
             <span className="text-[10px] font-semibold mt-1">Payments</span>
@@ -853,19 +853,19 @@ export default function ServerBoard() {
       {/* Stacking Toasts Notification Container */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-sm w-full">
         {toasts.map((toast) => {
-          let bgClass = 'bg-zinc-900 text-zinc-100'
+          let bgClass = 'bg-surface-overlay text-text-primary border border-border-primary'
           if (toast.type === 'ready' || toast.type === 'payment') {
-            bgClass = 'bg-green-500 text-zinc-950'
+            bgClass = 'bg-semantic_success-500 text-surface-base'
           } else if (toast.type === 'assistance') {
-            bgClass = 'bg-amber-500 text-zinc-950'
+            bgClass = 'bg-accent-500 text-surface-base'
           } else if (toast.type === 'error') {
-            bgClass = 'bg-red-500 text-zinc-100'
+            bgClass = 'bg-semantic_error-500 text-white'
           }
 
           return (
             <div
               key={toast.id}
-              className={`px-4 py-3.5 rounded-xl shadow-2xl flex items-center justify-between gap-3 border border-black/10 transition-all duration-300 transform translate-y-0 ${bgClass}`}
+              className={`px-4 py-3.5 rounded-xl shadow-2xl flex items-center justify-between gap-3 transition-all duration-300 transform translate-y-0 ${bgClass}`}
             >
               <span className="text-sm font-bold">{toast.title}</span>
               <button

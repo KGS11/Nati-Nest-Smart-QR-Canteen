@@ -83,22 +83,22 @@ export function OrderStatusTimeline({
               <div
                 className={cn(
                   "absolute left-[19px] top-10 bottom-0 w-0.5 min-h-[32px] -z-10",
-                  isCompleted ? "bg-green-500" : "bg-zinc-800"
+                  isCompleted ? "bg-semantic_success-500" : "bg-surface-overlay"
                 )}
               />
             )}
 
             <div className="shrink-0 z-10">
               {isCompleted ? (
-                <div className="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-sm">
+                <div className="w-10 h-10 rounded-full bg-semantic_success-500 text-white flex items-center justify-center font-bold text-sm">
                   ✓
                 </div>
               ) : isCurrent ? (
-                <div className="w-10 h-10 rounded-full bg-amber-500 text-zinc-950 flex items-center justify-center font-bold text-sm ring-4 ring-amber-500/20 animate-pulse">
+                <div className="w-10 h-10 rounded-full bg-accent-500 text-surface-base flex items-center justify-center font-bold text-sm ring-4 ring-accent-500/20 animate-pulse">
                   <span className="text-base">{step.icon}</span>
                 </div>
               ) : (
-                <div className="w-10 h-10 rounded-full bg-zinc-800 text-zinc-650 flex items-center justify-center font-bold text-sm">
+                <div className="w-10 h-10 rounded-full bg-surface-overlay text-text-muted flex items-center justify-center font-bold text-sm">
                   <span className="text-base filter grayscale opacity-45">{step.icon}</span>
                 </div>
               )}
@@ -109,15 +109,15 @@ export function OrderStatusTimeline({
                 <span
                   className={cn(
                     "font-semibold text-sm",
-                    isCompleted && "text-green-400",
-                    isCurrent && "text-amber-400",
-                    isUpcoming && "text-zinc-500"
+                    isCompleted && "text-semantic_success-400",
+                    isCurrent && "text-accent-400",
+                    isUpcoming && "text-text-tertiary"
                   )}
                 >
                   {step.label}
                 </span>
                 {timestamp && (
-                  <span className="text-xs text-zinc-600 font-medium">
+                  <span className="text-xs text-text-muted font-medium">
                     {formatTime(timestamp)}
                   </span>
                 )}
@@ -125,7 +125,7 @@ export function OrderStatusTimeline({
               <p
                 className={cn(
                   "text-xs mt-0.5 leading-relaxed",
-                  isCurrent ? "text-zinc-300" : "text-zinc-500"
+                  isCurrent ? "text-text-primary" : "text-text-tertiary"
                 )}
               >
                 {step.description}

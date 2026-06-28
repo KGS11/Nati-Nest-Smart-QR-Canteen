@@ -26,7 +26,7 @@ export function EstimatedWaitBadge({ preparingAt }: EstimatedWaitBadgeProps) {
   }, [preparingAt]);
 
   return (
-    <div className="bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-xl px-3 py-1.5 inline-flex items-center gap-2 text-sm mt-2 w-fit">
+    <div className="bg-accent-500/10 text-accent-400 border border-accent-500/20 rounded-xl px-3 py-1.5 inline-flex items-center gap-2 text-sm mt-2 w-fit">
       <span>⏱️</span>
       <span>{remaining > 0 ? `About ${remaining} min remaining` : "Ready soon!"}</span>
     </div>

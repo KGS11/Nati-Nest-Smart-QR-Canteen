@@ -4,6 +4,7 @@ import jwt, { SignOptions } from "jsonwebtoken";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/db";
 import { AppError } from "../utils/AppError";
+import { getStaffJwtSecret, staffSignOptions } from "../utils/jwt.utils";
 
 const refreshTokenDays = 30;
 
@@ -20,21 +21,15 @@ const isPrismaDatabaseError = (error: unknown) =>
 
 export class AuthService {
   private createAccessToken(user: { id: string; role: string; name: string }) {
-    const jwtSecret = process.env.JWT_SECRET;
-
-    if (!jwtSecret) {
-      throw new AppError("JWT secret is not configured", 500);
-    }
-
+    const jwtSecret = getStaffJwtSecret();
     const expiresIn = (process.env.JWT_EXPIRES_IN ?? "15m") as SignOptions["expiresIn"];
     return jwt.sign(
       {
         userId: user.id,
         role: user.role,
-        name: user.name,
       },
       jwtSecret,
-      { expiresIn, jwtid: createOpaqueToken() },
+      { ...staffSignOptions(expiresIn), jwtid: createOpaqueToken() },
     );
   }
 
@@ -201,6 +196,18 @@ export class AuthService {
     await prisma.refreshToken.updateMany({
       where: {
         tokenHash: hashToken(refreshToken),
+        revokedAt: null,
+      },
+      data: { revokedAt: new Date() },
+    });
+
+    return { revoked: true };
+  }
+
+  async logoutAll(userId: string) {
+    await prisma.refreshToken.updateMany({
+      where: {
+        userId,
         revokedAt: null,
       },
       data: { revokedAt: new Date() },

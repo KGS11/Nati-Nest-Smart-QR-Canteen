@@ -13,38 +13,38 @@ const optionalInteger = z.preprocess((value) => {
 }, z.number().int().min(0));
 
 export const createCategorySchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
+  name: z.string().trim().min(1, "Name is required").max(100),
   sortOrder: optionalInteger.optional(),
   isActive: optionalBoolean.optional(),
-});
+}).strict();
 
 export const updateCategorySchema = z.object({
-  name: z.string().trim().min(1, "Name is required").optional(),
+  name: z.string().trim().min(1, "Name is required").max(100).optional(),
   sortOrder: optionalInteger.optional(),
   isActive: optionalBoolean.optional(),
-});
+}).strict();
 
 export const createMenuItemSchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
-  description: z.string().trim().optional(),
-  price: z.preprocess((value) => Number(value), z.number().positive("Price must be greater than 0")),
-  categoryId: z.string().trim().min(1, "Category is required"),
+  name: z.string().trim().min(1, "Name is required").max(120),
+  description: z.string().trim().max(500).optional(),
+  price: z.preprocess((value) => Number(value), z.number().positive("Price must be greater than 0").max(100000)),
+  categoryId: z.string().uuid("Category must be a valid UUID"),
   isAvailable: optionalBoolean.optional(),
-});
+}).strict();
 
 export const updateMenuItemSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").optional(),
-  description: z.string().trim().optional(),
+  name: z.string().trim().min(1, "Name is required").max(120).optional(),
+  description: z.string().trim().max(500).optional(),
   price: z
-    .preprocess((value) => (value === undefined ? undefined : Number(value)), z.number().positive())
+    .preprocess((value) => (value === undefined ? undefined : Number(value)), z.number().positive().max(100000))
     .optional(),
-  categoryId: z.string().trim().min(1, "Category is required").optional(),
+  categoryId: z.string().uuid("Category must be a valid UUID").optional(),
   isAvailable: optionalBoolean.optional(),
-});
+}).strict();
 
 export const updateAvailabilitySchema = z.object({
   isAvailable: optionalBoolean,
-});
+}).strict();
 
 export const validate =
   (schema: ZodTypeAny) => (request: Request, response: Response, next: NextFunction) => {

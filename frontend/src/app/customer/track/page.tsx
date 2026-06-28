@@ -131,37 +131,37 @@ export default function CustomerTrackPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-zinc-950">
+      <div className="flex min-h-screen items-center justify-center bg-surface-base">
         <Loader label="Tracking your orders..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 px-4 py-6 pb-28">
+    <div className="min-h-screen bg-surface-base px-4 py-6 pb-28 text-text-primary">
       {/* Header */}
       <header className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500 font-bold text-zinc-950">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-500 font-bold text-surface-base">
             {tableNumber ?? "--"}
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <p className="font-semibold text-xs text-zinc-400">Nati Nest</p>
+              <p className="font-semibold text-xs text-text-secondary">Nati Nest</p>
               <span
                 className={cn(
                   "h-2 w-2 rounded-full inline-block",
-                  isConnected ? "bg-green-500 animate-pulse" : "bg-zinc-600"
+                  isConnected ? "bg-semantic_success-500 animate-pulse" : "bg-text-muted"
                 )}
                 title={isConnected ? "Connected to server" : "Offline"}
               />
             </div>
-            <h1 className="text-xl font-bold text-zinc-100">Your Orders</h1>
+            <h1 className="text-xl font-bold text-text-primary">Your Orders</h1>
           </div>
         </div>
         <Link
           href="/customer/menu"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-amber-400 hover:text-amber-300"
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-raised text-accent-400 hover:text-accent-300"
         >
           <MaterialIcon name="restaurant_menu" />
         </Link>
@@ -171,7 +171,7 @@ export default function CustomerTrackPage() {
       <div className="space-y-4">
         {error ? <StatePanel tone="error" title="Tracking issue" message={error} /> : null}
         {message ? (
-          <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-xs text-amber-400">
+          <div className="rounded-xl border border-accent-500/20 bg-accent-500/10 p-3 text-xs text-accent-500">
             {message}
           </div>
         ) : null}
@@ -201,12 +201,12 @@ export default function CustomerTrackPage() {
       </div>
 
       {/* Bottom Fixed Assistance Quick Bar */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-zinc-900 bg-zinc-950/95 backdrop-blur-md p-4 flex gap-3 z-30 max-w-md mx-auto pb-safe">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-border-primary bg-surface-base/95 backdrop-blur-md p-4 flex gap-3 z-30 max-w-md mx-auto pb-safe">
         <button
           type="button"
           onClick={() => requestService(AssistanceType.WATER)}
           disabled={Boolean(serviceBusy)}
-          className="flex-1 h-12 rounded-xl border border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 flex items-center justify-center gap-2 text-zinc-300 font-semibold active:scale-95 transition-all text-xs disabled:opacity-50"
+          className="flex-1 h-12 rounded-xl border border-border-primary hover:border-border-secondary bg-surface-raised/50 flex items-center justify-center gap-2 text-text-primary font-semibold active:scale-95 transition-all text-xs disabled:opacity-50"
         >
           <MaterialIcon name={serviceBusy === AssistanceType.WATER ? "sync" : "water_drop"} className={serviceBusy === AssistanceType.WATER ? "animate-spin" : ""} />
           Water 
@@ -215,7 +215,7 @@ export default function CustomerTrackPage() {
           type="button"
           onClick={() => requestService(AssistanceType.PLATE)}
           disabled={Boolean(serviceBusy)}
-          className="flex-1 h-12 rounded-xl border border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 flex items-center justify-center gap-2 text-zinc-300 font-semibold active:scale-95 transition-all text-xs disabled:opacity-50"
+          className="flex-1 h-12 rounded-xl border border-border-primary hover:border-border-secondary bg-surface-raised/50 flex items-center justify-center gap-2 text-text-primary font-semibold active:scale-95 transition-all text-xs disabled:opacity-50"
         >
           <MaterialIcon name={serviceBusy === AssistanceType.PLATE ? "sync" : "restaurant"} className={serviceBusy === AssistanceType.PLATE ? "animate-spin" : ""} />
           Plate
@@ -224,7 +224,7 @@ export default function CustomerTrackPage() {
           type="button"
           onClick={() => requestService(AssistanceType.GENERAL)}
           disabled={Boolean(serviceBusy)}
-          className="flex-1 h-12 rounded-xl border border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 flex items-center justify-center gap-2 text-zinc-300 font-semibold active:scale-95 transition-all text-xs disabled:opacity-50"
+          className="flex-1 h-12 rounded-xl border border-border-primary hover:border-border-secondary bg-surface-raised/50 flex items-center justify-center gap-2 text-text-primary font-semibold active:scale-95 transition-all text-xs disabled:opacity-50"
         >
           <MaterialIcon name={serviceBusy === AssistanceType.GENERAL ? "sync" : "support_agent"} className={serviceBusy === AssistanceType.GENERAL ? "animate-spin" : ""} />
           Help 

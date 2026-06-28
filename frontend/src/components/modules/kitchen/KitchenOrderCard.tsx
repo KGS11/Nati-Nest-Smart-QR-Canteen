@@ -13,9 +13,9 @@ const elapsedMinutes = (date: string) =>
   Math.max(0, Math.floor((Date.now() - new Date(date).getTime()) / 60000));
 
 const timeTone = (minutes: number) => {
-  if (minutes < 5) return "bg-emerald-100 text-emerald-800";
-  if (minutes <= 10) return "bg-amber-100 text-amber-800";
-  return "bg-red-100 text-red-800";
+  if (minutes < 5) return "bg-semantic_success-500/15 text-semantic_success-400";
+  if (minutes <= 10) return "bg-accent-500/15 text-accent-400";
+  return "bg-semantic_error-500/15 text-semantic_error-400";
 };
 
 const timeLabel = (minutes: number) => {
@@ -44,25 +44,25 @@ export function KitchenOrderCard({
   return (
     <article
       className={[
-        "rounded-xl bg-white p-4 shadow-sm ring-1 ring-zinc-200",
+        "rounded-xl bg-surface-raised border border-border-primary p-4 shadow-sm",
         "transition-transform duration-200 active:scale-[0.99]",
-        urgent ? "border-l-4 border-red-500" : "border-l-4 border-transparent",
+        urgent ? "border-l-4 border-semantic_error-500" : "border-l-4 border-transparent",
         isNew ? "animate-[new-order-pulse_1s_ease-out]" : "",
       ].join(" ")}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-2xl font-bold leading-7 text-zinc-950">Table {tableNumber}</h3>
+          <h3 className="text-2xl font-bold leading-7 text-text-primary">Table {tableNumber}</h3>
           <span
             className={`mt-2 inline-flex min-h-8 items-center rounded-full px-3 text-[13px] font-semibold ${timeTone(minutes)}`}
           >
             {timeLabel(minutes)}
           </span>
         </div>
-        <span className="text-sm font-semibold text-zinc-400">{shortOrderId(order.id)}</span>
+        <span className="text-sm font-semibold text-text-secondary">{shortOrderId(order.id)}</span>
       </div>
 
-      <div className="mt-4 divide-y divide-zinc-200 rounded-lg border border-zinc-200 bg-zinc-50">
+      <div className="mt-4 divide-y divide-border-primary rounded-lg border border-border-primary bg-surface-base">
         {order.items.length ? (
           order.items.map((item) => {
             const rejected = item.status === "REJECTED";
@@ -71,35 +71,35 @@ export function KitchenOrderCard({
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p
-                      className={`truncate text-base font-medium text-zinc-950 ${
-                        rejected ? "text-zinc-400 line-through" : ""
+                      className={`truncate text-base font-medium text-text-primary ${
+                        rejected ? "text-text-tertiary line-through" : ""
                       }`}
                     >
                       {item.menuItem.name}
                     </p>
                     {rejected ? (
-                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
+                      <span className="rounded-full bg-semantic_error-500/15 px-2 py-0.5 text-xs font-bold text-semantic_error-400">
                         Unavailable
                       </span>
                     ) : null}
                   </div>
                   {item.notes || item.specialInstructions ? (
-                    <p className="mt-1 text-[13px] italic leading-5 text-zinc-500">
+                    <p className="mt-1 text-[13px] italic leading-5 text-text-secondary">
                       {item.notes ?? item.specialInstructions}
                     </p>
                   ) : null}
                 </div>
-                <span className="shrink-0 text-base font-bold text-zinc-950">x{item.quantity}</span>
+                <span className="shrink-0 text-base font-bold text-text-primary">x{item.quantity}</span>
               </div>
             );
           })
         ) : (
-          <div className="p-3 text-sm text-zinc-500">No items on this order.</div>
+          <div className="p-3 text-sm text-text-secondary">No items on this order.</div>
         )}
       </div>
 
       <footer className="mt-4 flex min-h-12 items-center justify-between gap-3">
-        <span className="text-sm font-semibold text-zinc-500">
+        <span className="text-sm font-semibold text-text-secondary">
           {totalItems} {totalItems === 1 ? "item" : "items"}
         </span>
 
@@ -108,7 +108,7 @@ export function KitchenOrderCard({
             type="button"
             disabled={busy}
             onClick={() => onAccept(order.id)}
-            className="min-h-12 rounded-lg bg-amber-500 px-4 text-sm font-bold text-zinc-950 shadow-sm active:scale-[0.98] disabled:opacity-60"
+            className="min-h-12 rounded-lg bg-accent-500 px-4 text-sm font-bold text-surface-base shadow-sm active:scale-[0.98] disabled:opacity-60"
           >
             {busy ? "Accepting..." : "Accept Order"}
           </button>
@@ -119,14 +119,14 @@ export function KitchenOrderCard({
             type="button"
             disabled={busy}
             onClick={() => onReady(order.id)}
-            className="min-h-12 rounded-lg bg-emerald-600 px-4 text-sm font-bold text-white shadow-sm active:scale-[0.98] disabled:opacity-60"
+            className="min-h-12 rounded-lg bg-semantic_success-600 px-4 text-sm font-bold text-white shadow-sm active:scale-[0.98] disabled:opacity-60"
           >
             {busy ? "Updating..." : "Mark Ready"}
           </button>
         ) : null}
 
         {order.status === OrderStatus.READY ? (
-          <span className="text-sm font-semibold text-zinc-500">Awaiting Delivery</span>
+          <span className="text-sm font-semibold text-text-secondary">Awaiting Delivery</span>
         ) : null}
       </footer>
     </article>

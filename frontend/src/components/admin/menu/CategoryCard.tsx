@@ -19,14 +19,14 @@ export default function CategoryCard({
   const itemCount = category._count?.items ?? 0
 
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-zinc-700 transition-colors flex flex-col justify-between gap-3 shadow-md">
+    <div className="bg-surface-raised border border-border-primary rounded-xl p-4 hover:border-border-secondary transition-colors flex flex-col justify-between gap-3 shadow-md">
       {/* Top Row */}
       <div className="flex justify-between items-start gap-4">
         <div className="flex flex-col">
-          <span className="font-semibold text-zinc-100 text-base leading-tight">
+          <span className="font-semibold text-text-primary text-base leading-tight">
             {category.name}
           </span>
-          <span className="text-xs text-zinc-500 mt-1 font-medium">
+          <span className="text-xs text-text-tertiary mt-1 font-medium">
             Order: {category.sortOrder}
           </span>
         </div>
@@ -35,7 +35,7 @@ export default function CategoryCard({
           <button
             type="button"
             onClick={() => onEdit(category)}
-            className="p-1.5 text-zinc-400 hover:text-amber-400 hover:bg-zinc-800/50 rounded-lg transition-colors bg-transparent border-0 cursor-pointer text-sm leading-none"
+            className="p-1.5 text-text-secondary hover:text-accent-400 hover:bg-surface-overlay/50 rounded-lg transition-colors bg-transparent border-0 cursor-pointer text-sm leading-none"
             title="Edit category"
           >
             ✏️
@@ -43,7 +43,7 @@ export default function CategoryCard({
           <button
             type="button"
             onClick={() => onDelete(category)}
-            className="p-1.5 text-zinc-400 hover:text-red-400 hover:bg-zinc-800/50 rounded-lg transition-colors bg-transparent border-0 cursor-pointer text-sm leading-none"
+            className="p-1.5 text-text-secondary hover:text-red-400 hover:bg-surface-overlay/50 rounded-lg transition-colors bg-transparent border-0 cursor-pointer text-sm leading-none"
             title="Delete category"
           >
             🗑️
@@ -52,8 +52,8 @@ export default function CategoryCard({
       </div>
 
       {/* Bottom Row */}
-      <div className="mt-3 flex items-center justify-between gap-4 border-t border-zinc-800/50 pt-3">
-        <span className="bg-zinc-800 text-zinc-400 text-xs px-2.5 py-1 rounded-md font-semibold">
+      <div className="mt-3 flex items-center justify-between gap-4 border-t border-border-primary/50 pt-3">
+        <span className="bg-surface-overlay text-text-secondary text-xs px-2.5 py-1 rounded-md font-semibold">
           {itemCount} item{itemCount !== 1 ? 's' : ''}
         </span>
 

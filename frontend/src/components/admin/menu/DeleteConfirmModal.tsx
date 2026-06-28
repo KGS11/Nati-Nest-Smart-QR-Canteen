@@ -19,7 +19,7 @@ export default function DeleteConfirmModal({
 }: DeleteConfirmModalProps) {
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-start justify-center p-4 overflow-y-auto">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-sm w-full mx-auto mt-40 p-6 shadow-2xl relative text-center">
+      <div className="bg-surface-raised border border-border-primary rounded-2xl max-w-sm w-full mx-auto mt-40 p-6 shadow-2xl relative text-center">
         
         {/* Warning Icon */}
         <span className="text-3xl text-red-400 mb-4 block" role="img" aria-label="warning">
@@ -27,10 +27,10 @@ export default function DeleteConfirmModal({
         </span>
 
         {/* Title */}
-        <h3 className="text-lg font-bold text-zinc-100">{title}</h3>
+        <h3 className="text-lg font-bold text-text-primary">{title}</h3>
 
         {/* Description */}
-        <p className="text-sm text-zinc-400 mt-2">{description}</p>
+        <p className="text-sm text-text-secondary mt-2">{description}</p>
 
         {/* Button Row */}
         <div className="mt-6 flex gap-3">
@@ -38,7 +38,7 @@ export default function DeleteConfirmModal({
             type="button"
             disabled={isDeleting}
             onClick={onCancel}
-            className="flex-1 py-2.5 border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/30 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-transparent cursor-pointer"
+            className="flex-1 py-2.5 border border-border-primary text-text-secondary hover:text-text-primary hover:bg-surface-overlay/30 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed bg-transparent cursor-pointer"
           >
             Cancel
           </button>

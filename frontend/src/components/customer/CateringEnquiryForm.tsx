@@ -146,18 +146,18 @@ export function CateringEnquiryForm({ isOpen, onClose }: CateringEnquiryFormProp
         role="dialog"
         aria-modal="true"
         aria-label="Catering enquiry form"
-        className="relative z-10 max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-zinc-800 bg-zinc-950 p-5 text-zinc-100 shadow-2xl sm:rounded-2xl"
+        className="relative z-10 max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-border-default bg-surface-base p-5 text-text-primary shadow-2xl sm:rounded-2xl"
       >
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-amber-400">Nati Nest</p>
-            <h2 className="mt-1 text-xl font-bold">Catering enquiry</h2>
-            <p className="mt-1 text-sm text-zinc-400">Tell us about your event and our team will call you.</p>
+            <p className="text-label-xs font-bold uppercase tracking-wide text-brand-500">Nati Nest</p>
+            <h2 className="mt-1 text-display-xs font-bold">Catering enquiry</h2>
+            <p className="mt-1 text-body-sm text-text-tertiary">Tell us about your event and our team will call you.</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="min-h-11 min-w-11 rounded-full border border-zinc-800 text-zinc-400"
+            className="min-h-11 min-w-11 rounded-full border border-border-default text-text-tertiary"
             aria-label="Close catering enquiry form"
           >
             X
@@ -165,86 +165,86 @@ export function CateringEnquiryForm({ isOpen, onClose }: CateringEnquiryFormProp
         </div>
 
         {isSuccess ? (
-          <div className="rounded-2xl border border-green-500/30 bg-green-500/10 p-5 text-center">
-            <h3 className="text-lg font-bold text-green-300">Enquiry sent</h3>
-            <p className="mt-2 text-sm text-zinc-300">Our catering team will contact you shortly.</p>
-            <Button type="button" className="mt-5 w-full bg-amber-500 text-zinc-950" onClick={onClose}>
+          <div className="rounded-2xl border border-semantic_success-500/30 bg-semantic_success-500/10 p-5 text-center">
+            <h3 className="text-display-xs font-bold text-semantic_success-400">Enquiry sent</h3>
+            <p className="mt-2 text-body-sm text-text-secondary">Our catering team will contact you shortly.</p>
+            <Button type="button" variant="brand" className="mt-5 w-full" onClick={onClose}>
               Done
             </Button>
           </div>
         ) : (
           <form onSubmit={submit} className="space-y-4">
             {apiError ? (
-              <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-200">
+              <p role="alert" className="rounded-xl border border-semantic_error-500/30 bg-semantic_error-500/10 p-3 text-label-sm text-semantic_error-200">
                 {apiError}
               </p>
             ) : null}
 
             <label className="block">
-              <span className="text-xs font-bold text-zinc-400">Name</span>
+              <span className="text-label-xs font-bold text-text-tertiary">Name</span>
               <input
                 ref={firstFieldRef}
                 value={form.name}
                 onChange={(event) => update("name", event.target.value)}
-                className="mt-1 min-h-12 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50"
+                className="mt-1 min-h-12 w-full rounded-xl border border-border-default bg-surface-raised px-4 text-body-sm text-text-primary outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/50"
               />
-              {errors.name ? <span className="text-xs text-red-400">{errors.name}</span> : null}
+              {errors.name ? <span className="text-label-xs text-semantic_error-400">{errors.name}</span> : null}
             </label>
 
             <label className="block">
-              <span className="text-xs font-bold text-zinc-400">Phone</span>
+              <span className="text-label-xs font-bold text-text-tertiary">Phone</span>
               <input
                 value={form.phone}
                 inputMode="numeric"
                 maxLength={10}
                 onChange={(event) => update("phone", event.target.value.replace(/\D/g, ""))}
-                className="mt-1 min-h-12 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50"
+                className="mt-1 min-h-12 w-full rounded-xl border border-border-default bg-surface-raised px-4 text-body-sm text-text-primary outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500/50"
               />
-              {errors.phone ? <span className="text-xs text-red-400">{errors.phone}</span> : null}
+              {errors.phone ? <span className="text-label-xs text-semantic_error-400">{errors.phone}</span> : null}
             </label>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="text-xs font-bold text-zinc-400">Event type</span>
+                <span className="text-label-xs font-bold text-text-tertiary">Event type</span>
                 <select
                   value={form.eventType}
                   onChange={(event) => update("eventType", event.target.value as EventType)}
-                  className="mt-1 min-h-12 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-sm outline-none focus:border-amber-500"
+                  className="mt-1 min-h-12 w-full rounded-xl border border-border-default bg-surface-raised px-4 text-body-sm text-text-primary outline-none focus:border-brand-500"
                 >
                   {eventTypes.map((type) => <option key={type} value={type}>{type}</option>)}
                 </select>
               </label>
               <label className="block">
-                <span className="text-xs font-bold text-zinc-400">Event date</span>
+                <span className="text-label-xs font-bold text-text-tertiary">Event date</span>
                 <input
                   type="date"
                   min={tomorrowDate()}
                   value={form.eventDate}
                   onChange={(event) => update("eventDate", event.target.value)}
-                  className="mt-1 min-h-12 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-sm outline-none focus:border-amber-500"
+                  className="mt-1 min-h-12 w-full rounded-xl border border-border-default bg-surface-raised px-4 text-body-sm text-text-primary outline-none focus:border-brand-500"
                 />
-                {errors.eventDate ? <span className="text-xs text-red-400">{errors.eventDate}</span> : null}
+                {errors.eventDate ? <span className="text-label-xs text-semantic_error-400">{errors.eventDate}</span> : null}
               </label>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="text-xs font-bold text-zinc-400">Guests</span>
+                <span className="text-label-xs font-bold text-text-tertiary">Guests</span>
                 <input
                   type="number"
                   min={5}
                   value={form.guestCount}
                   onChange={(event) => update("guestCount", Number(event.target.value))}
-                  className="mt-1 min-h-12 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-sm outline-none focus:border-amber-500"
+                  className="mt-1 min-h-12 w-full rounded-xl border border-border-default bg-surface-raised px-4 text-body-sm text-text-primary outline-none focus:border-brand-500"
                 />
-                {errors.guestCount ? <span className="text-xs text-red-400">{errors.guestCount}</span> : null}
+                {errors.guestCount ? <span className="text-label-xs text-semantic_error-400">{errors.guestCount}</span> : null}
               </label>
               <label className="block">
-                <span className="text-xs font-bold text-zinc-400">Preferred contact</span>
+                <span className="text-label-xs font-bold text-text-tertiary">Preferred contact</span>
                 <select
                   value={form.preferredContactTime}
                   onChange={(event) => update("preferredContactTime", event.target.value as ContactTime)}
-                  className="mt-1 min-h-12 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-sm outline-none focus:border-amber-500"
+                  className="mt-1 min-h-12 w-full rounded-xl border border-border-default bg-surface-raised px-4 text-body-sm text-text-primary outline-none focus:border-brand-500"
                 >
                   {contactTimes.map((time) => <option key={time} value={time}>{time}</option>)}
                 </select>
@@ -252,31 +252,32 @@ export function CateringEnquiryForm({ isOpen, onClose }: CateringEnquiryFormProp
             </div>
 
             <label className="block">
-              <span className="text-xs font-bold text-zinc-400">Location</span>
+              <span className="text-label-xs font-bold text-text-tertiary">Location</span>
               <input
                 value={form.location}
                 onChange={(event) => update("location", event.target.value)}
-                className="mt-1 min-h-12 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 text-sm outline-none focus:border-amber-500"
+                className="mt-1 min-h-12 w-full rounded-xl border border-border-default bg-surface-raised px-4 text-body-sm text-text-primary outline-none focus:border-brand-500"
               />
-              {errors.location ? <span className="text-xs text-red-400">{errors.location}</span> : null}
+              {errors.location ? <span className="text-label-xs text-semantic_error-400">{errors.location}</span> : null}
             </label>
 
             <label className="block">
-              <span className="text-xs font-bold text-zinc-400">Requirements / Notes (Optional)</span>
+              <span className="text-label-xs font-bold text-text-tertiary">Requirements / Notes (Optional)</span>
               <textarea
                 value={form.notes}
                 maxLength={500}
                 rows={3}
                 onChange={(event) => update("notes", event.target.value)}
-                className="mt-1 w-full rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm outline-none focus:border-amber-500"
+                className="mt-1 w-full rounded-xl border border-border-default bg-surface-raised px-4 py-3 text-body-sm text-text-primary outline-none focus:border-brand-500"
               />
-              <span className="text-xs text-zinc-500">{form.notes.length}/500</span>
+              <span className="text-label-xs text-text-tertiary">{form.notes.length}/500</span>
             </label>
 
             <Button
               type="submit"
               disabled={submitting}
-              className="min-h-12 w-full bg-amber-500 text-zinc-950"
+              variant="brand"
+              className="min-h-[48px] w-full"
             >
               {submitting ? <Loader label="" /> : "Send Enquiry"}
             </Button>

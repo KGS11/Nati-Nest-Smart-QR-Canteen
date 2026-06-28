@@ -94,7 +94,7 @@ export default function DailyMenuPage() {
   return (
     <div className="mx-auto w-full max-w-[1600px] p-4 pb-24 md:p-8 animate-in fade-in duration-200">
       {error && (
-        <div className="mb-4 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-sm font-semibold flex items-center justify-between animate-pulse">
+        <div className="mb-4 p-4 bg-semantic_error-500/10 border border-semantic_error-500/20 text-semantic_error-400 rounded-xl text-label-sm font-semibold flex items-center justify-between animate-pulse">
           <span>{error}</span>
         </div>
       )}
@@ -112,20 +112,20 @@ export default function DailyMenuPage() {
         <div className="flex gap-2 mb-4">
           <button
             onClick={() => setActiveTab("today")}
-            className={`flex-1 py-3 rounded-xl text-sm font-bold border transition-all cursor-pointer ${
+            className={`flex-1 py-3 rounded-xl text-label-sm font-bold border transition-all cursor-pointer ${
               activeTab === "today"
-                ? "bg-amber-500 border-amber-500 text-zinc-950"
-                : "bg-zinc-900 border-zinc-800 text-zinc-400"
+                ? "bg-brand-500 border-brand-500 text-brand-950"
+                : "bg-surface-raised border-border-default text-text-tertiary"
             }`}
           >
             Active Today ({todaysItems.length})
           </button>
           <button
             onClick={() => setActiveTab("catalog")}
-            className={`flex-1 py-3 rounded-xl text-sm font-bold border transition-all cursor-pointer ${
+            className={`flex-1 py-3 rounded-xl text-label-sm font-bold border transition-all cursor-pointer ${
               activeTab === "catalog"
-                ? "bg-amber-500 border-amber-500 text-zinc-950"
-                : "bg-zinc-900 border-zinc-800 text-zinc-400"
+                ? "bg-brand-500 border-brand-500 text-brand-950"
+                : "bg-surface-raised border-border-default text-text-tertiary"
             }`}
           >
             Add Items

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cn } from "@/utils/cn";
 
 interface OrderTimerProps {
   placedAt: string;
@@ -14,7 +15,7 @@ const elapsedSeconds = (placedAt: string) =>
 const formatElapsed = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
   const remainder = seconds % 60;
-  return `${minutes}m ${remainder}s`;
+  return `${minutes.toString().padStart(2, '0')}:${remainder.toString().padStart(2, '0')}`;
 };
 
 export function OrderTimer({
@@ -35,10 +36,10 @@ export function OrderTimer({
   const minutes = seconds / 60;
   const colorClass =
     minutes < warningThresholdMinutes
-      ? "text-green-400"
+      ? "text-success-500"
       : minutes < dangerThresholdMinutes
-        ? "text-amber-400"
-        : "animate-pulse text-red-400";
+        ? "text-warning-500"
+        : "animate-pulse text-semantic_error-500";
 
-  return <span className={`text-xs font-semibold ${colorClass}`}>{formatElapsed(seconds)}</span>;
+  return <span className={cn("font-mono text-body-md font-bold tabular-nums tracking-widest", colorClass)}>{formatElapsed(seconds)}</span>;
 }

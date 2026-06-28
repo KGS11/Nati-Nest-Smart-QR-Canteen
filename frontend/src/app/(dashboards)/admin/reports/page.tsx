@@ -116,9 +116,9 @@ const getPresetRange = (preset: Preset) => {
 
 function MetricTile({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
-      <p className="text-xs font-bold uppercase tracking-wide text-zinc-500">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-zinc-100">{value}</p>
+    <div className="rounded-xl border border-border-default bg-surface-raised p-4">
+      <p className="text-label-xs font-bold uppercase tracking-wide text-text-tertiary">{label}</p>
+      <p className="mt-2 text-display-md font-bold text-text-primary">{value}</p>
     </div>
   );
 }
@@ -135,15 +135,15 @@ function BarRow({
   display?: string;
 }) {
   return (
-    <div className="grid grid-cols-[96px_1fr_90px] items-center gap-3 text-sm">
-      <span className="truncate text-zinc-400">{label}</span>
-      <div className="h-3 overflow-hidden rounded-full bg-zinc-800">
+    <div className="grid grid-cols-[96px_1fr_90px] items-center gap-3 text-label-sm">
+      <span className="truncate text-text-tertiary">{label}</span>
+      <div className="h-3 overflow-hidden rounded-full bg-surface-overlay">
         <div
-          className="h-full rounded-full bg-amber-500"
+          className="h-full rounded-full bg-brand-500"
           style={{ width: `${max > 0 ? Math.max(4, (value / max) * 100) : 0}%` }}
         />
       </div>
-      <span className="text-right font-semibold text-zinc-200">{display ?? value}</span>
+      <span className="text-right font-semibold text-text-secondary">{display ?? value}</span>
     </div>
   );
 }
@@ -231,20 +231,20 @@ export default function AdminReportsPage() {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-zinc-950 p-6 text-zinc-100">
+    <div className="flex flex-col space-y-6 text-text-primary">
       <PageHeader title="Reports" subtitle={`${range.startDate} to ${range.endDate}`} />
 
-      <div className="mb-6 flex flex-col gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4 lg:flex-row lg:items-end">
+      <div className="mb-6 flex flex-col gap-3 rounded-xl border border-border-default bg-surface-raised p-4 lg:flex-row lg:items-end">
         <div className="flex flex-wrap gap-2">
           {(["today", "yesterday", "week", "month", "custom"] as Preset[]).map((item) => (
             <button
               key={item}
               type="button"
               onClick={() => setPresetRange(item)}
-              className={`min-h-10 rounded-lg px-4 text-sm font-bold capitalize ${
+              className={`min-h-10 rounded-lg px-4 text-label-sm font-bold capitalize transition-all ${
                 preset === item
-                  ? "bg-amber-500 text-zinc-950"
-                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                  ? "bg-brand-500 text-brand-950"
+                  : "bg-surface-overlay text-text-secondary hover:bg-surface-base hover:text-text-primary"
               }`}
             >
               {item}
@@ -276,28 +276,28 @@ export default function AdminReportsPage() {
         </Button>
       </div>
 
-      <div className="mb-6 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+      <div className="mb-6 rounded-xl border border-border-default bg-surface-raised p-4">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-bold text-zinc-100">Export Reports</h2>
-            <p className="text-xs text-zinc-500">Download the current report range as CSV or Excel.</p>
+            <h2 className="text-label-sm font-bold text-text-primary">Export Reports</h2>
+            <p className="text-label-xs text-text-tertiary">Download the current report range as CSV or Excel.</p>
           </div>
-          {isExporting ? <span className="text-xs font-semibold text-amber-400">Exporting...</span> : null}
+          {isExporting ? <span className="text-label-xs font-semibold text-brand-500 animate-pulse">Exporting...</span> : null}
         </div>
         {exportError ? (
-          <p role="alert" className="mb-3 text-xs font-semibold text-red-400">{exportError}</p>
+          <p role="alert" className="mb-3 text-label-xs font-semibold text-semantic_error-400">{exportError}</p>
         ) : null}
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
           {(["revenue", "orders", "payments", "tables", "feedback", "staff"] as ExportType[]).map((type) => (
-            <div key={type} className="flex min-w-0 gap-2 rounded-lg bg-zinc-950 p-2">
-              <span className="flex-1 truncate px-2 py-2 text-xs font-bold capitalize text-zinc-300">
+            <div key={type} className="flex min-w-0 gap-2 rounded-lg bg-surface-base p-2">
+              <span className="flex-1 truncate px-2 py-2 text-label-xs font-bold capitalize text-text-secondary">
                 {type === "staff" ? "Staff Activity" : type}
               </span>
               <button
                 type="button"
                 disabled={isExporting}
                 onClick={() => runExport(type, "csv")}
-                className="min-h-10 rounded-md border border-zinc-800 px-2 text-xs font-semibold text-zinc-300 disabled:opacity-50"
+                className="min-h-10 rounded-md border border-border-default px-2 text-label-xs font-semibold text-text-secondary hover:text-text-primary disabled:opacity-50"
               >
                 CSV
               </button>
@@ -305,7 +305,7 @@ export default function AdminReportsPage() {
                 type="button"
                 disabled={isExporting}
                 onClick={() => runExport(type, "xlsx")}
-                className="min-h-10 rounded-md bg-amber-500 px-2 text-xs font-bold text-zinc-950 disabled:opacity-50"
+                className="min-h-10 rounded-md bg-brand-500 px-2 text-label-xs font-bold text-brand-950 hover:bg-brand-400 disabled:opacity-50"
               >
                 XLSX
               </button>
@@ -317,19 +317,19 @@ export default function AdminReportsPage() {
       {isLoading ? (
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="h-24 bg-zinc-900 border border-zinc-850 rounded-xl animate-pulse" />
-            <div className="h-24 bg-zinc-900 border border-zinc-850 rounded-xl animate-pulse" />
-            <div className="h-24 bg-zinc-900 border border-zinc-850 rounded-xl animate-pulse" />
-            <div className="h-24 bg-zinc-900 border border-zinc-850 rounded-xl animate-pulse" />
+            <div className="h-24 bg-surface-raised border border-border-default rounded-xl animate-pulse" />
+            <div className="h-24 bg-surface-raised border border-border-default rounded-xl animate-pulse" />
+            <div className="h-24 bg-surface-raised border border-border-default rounded-xl animate-pulse" />
+            <div className="h-24 bg-surface-raised border border-border-default rounded-xl animate-pulse" />
           </div>
           <div className="grid gap-6 lg:grid-cols-2">
-            <div className="h-80 bg-zinc-900 border border-zinc-850 rounded-xl animate-pulse" />
-            <div className="h-80 bg-zinc-900 border border-zinc-850 rounded-xl animate-pulse" />
+            <div className="h-80 bg-surface-raised border border-border-default rounded-xl animate-pulse" />
+            <div className="h-80 bg-surface-raised border border-border-default rounded-xl animate-pulse" />
           </div>
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6">
-          <p className="font-semibold text-red-300">{error}</p>
+        <div className="rounded-xl border border-semantic_error-500/20 bg-semantic_error-500/5 p-6">
+          <p className="font-semibold text-semantic_error-300">{error}</p>
           <Button type="button" className="mt-4" onClick={() => void loadReports()}>
             Retry
           </Button>
@@ -344,27 +344,27 @@ export default function AdminReportsPage() {
           </section>
 
           <section className="grid gap-6 xl:grid-cols-2">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-              <h2 className="text-lg font-bold">Revenue Trend</h2>
+            <div className="rounded-xl border border-border-default bg-surface-raised p-5">
+              <h2 className="text-display-xs font-bold">Revenue Trend</h2>
               <div className="mt-4 grid gap-3">
                 {revenue?.breakdown.length ? (
                   revenue.breakdown.map((item) => (
                     <BarRow
-                      key={item.date}
-                      label={item.date}
-                      value={item.totalRevenue}
-                      max={maxRevenue}
-                      display={currency(item.totalRevenue)}
+                       key={item.date}
+                       label={item.date}
+                       value={item.totalRevenue}
+                       max={maxRevenue}
+                       display={currency(item.totalRevenue)}
                     />
                   ))
                 ) : (
-                  <p className="text-sm text-zinc-500">No revenue in this range.</p>
+                  <p className="text-body-sm text-text-tertiary">No revenue in this range.</p>
                 )}
               </div>
             </div>
 
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-              <h2 className="text-lg font-bold">Orders by Status</h2>
+            <div className="rounded-xl border border-border-default bg-surface-raised p-5">
+              <h2 className="text-display-xs font-bold">Orders by Status</h2>
               <div className="mt-4 grid gap-3">
                 {Object.entries(orders?.summary.ordersByStatus ?? {}).map(([status, count]) => (
                   <BarRow
@@ -379,9 +379,9 @@ export default function AdminReportsPage() {
           </section>
 
           <section className="grid gap-6 xl:grid-cols-3">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-              <h2 className="text-lg font-bold">Revenue</h2>
-              <div className="mt-4 grid gap-3 text-sm text-zinc-300">
+            <div className="rounded-xl border border-border-default bg-surface-raised p-5">
+              <h2 className="text-display-xs font-bold">Revenue</h2>
+              <div className="mt-4 grid gap-3 text-body-sm text-text-secondary">
                 <p>Total: {currency(revenue?.summary.totalRevenue ?? 0)}</p>
                 <p>Transactions: {revenue?.summary.totalTransactions ?? 0}</p>
                 <p>Average order value: {currency(revenue?.summary.averageOrderValue ?? 0)}</p>
@@ -390,9 +390,9 @@ export default function AdminReportsPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-              <h2 className="text-lg font-bold">Orders</h2>
-              <div className="mt-4 grid gap-3 text-sm text-zinc-300">
+            <div className="rounded-xl border border-border-default bg-surface-raised p-5">
+              <h2 className="text-display-xs font-bold">Orders</h2>
+              <div className="mt-4 grid gap-3 text-body-sm text-text-secondary">
                 <p>Total: {orders?.summary.totalOrders ?? 0}</p>
                 <p>Completed: {orders?.summary.completedOrders ?? 0}</p>
                 <p>Cancelled: {orders?.summary.cancelledOrders ?? 0}</p>
@@ -401,9 +401,9 @@ export default function AdminReportsPage() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-              <h2 className="text-lg font-bold">Feedback</h2>
-              <div className="mt-4 grid gap-3 text-sm text-zinc-300">
+            <div className="rounded-xl border border-border-default bg-surface-raised p-5">
+              <h2 className="text-display-xs font-bold">Feedback</h2>
+              <div className="mt-4 grid gap-3 text-body-sm text-text-secondary">
                 <p>Total feedback: {feedback?.summary.totalFeedback ?? 0}</p>
                 <p>Average rating: {feedback?.summary.averageRating ?? 0}</p>
                 <p>Submission rate: {feedback?.summary.feedbackSubmissionRate ?? 0}%</p>
@@ -420,8 +420,8 @@ export default function AdminReportsPage() {
           </section>
 
           <section className="grid gap-6 xl:grid-cols-2">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-              <h2 className="text-lg font-bold">Popular Items</h2>
+            <div className="rounded-xl border border-border-default bg-surface-raised p-5">
+              <h2 className="text-display-xs font-bold">Popular Items</h2>
               <div className="mt-4 grid gap-3">
                 {popular?.items.length ? (
                   popular.items.map((item) => (
@@ -434,13 +434,13 @@ export default function AdminReportsPage() {
                     />
                   ))
                 ) : (
-                  <p className="text-sm text-zinc-500">No item sales in this range.</p>
+                  <p className="text-body-sm text-text-tertiary">No item sales in this range.</p>
                 )}
               </div>
             </div>
 
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-              <h2 className="text-lg font-bold">Tables</h2>
+            <div className="rounded-xl border border-border-default bg-surface-raised p-5">
+              <h2 className="text-display-xs font-bold">Tables</h2>
               <div className="mt-4 grid gap-3">
                 {tables?.tables.slice(0, 10).length ? (
                   tables.tables.slice(0, 10).map((table) => (
@@ -453,7 +453,7 @@ export default function AdminReportsPage() {
                     />
                   ))
                 ) : (
-                  <p className="text-sm text-zinc-500">No table sessions in this range.</p>
+                  <p className="text-body-sm text-text-tertiary">No table sessions in this range.</p>
                 )}
               </div>
             </div>

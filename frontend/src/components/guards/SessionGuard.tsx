@@ -34,7 +34,7 @@ export function SessionGuard({ children }: SessionGuardProps) {
 
   if ((!hasHydrated || checking) && !pathname.startsWith("/scan")) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-zinc-950 text-amber-50">
+      <div className="flex h-screen w-screen items-center justify-center bg-surface-base text-text-primary">
         <Loader label="Validating table session..." />
       </div>
     );

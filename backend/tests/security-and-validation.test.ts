@@ -4,6 +4,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextFunction, Request, Response } from "express";
 import { createOrderSchema, orderIdParamSchema } from "../src/validators/order.validators";
 import { apiRateLimit, authRateLimit, securityHeaders } from "../src/middlewares/security";
+import { sessionSignOptions, staffSignOptions } from "../src/utils/jwt.utils";
 
 const mockPrisma = vi.hoisted(() => ({
   user: {
@@ -51,6 +52,7 @@ describe("security middleware and validation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.JWT_SECRET = "test-jwt-secret";
+    process.env.SESSION_JWT_SECRET = "test-session-secret";
   });
 
   it("sets security headers", () => {
@@ -61,7 +63,9 @@ describe("security middleware and validation", () => {
 
     expect(headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(headers.get("X-Frame-Options")).toBe("DENY");
-    expect(headers.get("Referrer-Policy")).toBe("no-referrer");
+    expect(headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
+    expect(headers.get("Permissions-Policy")).toBe("camera=(), microphone=(), geolocation=()");
+    expect(headers.get("Cross-Origin-Opener-Policy")).toBe("same-origin");
     expect(next).toHaveBeenCalledOnce();
   });
 
@@ -108,6 +112,7 @@ describe("socket authentication", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.JWT_SECRET = "test-jwt-secret";
+    process.env.SESSION_JWT_SECRET = "test-session-secret";
   });
 
   it("rejects sockets without handshake auth", async () => {
@@ -118,8 +123,9 @@ describe("socket authentication", () => {
 
   it("accepts active staff socket tokens", async () => {
     const token = jwt.sign(
-      { userId: "staff-id", role: Role.KITCHEN, name: "Kitchen" },
+      { userId: "staff-id", role: Role.KITCHEN },
       process.env.JWT_SECRET!,
+      staffSignOptions("15m"),
     );
     const socket = { handshake: { auth: { token, type: "staff" } }, data: {} };
     const next = vi.fn();
@@ -143,7 +149,8 @@ describe("socket authentication", () => {
         tableId: "22222222-2222-4222-8222-222222222222",
         tableNumber: "5",
       },
-      process.env.JWT_SECRET!,
+      process.env.SESSION_JWT_SECRET!,
+      sessionSignOptions("12h"),
     );
     const socket = { handshake: { auth: { token, type: "customer" } }, data: {} };
     const next = vi.fn();

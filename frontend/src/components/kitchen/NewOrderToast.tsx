@@ -17,7 +17,7 @@ export function NewOrderToast({ tableNumber, onDismiss }: NewOrderToastProps) {
     <button
       type="button"
       onClick={onDismiss}
-      className="fixed left-1/2 top-4 z-50 min-h-12 -translate-x-1/2 animate-[kitchen-toast-in_180ms_ease-out] rounded-full bg-amber-500 px-5 text-left text-zinc-950 shadow-xl"
+      className="fixed left-1/2 top-4 z-50 min-h-12 -translate-x-1/2 animate-[kitchen-toast-in_180ms_ease-out] rounded-full bg-brand-500 px-5 text-left text-brand-950 shadow-xl"
     >
       <span className="mr-2" aria-hidden="true">
         !

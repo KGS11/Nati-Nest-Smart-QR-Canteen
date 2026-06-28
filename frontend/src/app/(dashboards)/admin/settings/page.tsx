@@ -9,6 +9,7 @@ import Loader from "@/components/ui/Loader";
 import { Toast } from "@/components/ui/Toast";
 import apiClient from "@/lib/api-client";
 import { ApiResponse, ClientApiError } from "@/types/api";
+import { getValidImageUrl } from "@/utils/imageUrl";
 
 interface AdminSettings {
   businessName: string;
@@ -35,6 +36,8 @@ export default function AdminSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
   const { register, handleSubmit, reset, formState } = useForm<AdminSettings>();
+  const logoUrl = getValidImageUrl(settings?.logoUrl);
+  const upiQrUrl = getValidImageUrl(settings?.upiQrUrl);
 
   const showToast = (nextToast: ToastState) => {
     setToast(nextToast);
@@ -113,7 +116,7 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto bg-zinc-950 p-6 text-zinc-100">
+    <div className="flex flex-col space-y-6 text-text-primary">
       {toast ? (
         <div className="fixed right-6 top-6 z-50 w-full max-w-sm">
           <Toast title={toast.title} tone={toast.tone} />
@@ -125,20 +128,20 @@ export default function AdminSettingsPage() {
       {isLoading ? (
         <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
           <div className="space-y-6">
-            <div className="h-64 bg-zinc-900 border border-zinc-850 rounded-xl animate-pulse" />
-            <div className="h-48 bg-zinc-900 border border-zinc-850 rounded-xl animate-pulse" />
+            <div className="h-64 bg-surface-raised border border-border-default rounded-xl animate-pulse" />
+            <div className="h-48 bg-surface-raised border border-border-default rounded-xl animate-pulse" />
           </div>
-          <div className="h-96 bg-zinc-900 border border-zinc-850 rounded-xl animate-pulse" />
+          <div className="h-96 bg-surface-raised border border-border-default rounded-xl animate-pulse" />
         </div>
       ) : error ? (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6 text-red-300">
+        <div className="rounded-xl border border-semantic_error-500/20 bg-semantic_error-500/5 p-6 text-semantic_error-300">
           {error}
         </div>
       ) : (
         <form onSubmit={handleSubmit(saveSettings)} className="grid gap-6 xl:grid-cols-[1fr_360px]">
           <section className="space-y-6">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-              <h2 className="text-lg font-bold">Business Info</h2>
+            <div className="rounded-xl border border-border-default bg-surface-raised p-5">
+              <h2 className="text-display-xs font-bold">Business Info</h2>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 <Input label="Business Name" {...register("businessName", { required: true })} />
                 <Input label="Business Phone" {...register("businessPhone")} />
@@ -146,18 +149,18 @@ export default function AdminSettingsPage() {
                   <Input label="Merchant UPI ID (for dynamic QR codes)" {...register("upiId")} placeholder="e.g. merchant@okaxis" />
                 </div>
                 <label className="block space-y-2 text-left md:col-span-2">
-                  <span className="text-sm font-medium text-zinc-200">Business Address</span>
+                  <span className="text-label-sm font-medium text-text-secondary">Business Address</span>
                   <textarea
                     rows={4}
-                    className="w-full rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20"
+                    className="w-full rounded-lg border border-border-default bg-surface-base px-3 py-2 text-label-sm text-text-primary placeholder-text-tertiary outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
                     {...register("businessAddress")}
                   />
                 </label>
               </div>
             </div>
 
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-              <h2 className="text-lg font-bold">Taxes and Notifications</h2>
+            <div className="rounded-xl border border-border-default bg-surface-raised p-5">
+              <h2 className="text-display-xs font-bold">Taxes and Notifications</h2>
               <div className="mt-5 grid gap-4 md:grid-cols-2">
                 <Input
                   label="Tax Rate (%)"
@@ -167,10 +170,10 @@ export default function AdminSettingsPage() {
                   step="0.01"
                   {...register("taxRate", { valueAsNumber: true })}
                 />
-                <label className="flex items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-950 px-3 py-3 text-sm font-semibold text-zinc-200">
+                <label className="flex items-center gap-3 rounded-lg border border-border-default bg-surface-base px-3 py-3 text-label-sm font-semibold text-text-secondary">
                   <input
                     type="checkbox"
-                    className="h-4 w-4 accent-amber-500"
+                    className="h-4 w-4 accent-brand-500"
                     {...register("notificationsEnabled")}
                   />
                   Notifications enabled
@@ -184,40 +187,40 @@ export default function AdminSettingsPage() {
           </section>
 
           <aside className="space-y-6">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-              <h2 className="text-lg font-bold">Logo Upload</h2>
-              <div className="mt-4 flex min-h-36 items-center justify-center rounded-xl bg-zinc-950 p-4">
-                {settings?.logoUrl ? (
-                  <img src={settings.logoUrl} alt="Business logo" className="max-h-28 object-contain" />
+            <div className="rounded-xl border border-border-default bg-surface-raised p-5">
+              <h2 className="text-display-xs font-bold">Logo Upload</h2>
+              <div className="mt-4 flex min-h-36 items-center justify-center rounded-xl bg-surface-base p-4">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="Business logo" className="max-h-28 object-contain" />
                 ) : (
-                  <span className="text-sm text-zinc-500">No logo uploaded</span>
+                  <span className="text-label-sm text-text-tertiary">No logo uploaded</span>
                 )}
               </div>
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
                 onChange={(event) => void uploadImage(event, "logo")}
-                className="mt-4 block w-full rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-sm text-zinc-300"
+                className="mt-4 block w-full rounded-lg border border-border-default bg-surface-base p-3 text-label-sm text-text-secondary"
               />
-              {isUploading === "logo" ? <p className="mt-2 text-sm text-amber-400">Uploading...</p> : null}
+              {isUploading === "logo" ? <p className="mt-2 text-label-sm text-brand-500">Uploading...</p> : null}
             </div>
 
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
-              <h2 className="text-lg font-bold">UPI QR</h2>
+            <div className="rounded-xl border border-border-default bg-surface-raised p-5">
+              <h2 className="text-display-xs font-bold">UPI QR</h2>
               <div className="mt-4 flex min-h-56 items-center justify-center rounded-xl bg-white p-4">
-                {settings?.upiQrUrl ? (
-                  <img src={settings.upiQrUrl} alt="UPI QR" className="max-h-48 object-contain" />
+                {upiQrUrl ? (
+                  <img src={upiQrUrl} alt="UPI QR" className="max-h-48 object-contain" />
                 ) : (
-                  <span className="text-sm font-semibold text-zinc-500">No QR configured</span>
+                  <span className="text-label-sm font-semibold text-text-tertiary">No QR configured</span>
                 )}
               </div>
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
                 onChange={(event) => void uploadImage(event, "upi")}
-                className="mt-4 block w-full rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-sm text-zinc-300"
+                className="mt-4 block w-full rounded-lg border border-border-default bg-surface-base p-3 text-label-sm text-text-secondary"
               />
-              {isUploading === "upi" ? <p className="mt-2 text-sm text-amber-400">Uploading...</p> : null}
+              {isUploading === "upi" ? <p className="mt-2 text-label-sm text-brand-500">Uploading...</p> : null}
             </div>
           </aside>
         </form>

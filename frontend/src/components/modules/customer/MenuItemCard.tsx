@@ -30,7 +30,7 @@ export function MenuItemCard({
   return (
     <div
       className={cn(
-        "bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 active:scale-[0.99] transition-all flex flex-row md:flex-col",
+        "bg-surface-raised rounded-2xl overflow-hidden border border-border-primary active:scale-[0.99] transition-all flex flex-row md:flex-col",
         !isAvailable && "opacity-80"
       )}
     >
@@ -55,11 +55,11 @@ export function MenuItemCard({
 
         <div className="absolute top-0 left-0 flex flex-col items-start z-10">
           {!isAvailable ? (
-            <span className="bg-zinc-700 text-zinc-350 text-[10px] font-bold px-2 py-0.5 rounded-br-lg">
+            <span className="bg-surface-overlay text-text-secondary text-[10px] font-bold px-2 py-0.5 rounded-br-lg">
               SOLD OUT
             </span>
           ) : isPopular ? (
-            <span className="bg-amber-500 text-zinc-950 text-[10px] font-bold px-2 py-0.5 rounded-br-lg">
+            <span className="bg-accent-500 text-surface-base text-[10px] font-bold px-2 py-0.5 rounded-br-lg">
               BESTSELLER
             </span>
           ) : null}
@@ -69,36 +69,36 @@ export function MenuItemCard({
       {/* Content */}
       <div className="flex-1 p-3 flex flex-col justify-between">
         <div>
-          <span className="text-[10px] text-zinc-500 uppercase tracking-wider block">
+          <span className="text-[10px] text-text-tertiary uppercase tracking-wider block">
             {item.category?.name || "Dish"}
           </span>
           <h3
             className={cn(
               "font-semibold text-sm leading-tight mt-0.5",
-              isAvailable ? "text-zinc-100" : "text-zinc-500"
+              isAvailable ? "text-text-primary" : "text-text-tertiary"
             )}
           >
             {item.name}
           </h3>
-          <p className="text-xs text-zinc-500 mt-1 line-clamp-1 md:line-clamp-2 leading-relaxed">
+          <p className="text-xs text-text-tertiary mt-1 line-clamp-1 md:line-clamp-2 leading-relaxed">
             {item.description || "Freshly prepared canteen favorite"}
           </p>
         </div>
 
         {/* Price & Action Row */}
         <div className="flex items-center justify-between mt-3 gap-2">
-          <span className="text-sm font-bold text-amber-400">
+          <span className="text-sm font-bold text-accent-400">
             Rs {Number(item.price).toFixed(2)}
           </span>
 
           <div className="flex-shrink-0">
             {!isAvailable ? (
-              <span className="text-xs text-zinc-650 font-medium">Sold Out</span>
+              <span className="text-xs text-text-muted font-medium">Sold Out</span>
             ) : quantity === 0 ? (
               <button
                 type="button"
                 onClick={onAdd}
-                className="h-9 px-4 rounded-xl bg-amber-500 text-zinc-950 hover:bg-amber-400 font-semibold text-xs active:scale-95 transition-all"
+                className="h-9 px-4 rounded-xl bg-accent-500 text-surface-base hover:bg-accent-400 font-semibold text-xs active:scale-95 transition-all"
               >
                 Add
               </button>
@@ -107,18 +107,18 @@ export function MenuItemCard({
                 <button
                   type="button"
                   onClick={onDecrement}
-                  className="w-8 h-8 rounded-lg bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center font-bold text-zinc-300 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+                  className="w-8 h-8 rounded-lg bg-surface-overlay hover:bg-surface-overlay/80 flex items-center justify-center font-bold text-text-secondary transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-accent-500"
                   aria-label={`Decrease ${item.name} quantity`}
                 >
                   <MaterialIcon name="remove" className="text-sm" />
                 </button>
-                <span className="w-5 text-center text-amber-400 font-bold text-sm">
+                <span className="w-5 text-center text-accent-400 font-bold text-sm">
                   {quantity}
                 </span>
                 <button
                   type="button"
                   onClick={onIncrement}
-                  className="w-8 h-8 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 flex items-center justify-center font-bold text-amber-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+                  className="w-8 h-8 rounded-lg bg-accent-500/20 hover:bg-accent-500/30 flex items-center justify-center font-bold text-accent-400 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-accent-500"
                   aria-label={`Increase ${item.name} quantity`}
                 >
                   <MaterialIcon name="add" className="text-sm" />

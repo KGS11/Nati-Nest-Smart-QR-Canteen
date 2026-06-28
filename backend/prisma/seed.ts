@@ -4,9 +4,9 @@ import { prisma } from "../src/config/db";
 
 const main = async () => {
   try {
-    const adminHash = await bcrypt.hash("admin123", 10);
-    const waiterHash = await bcrypt.hash("waiter123", 10);
-    const kitchenHash = await bcrypt.hash("kitchen123", 10);
+    const adminHash = await bcrypt.hash("Admin@123", 12);
+    const waiterHash = await bcrypt.hash("Waiter@123", 12);
+    const kitchenHash = await bcrypt.hash("Kitchen@123", 12);
 
     await prisma.user.upsert({
       where: { phone: "9999999999" },

@@ -24,12 +24,12 @@ export function DeleteTableModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 px-4 py-16">
-      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900 p-6 text-center shadow-2xl">
+      <div className="w-full max-w-md rounded-2xl border border-border-primary bg-surface-raised p-6 text-center shadow-2xl">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 text-2xl font-bold text-red-400">
           !
         </div>
-        <h2 className="mt-4 text-xl font-bold text-zinc-100">Delete Table {table.tableNumber}</h2>
-        <p className="mt-2 text-sm text-zinc-400">
+        <h2 className="mt-4 text-xl font-bold text-text-primary">Delete Table {table.tableNumber}</h2>
+        <p className="mt-2 text-sm text-text-secondary">
           This action cannot be undone. The table and its QR code will be permanently removed.
         </p>
 

@@ -1,5 +1,10 @@
 import crypto from "crypto";
-import jwt from "jsonwebtoken";
+import jwt, { SignOptions } from "jsonwebtoken";
+import {
+  getSessionJwtSecret,
+  sessionSignOptions,
+  sessionVerifyOptions,
+} from "./jwt.utils";
 
 export type SessionPayload = {
   sessionId: string;
@@ -12,27 +17,19 @@ export const generateSessionToken = (): string => {
 };
 
 export const createSessionJWT = (payload: SessionPayload): string => {
-  const secret = process.env.JWT_SECRET;
-
-  if (!secret) {
-    throw new Error("JWT_SECRET is not configured.");
-  }
+  const secret = getSessionJwtSecret();
 
   return jwt.sign(payload, secret, {
-    expiresIn: "24h",
+    ...sessionSignOptions((process.env.SESSION_JWT_EXPIRES_IN ?? "12h") as SignOptions["expiresIn"]),
     jwtid: generateSessionToken(),
   });
 };
 
 export const verifySessionJWT = (token: string): SessionPayload | null => {
   try {
-    const secret = process.env.JWT_SECRET;
+    const secret = getSessionJwtSecret();
 
-    if (!secret) {
-      return null;
-    }
-
-    const payload = jwt.verify(token, secret) as SessionPayload;
+    const payload = jwt.verify(token, secret, sessionVerifyOptions) as SessionPayload;
     return {
       sessionId: payload.sessionId,
       tableId: payload.tableId,
