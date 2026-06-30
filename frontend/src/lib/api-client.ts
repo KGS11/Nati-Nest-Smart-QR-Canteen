@@ -5,7 +5,6 @@ import { useSessionStore } from "@/stores/sessionStore";
 import { ApiErrorResponse, ClientApiError } from "@/types/api";
 
 export const apiClient = axios.create({
-  baseURL: env.apiUrl,
   headers: {
     "Content-Type": "application/json",
   },
@@ -23,6 +22,15 @@ const isCustomerPath = (config: InternalAxiosRequestConfig): boolean => {
   if (url === "/catering/enquiries" && config.method?.toLowerCase() === "post") return true;
   return false;
 };
+
+// Dynamically resolve the baseURL per request so that opening via Wi-Fi IP
+// or localhost both route correctly to the backend on port 5000.
+apiClient.interceptors.request.use((config) => {
+  if (!config.baseURL) {
+    config.baseURL = env.apiUrl;
+  }
+  return config;
+});
 
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {

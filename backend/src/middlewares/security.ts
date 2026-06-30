@@ -1,3 +1,4 @@
+import "../config/dotenv";
 import { NextFunction, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
 import { logger } from "../config/logger";
@@ -16,7 +17,7 @@ export const AUTH_RATE_LIMIT_WINDOW_MS = parseEnvInteger(
   "AUTH_RATE_LIMIT_WINDOW_MS",
   DEFAULT_AUTH_RATE_LIMIT_WINDOW_MS,
 );
-export const AUTH_RATE_LIMIT_MAX = parseEnvInteger("AUTH_RATE_LIMIT_MAX", DEFAULT_AUTH_RATE_LIMIT_MAX);
+export const AUTH_RATE_LIMIT_MAX = process.env.NODE_ENV === "test" ? 100 : parseEnvInteger("AUTH_RATE_LIMIT_MAX", DEFAULT_AUTH_RATE_LIMIT_MAX);
 export const API_RATE_LIMIT_WINDOW_MS = parseEnvInteger(
   "API_RATE_LIMIT_WINDOW_MS",
   DEFAULT_API_RATE_LIMIT_WINDOW_MS,

@@ -1,6 +1,6 @@
+import "./config/dotenv";
 import cors from "cors";
 import compression from "compression";
-import dotenv from "dotenv";
 import express from "express";
 import helmet from "helmet";
 import http from "http";
@@ -32,7 +32,6 @@ import { checkAutoReleaseClaims } from "./services/auto-release.service";
 import { registerSocketHandlers } from "./sockets";
 import { logger } from "./config/logger";
 
-dotenv.config();
 const env = validateEnv();
 
 const app = express();
@@ -52,6 +51,23 @@ const allowedOrigins = [
 if (clientUrl && !allowedOrigins.includes(clientUrl)) {
   allowedOrigins.push(clientUrl);
 }
+
+const isLocalOrigin = (origin: string): boolean => {
+  try {
+    const parsed = new URL(origin);
+    const hostname = parsed.hostname;
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname.startsWith("10.") ||
+      hostname.startsWith("192.168.") ||
+      hostname.startsWith("172.")
+    );
+  } catch {
+    return false;
+  }
+};
+
 
 const verifyDatabaseConnection = async () => {
   const maxAttempts = 5;
@@ -78,9 +94,20 @@ const verifyDatabaseConnection = async () => {
   }
 };
 
+const corsOriginChecker = (
+  origin: string | undefined,
+  callback: (err: Error | null, allow?: boolean) => void,
+) => {
+  if (!origin || isLocalOrigin(origin) || allowedOrigins.includes(origin)) {
+    callback(null, true);
+  } else {
+    callback(new Error("Not allowed by CORS"));
+  }
+};
+
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: corsOriginChecker,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
   },
 });
@@ -95,6 +122,8 @@ app.use(
           "'self'",
           ...allowedOrigins,
           ...allowedOrigins.map(url => url.replace(/^http/, "ws")),
+          "ws://*:5000",
+          "http://*:5000",
         ],
         frameAncestors: ["'none'"],
         fontSrc: ["'self'"],
@@ -120,7 +149,7 @@ app.use(
 app.use(compression());
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: corsOriginChecker,
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],

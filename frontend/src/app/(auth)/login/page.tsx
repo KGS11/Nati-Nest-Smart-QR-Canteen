@@ -34,17 +34,48 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: { phone: "", password: "" },
   });
 
+  const phoneValue = watch("phone");
+  const passwordValue = watch("password");
+
+  useEffect(() => {
+    setApiError(null);
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated && user) {
       router.replace(roleRoutes[user.role]);
     }
   }, [isAuthenticated, router, user]);
+
+  useEffect(() => {
+    setApiError(null);
+  }, [phoneValue, passwordValue, selectedRole]);
+
+  const getLoginErrorMessage = (error: ClientApiError) => {
+    const backendMessage = error.data?.message || error.message;
+
+    switch (error.status) {
+      case 400:
+        return backendMessage || "Please check your login details.";
+      case 401:
+        return "Invalid phone number or password";
+      case 403:
+        return "You do not have permission.";
+      case 429:
+        return backendMessage || "Too many authentication attempts from this network. Try again later.";
+      case 500:
+        return "Server unavailable. Please try again later.";
+      default:
+        return "Unexpected error. Please try again.";
+    }
+  };
 
   const onSubmit = async (credentials: LoginInput) => {
     setApiError(null);
@@ -54,10 +85,11 @@ export default function LoginPage() {
       >("/auth/login", { phone: credentials.phone, password: credentials.password });
       const { token, refreshToken, user: loggedInUser } = response.data.data;
       login(token, loggedInUser, refreshToken);
+      setApiError(null);
       router.replace(roleRoutes[loggedInUser.role]);
     } catch (error) {
       const clientError = error as ClientApiError;
-      setApiError(clientError.message || "Invalid credentials or server unavailable.");
+      setApiError(getLoginErrorMessage(clientError));
     }
   };
 
