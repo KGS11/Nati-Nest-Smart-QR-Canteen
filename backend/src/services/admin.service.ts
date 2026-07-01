@@ -1,14 +1,262 @@
 import { prisma } from "../config/db";
-import { OrderStatus, Role } from "@prisma/client";
+import { OrderItemStatus, OrderStatus, PaymentStatus, Prisma, Role } from "@prisma/client";
 import { AppError } from "../utils/AppError";
 import { ROOMS } from "../sockets/rooms";
+import { notifyWaiter } from "../utils/notification.util";
+
+type CancelOrderItemInput = {
+  reason: string;
+  notes?: string;
+};
+
+type AdminActor = {
+  userId: string;
+  name: string;
+};
 
 const getIo = () => {
   const { io } = require("../index");
   return io;
 };
 
+const complaintCancellableStatuses: OrderStatus[] = [OrderStatus.DELIVERED, OrderStatus.PAID];
+
 export class AdminService {
+  private calculateActiveTotal(
+    orders: Array<{
+      status: OrderStatus;
+      items: Array<{ status: OrderItemStatus; unitPrice: Prisma.Decimal; quantity: number }>;
+    }>,
+  ) {
+    const total = orders
+      .filter((order) => order.status !== OrderStatus.CANCELLED)
+      .flatMap((order) => order.items)
+      .filter((item) => item.status === OrderItemStatus.ACTIVE)
+      .reduce((sum, item) => sum + Number(item.unitPrice) * item.quantity, 0);
+
+    return Math.max(0, Math.round(total * 100) / 100);
+  }
+
+  async cancelOrderItem(
+    orderId: string,
+    itemId: string,
+    input: CancelOrderItemInput,
+    admin: AdminActor,
+    ipAddress?: string,
+  ) {
+    const result = await prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id: orderId },
+        include: {
+          session: {
+            include: {
+              table: { select: { tableNumber: true } },
+            },
+          },
+          items: {
+            include: { menuItem: true },
+          },
+        },
+      });
+
+      if (!order) {
+        throw new AppError("Order not found", 404);
+      }
+
+      if (!complaintCancellableStatuses.includes(order.status)) {
+        throw new AppError("Only delivered or paid order items can be cancelled by admin.", 400);
+      }
+
+      const item = order.items.find((orderItem) => orderItem.id === itemId);
+      if (!item) {
+        throw new AppError("Order item not found", 404);
+      }
+
+      if (item.status === OrderItemStatus.CANCELLED_BY_ADMIN) {
+        throw new AppError("Order item is already cancelled by restaurant.", 409);
+      }
+
+      if (item.status !== OrderItemStatus.ACTIVE) {
+        throw new AppError("Only active order items can be cancelled by admin.", 400);
+      }
+
+      const payment = await tx.payment.findUnique({
+        where: { sessionId: order.sessionId },
+      });
+
+      const sessionOrdersBefore = await tx.order.findMany({
+        where: { sessionId: order.sessionId },
+        include: { items: true },
+      });
+      const oldTotal = payment ? Number(payment.totalAmount) : this.calculateActiveTotal(sessionOrdersBefore);
+      const originalAmount = Math.round(Number(item.unitPrice) * item.quantity * 100) / 100;
+      const now = new Date();
+
+      const updatedItem = await tx.orderItem.update({
+        where: { id: itemId },
+        data: {
+          status: OrderItemStatus.CANCELLED_BY_ADMIN,
+          cancelledAt: now,
+          cancelledById: admin.userId,
+          cancellationReason: input.reason,
+          cancellationNotes: input.notes?.trim() || null,
+          originalAmount: new Prisma.Decimal(originalAmount),
+        },
+        include: {
+          menuItem: true,
+          cancelledBy: { select: { id: true, name: true } },
+        },
+      });
+
+      const sessionOrdersAfter = await tx.order.findMany({
+        where: { sessionId: order.sessionId },
+        include: { items: true },
+      });
+      const newTotal = this.calculateActiveTotal(sessionOrdersAfter);
+
+      let adjustment:
+        | {
+            id: string;
+            amount: Prisma.Decimal;
+            status: string;
+          }
+        | null = null;
+
+      if (payment?.status === PaymentStatus.PENDING) {
+        await tx.payment.update({
+          where: { id: payment.id },
+          data: { totalAmount: new Prisma.Decimal(newTotal) },
+        });
+      }
+
+      if (payment?.status === PaymentStatus.COMPLETED) {
+        adjustment = await tx.paymentAdjustment.create({
+          data: {
+            paymentId: payment.id,
+            sessionId: order.sessionId,
+            orderItemId: itemId,
+            adminId: admin.userId,
+            amount: new Prisma.Decimal(originalAmount),
+            reason: input.reason,
+            notes: input.notes?.trim() || null,
+            status: "REFUND_PENDING",
+          },
+        });
+      }
+
+      await tx.auditLog.create({
+        data: {
+          actorId: admin.userId,
+          action: "ORDER_ITEM_CANCELLED_BY_ADMIN",
+          entityType: "OrderItem",
+          entityId: itemId,
+          ipAddress: ipAddress || null,
+          metadata: {
+            adminName: admin.name,
+            orderId,
+            sessionId: order.sessionId,
+            tableNumber: order.session.table.tableNumber,
+            menuItemId: item.menuItemId,
+            menuItemName: item.menuItem.name,
+            previousStatus: item.status,
+            newStatus: OrderItemStatus.CANCELLED_BY_ADMIN,
+            reason: input.reason,
+            notes: input.notes?.trim() || null,
+            originalAmount,
+            oldTotal,
+            newTotal,
+            paymentId: payment?.id ?? null,
+            paymentStatus: payment?.status ?? null,
+            adjustmentId: adjustment?.id ?? null,
+            adjustmentStatus: adjustment?.status ?? null,
+          },
+        },
+      });
+
+      return {
+        order,
+        item: updatedItem,
+        oldTotal,
+        newTotal,
+        amountDeducted: originalAmount,
+        paymentStatus: payment?.status ?? null,
+        adjustment: adjustment
+          ? {
+              id: adjustment.id,
+              amount: Number(adjustment.amount),
+              status: adjustment.status,
+            }
+          : null,
+      };
+    });
+
+    const payload = {
+      orderId,
+      itemId,
+      sessionId: result.order.sessionId,
+      tableNumber: result.order.session.table.tableNumber,
+      name: result.item.menuItem.name,
+      quantity: result.item.quantity,
+      unitPrice: Number(result.item.unitPrice),
+      amountDeducted: result.amountDeducted,
+      reason: result.item.cancellationReason,
+      notes: result.item.cancellationNotes,
+      cancelledAt: result.item.cancelledAt,
+      cancelledBy: result.item.cancelledBy?.name ?? admin.name,
+      oldTotal: result.oldTotal,
+      newTotal: result.newTotal,
+      paymentStatus: result.paymentStatus,
+      adjustment: result.adjustment,
+    };
+
+    const io = getIo();
+    io.to(ROOMS.session(result.order.sessionId)).emit("order:item_cancelled", payload);
+    io.to(ROOMS.session(result.order.sessionId)).emit("bill:updated", {
+      sessionId: result.order.sessionId,
+      tableNumber: result.order.session.table.tableNumber,
+      totalAmount: result.newTotal,
+      updatedAt: new Date(),
+    });
+    io.to(ROOMS.admin).emit("order:item_cancelled", payload);
+
+    await notifyWaiter(result.order.sessionId, "order:item_cancelled", payload, true);
+
+    return payload;
+  }
+
+  async getComplaintEligibleOrders() {
+    const orders = await prisma.order.findMany({
+      where: {
+        status: { in: complaintCancellableStatuses },
+      },
+      orderBy: { deliveredAt: "desc" },
+      take: 30,
+      include: {
+        session: {
+          include: {
+            table: { select: { tableNumber: true } },
+          },
+        },
+        items: {
+          include: { menuItem: true },
+        },
+      },
+    });
+
+    return orders.map((order) => ({
+      ...order,
+      items: order.items.map((item) => ({
+        ...item,
+        unitPrice: Number(item.unitPrice),
+        originalAmount: item.originalAmount ? Number(item.originalAmount) : null,
+        menuItem: {
+          ...item.menuItem,
+          price: Number(item.menuItem.price),
+        },
+      })),
+    }));
+  }
+
   async reassignKitchen(orderId: string, staffId: string) {
     const order = await prisma.order.findUnique({
       where: { id: orderId },

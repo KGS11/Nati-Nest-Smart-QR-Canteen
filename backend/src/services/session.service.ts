@@ -94,7 +94,7 @@ export class SessionService {
       const orders = session.orders.map((order) => ({
         ...order,
         items: order.items.map((item) => {
-          if (item.status !== OrderItemStatus.REJECTED) {
+          if (item.status === OrderItemStatus.ACTIVE) {
             totalAmount += item.unitPrice.toNumber() * item.quantity;
             itemCount += item.quantity;
           }

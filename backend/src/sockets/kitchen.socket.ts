@@ -25,6 +25,10 @@ export const initializeKitchenSockets = (io: Server) => {
           return;
         }
 
+        if (auth.role === Role.ADMIN) {
+          await socket.join(ROOMS.admin);
+        }
+
         await socket.join(ROOMS.kitchen);
         socket.emit("kitchen:joined", {
           message: "Connected to kitchen dashboard",

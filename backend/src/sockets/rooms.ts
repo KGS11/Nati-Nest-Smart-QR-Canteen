@@ -1,4 +1,5 @@
 export const ROOMS = {
+  admin: "admin",
   kitchen: "kitchen",
   server: "server",
   session: (sessionId: string) => `session:${sessionId}`,

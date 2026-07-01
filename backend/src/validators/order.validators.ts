@@ -24,6 +24,27 @@ export const orderIdParamSchema = z.object({
   orderId: z.string().uuid("orderId must be a valid UUID"),
 });
 
+export const adminCancelOrderItemParamsSchema = z.object({
+  orderId: z.string().uuid("orderId must be a valid UUID"),
+  itemId: z.string().uuid("itemId must be a valid UUID"),
+});
+
+export const adminCancelOrderItemSchema = z.object({
+  reason: z.enum(
+    [
+      "TASTE_ISSUE",
+      "POOR_QUALITY",
+      "WRONG_PREPARATION",
+      "SUPPLIER_ISSUE",
+      "DAMAGED_FOOD",
+      "WRONG_ITEM",
+      "OTHER",
+    ],
+    { error: "Cancellation reason is required." },
+  ),
+  notes: z.string().trim().max(500, "Notes must not exceed 500 characters").optional(),
+});
+
 export const assistanceRequestSchema = z.object({
   requestType: z.enum(["WATER", "BILL", "GENERAL", "PLATE"]),
 });
@@ -93,6 +114,8 @@ export const validateParams =
 
 export const createOrderValidator = validateRequest(createOrderSchema);
 export const orderIdParamValidator = validateParams(orderIdParamSchema);
+export const adminCancelOrderItemParamsValidator = validateParams(adminCancelOrderItemParamsSchema);
+export const adminCancelOrderItemValidator = validateRequest(adminCancelOrderItemSchema);
 export const verifyPaymentValidator = validateRequest(verifyPaymentSchema);
 
 export const setTipSchema = z.object({

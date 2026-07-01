@@ -1,0 +1,7 @@
+
+> backend@1.0.0 dev
+> ts-node src/index.ts
+
+◇ injected env (15) from .env // tip: ⌘ enable debugging { debug: true }
+{"attempt":1,"error":"Can't reach database server at `ep-odd-wildflower-aozj2tkf.c-2.ap-southeast-1.aws.neon.tech:5432`\n\nPlease make sure your database server is running at `ep-odd-wildflower-aozj2tkf.c-2.ap-southeast-1.aws.neon.tech:5432`.","level":"error","maxAttempts":5,"message":"Database connection startup check failed.","timestamp":"2026-07-01T16:28:44.788Z"}
+{"attempt":2,"error":"Can't reach database server at `ep-odd-wildflower-aozj2tkf.c-2.ap-southeast-1.aws.neon.tech:5432`\n\nPlease make sure your database server is running at `ep-odd-wildflower-aozj2tkf.c-2.ap-southeast-1.aws.neon.tech:5432`.","level":"error","maxAttempts":5,"message":"Database connection startup check failed.","timestamp":"2026-07-01T16:28:45.859Z"}

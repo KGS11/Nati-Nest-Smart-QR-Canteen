@@ -37,6 +37,7 @@ enum OrderStatus {
 enum OrderItemStatus {
   ACTIVE
   REJECTED
+  CANCELLED_BY_ADMIN
 }
 
 enum PaymentMethod {
@@ -82,6 +83,9 @@ model User {
   createdAt    DateTime @default(now())
 
   paymentsVerified   Payment[]                @relation("VerifiedBy")
+  orderItemsCancelled OrderItem[]             @relation("OrderItemCancelledBy")
+  paymentAdjustments PaymentAdjustment[]      @relation("PaymentAdjustmentAdmin")
+  auditLogs          AuditLog[]               @relation("AuditLogActor")
   assistanceResolved AssistanceRequest[]      @relation("ResolvedBy")
   refreshTokens      RefreshToken[]
   dailyMenuAdded     DailyMenu[]              @relation("DailyMenuAddedBy")
@@ -170,6 +174,7 @@ model TableSession {
   feedback           Feedback?
   assistanceRequests AssistanceRequest[]
   cateringLeads      CateringLead[]
+  paymentAdjustments PaymentAdjustment[]
   
   assignedWaiterId   String?
   assignedAt         DateTime?
@@ -229,15 +234,24 @@ model OrderItem {
   status              OrderItemStatus @default(ACTIVE)
   createdAt           DateTime        @default(now())
   rejectionReason     String?
+  cancelledAt         DateTime?
+  cancelledById       String?
+  cancellationReason  String?
+  cancellationNotes   String?
+  originalAmount      Decimal?        @db.Decimal(10, 2)
 
-  order    Order    @relation(fields: [orderId], references: [id])
-  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+  order       Order    @relation(fields: [orderId], references: [id])
+  menuItem    MenuItem @relation(fields: [menuItemId], references: [id])
+  cancelledBy User?    @relation("OrderItemCancelledBy", fields: [cancelledById], references: [id])
+  paymentAdjustments PaymentAdjustment[]
 
   @@index([orderId])
   @@index([menuItemId])
   @@index([status, createdAt])
   @@index([status])
   @@index([orderId, status])
+  @@index([cancelledById])
+  @@index([cancelledAt])
   @@map("order_items")
 }
 
@@ -254,12 +268,38 @@ model Payment {
 
   session    TableSession @relation(fields: [sessionId], references: [id])
   verifiedBy User?        @relation("VerifiedBy", fields: [verifiedById], references: [id])
+  adjustments PaymentAdjustment[]
 
   @@index([status, createdAt])
   @@index([status, verifiedAt])
   @@index([verifiedAt])
   @@index([status])
   @@map("payments")
+}
+
+model PaymentAdjustment {
+  id          String   @id @default(uuid())
+  paymentId   String
+  sessionId   String
+  orderItemId String
+  adminId     String
+  amount      Decimal  @db.Decimal(10, 2)
+  reason      String
+  notes       String?
+  status      String   @default("REFUND_PENDING")
+  createdAt   DateTime @default(now())
+
+  payment   Payment      @relation(fields: [paymentId], references: [id])
+  session   TableSession @relation(fields: [sessionId], references: [id])
+  orderItem OrderItem    @relation(fields: [orderItemId], references: [id])
+  admin     User         @relation("PaymentAdjustmentAdmin", fields: [adminId], references: [id])
+
+  @@index([paymentId])
+  @@index([sessionId])
+  @@index([orderItemId])
+  @@index([adminId])
+  @@index([status, createdAt])
+  @@map("payment_adjustments")
 }
 
 model AssistanceRequest {
@@ -371,6 +411,24 @@ model OrderAssignmentHistory {
   @@index([orderId])
   @@index([staffId])
   @@map("order_assignment_history")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation("AuditLogActor", fields: [actorId], references: [id])
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+  @@map("audit_logs")
 }
 
 model WaiterAssignmentRequest {

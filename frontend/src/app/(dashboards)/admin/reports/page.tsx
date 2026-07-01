@@ -288,7 +288,7 @@ export default function AdminReportsPage() {
           <p role="alert" className="mb-3 text-label-xs font-semibold text-semantic_error-400">{exportError}</p>
         ) : null}
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
-          {(["revenue", "orders", "payments", "tables", "feedback", "staff"] as ExportType[]).map((type) => (
+          {(["revenue", "orders", "payments", "tables", "feedback", "staff", "cancelled-items"] as ExportType[]).map((type) => (
             <div key={type} className="flex min-w-0 gap-2 rounded-lg bg-surface-base p-2">
               <span className="flex-1 truncate px-2 py-2 text-label-xs font-bold capitalize text-text-secondary">
                 {type === "staff" ? "Staff Activity" : type}

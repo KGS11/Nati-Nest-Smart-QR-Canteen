@@ -34,6 +34,13 @@ export const adminService = {
     return response.data.data;
   },
 
+  async getComplaintEligibleOrders() {
+    const response = await apiClient.get<ApiResponse<{ orders: any[]; count: number }>>(
+      "/admin/orders/complaint-eligible",
+    );
+    return response.data.data.orders;
+  },
+
   async reassignKitchen(orderId: string, staffId: string) {
     const response = await apiClient.patch<ApiResponse<{ order: any }>>(
       `/admin/orders/${orderId}/reassign-kitchen`,
@@ -48,6 +55,25 @@ export const adminService = {
       { staffId }
     );
     return response.data.data.order;
+  },
+
+  async cancelOrderItem(
+    orderId: string,
+    itemId: string,
+    payload: { reason: string; notes?: string },
+  ) {
+    const response = await apiClient.patch<ApiResponse<any>>(
+      `/admin/orders/${orderId}/items/${itemId}/cancel`,
+      payload,
+    );
+    return response.data.data;
+  },
+
+  async getCancelledItemAnalytics(startDate: string, endDate: string) {
+    const response = await apiClient.get<ApiResponse<any>>("/reports/cancelled-items", {
+      params: { startDate, endDate },
+    });
+    return response.data.data;
   },
 
   async forceUnclaimKitchen(orderId: string) {

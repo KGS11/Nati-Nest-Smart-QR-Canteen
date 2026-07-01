@@ -28,6 +28,17 @@ export interface BillSummary {
     unitPrice: number;
     subtotal: number;
   }>;
+  cancelledItems?: Array<{
+    orderId: string;
+    itemId: string;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    amountDeducted: number;
+    reason: string | null;
+    notes: string | null;
+    cancelledAt: string | null;
+  }>;
 }
 
 export interface FeedbackStatus {

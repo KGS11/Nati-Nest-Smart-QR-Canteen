@@ -34,7 +34,7 @@ const serializePayment = <
   tipAmount: payment.tipAmount ? payment.tipAmount.toNumber() : 0,
 });
 
-const buildBillSummary = async (sessionId: string) => {
+export const buildBillSummary = async (sessionId: string) => {
   const session = await prisma.tableSession.findUnique({
     where: { id: sessionId },
     include: { table: { select: { tableNumber: true } } },
@@ -51,7 +51,6 @@ const buildBillSummary = async (sessionId: string) => {
     },
     include: {
       items: {
-        where: { status: OrderItemStatus.ACTIVE },
         include: { menuItem: true },
       },
     },
@@ -63,24 +62,53 @@ const buildBillSummary = async (sessionId: string) => {
   >();
   let totalAmount = 0;
 
+  const cancelledItems: Array<{
+    orderId: string;
+    itemId: string;
+    name: string;
+    quantity: number;
+    unitPrice: number;
+    amountDeducted: number;
+    reason: string | null;
+    notes: string | null;
+    cancelledAt: Date | null;
+  }> = [];
+
   const serializedOrders = orders.map((order) => ({
     ...order,
     items: order.items.map((item) => {
       const unitPrice = Number(item.unitPrice) || 0;
       const quantity = Number(item.quantity) || 0;
       const subtotal = Math.round(unitPrice * quantity * 100) / 100;
-      totalAmount += subtotal;
 
-      const existing = breakdown.get(item.menuItem.name);
-      if (existing) {
-        existing.quantity += quantity;
-        existing.subtotal = Math.round((existing.subtotal + subtotal) * 100) / 100;
-      } else {
-        breakdown.set(item.menuItem.name, {
+      if (item.status === OrderItemStatus.ACTIVE) {
+        totalAmount += subtotal;
+
+        const existing = breakdown.get(item.menuItem.name);
+        if (existing) {
+          existing.quantity += quantity;
+          existing.subtotal = Math.round((existing.subtotal + subtotal) * 100) / 100;
+        } else {
+          breakdown.set(item.menuItem.name, {
+            name: item.menuItem.name,
+            quantity,
+            unitPrice,
+            subtotal,
+          });
+        }
+      }
+
+      if (item.status === OrderItemStatus.CANCELLED_BY_ADMIN) {
+        cancelledItems.push({
+          orderId: order.id,
+          itemId: item.id,
           name: item.menuItem.name,
           quantity,
           unitPrice,
-          subtotal,
+          amountDeducted: subtotal,
+          reason: item.cancellationReason,
+          notes: item.cancellationNotes,
+          cancelledAt: item.cancelledAt,
         });
       }
 
@@ -100,6 +128,7 @@ const buildBillSummary = async (sessionId: string) => {
     orders: serializedOrders,
     totalAmount: Math.round(totalAmount * 100) / 100,
     itemBreakdown: Array.from(breakdown.values()),
+    cancelledItems,
   };
 };
 
@@ -344,6 +373,27 @@ export class PaymentService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async getBillSummary(sessionId: string) {
+    return buildBillSummary(sessionId);
+  }
+
+  async refreshPendingPaymentTotal(sessionId: string) {
+    const billSummary = await buildBillSummary(sessionId);
+    const payment = await prisma.payment.findUnique({ where: { sessionId } });
+
+    if (!payment || payment.status !== PaymentStatus.PENDING) {
+      return { payment: payment ? serializePayment(payment) : null, billSummary };
+    }
+
+    const totalAmount = Math.max(0, billSummary.totalAmount);
+    const updatedPayment = await prisma.payment.update({
+      where: { id: payment.id },
+      data: { totalAmount: new Prisma.Decimal(totalAmount) },
+    });
+
+    return { payment: serializePayment(updatedPayment), billSummary };
   }
 
   async getPendingPayments() {

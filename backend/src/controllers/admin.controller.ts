@@ -9,6 +9,43 @@ const param = (request: Request, key: string) => {
 };
 
 export class AdminController {
+  async getComplaintEligibleOrders(_request: Request, response: Response, next: NextFunction) {
+    try {
+      const orders = await adminService.getComplaintEligibleOrders();
+      return response.status(200).json({
+        success: true,
+        data: { orders, count: orders.length },
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async cancelOrderItem(request: Request, response: Response, next: NextFunction) {
+    try {
+      const orderId = param(request, "orderId");
+      const itemId = param(request, "itemId");
+      const result = await adminService.cancelOrderItem(
+        orderId,
+        itemId,
+        request.body,
+        {
+          userId: request.user!.userId,
+          name: request.user!.name,
+        },
+        request.ip,
+      );
+
+      return response.status(200).json({
+        success: true,
+        message: "Order item cancelled by restaurant.",
+        data: result,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async reassignKitchen(request: Request, response: Response, next: NextFunction) {
     try {
       const orderId = param(request, "orderId");

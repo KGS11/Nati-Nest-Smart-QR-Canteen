@@ -74,6 +74,7 @@ export default function CustomerTrackPage() {
     const delivered = () => refreshWithMessage("Enjoy your meal!");
     const cancelled = (payload: any) => refreshWithMessage(payload.reason ? `Order cancelled: ${payload.reason}` : "Your order was cancelled.");
     const itemRejected = (payload: any) => refreshWithMessage(`Item unavailable: ${payload.name}.`);
+    const itemCancelled = (payload: any) => refreshWithMessage(`Restaurant adjusted your bill: ${payload.name} cancelled.`);
 
     socket.on("order:accepted", accepted);
     socket.on("order:preparing", preparing);
@@ -81,6 +82,7 @@ export default function CustomerTrackPage() {
     socket.on("order:delivered", delivered);
     socket.on("order:cancelled", cancelled);
     socket.on("order:item_rejected", itemRejected);
+    socket.on("order:item_cancelled", itemCancelled);
 
     return () => {
       socket.off("order:accepted", accepted);
@@ -89,6 +91,7 @@ export default function CustomerTrackPage() {
       socket.off("order:delivered", delivered);
       socket.off("order:cancelled", cancelled);
       socket.off("order:item_rejected", itemRejected);
+      socket.off("order:item_cancelled", itemCancelled);
     };
   }, [loadOrders, socket]);
 

@@ -5,7 +5,15 @@ import apiClient from "@/lib/api-client";
 import { ClientApiError } from "@/types/api";
 
 export type ExportFormat = "csv" | "xlsx";
-export type ExportType = "orders" | "payments" | "revenue" | "feedback" | "tables" | "catering" | "staff";
+export type ExportType =
+  | "orders"
+  | "payments"
+  | "revenue"
+  | "feedback"
+  | "tables"
+  | "catering"
+  | "staff"
+  | "cancelled-items";
 
 interface DownloadExportParams {
   type: ExportType;

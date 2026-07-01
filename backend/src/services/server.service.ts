@@ -10,7 +10,7 @@ import { prisma } from "../config/db";
 import { ROOMS } from "../sockets/rooms";
 import { AppError } from "../utils/AppError";
 import { notifyWaiter } from "../utils/notification.util";
-import { paymentService } from "./payment.service";
+import { buildBillSummary, paymentService } from "./payment.service";
 
 type ServerOrder = Awaited<ReturnType<typeof serverOrderById>>;
 
@@ -540,71 +540,7 @@ export class ServerService {
 
   async getSessionBillSummary(sessionId: string) {
     try {
-      const session = await prisma.tableSession.findUnique({
-        where: { id: sessionId },
-        include: { table: { select: { tableNumber: true } } },
-      });
-
-      if (!session) {
-        throw new AppError("Session not found", 404);
-      }
-
-      const orders = await prisma.order.findMany({
-        where: {
-          sessionId,
-          status: { not: OrderStatus.CANCELLED },
-        },
-        include: {
-          items: {
-            where: { status: OrderItemStatus.ACTIVE },
-            include: { menuItem: true },
-          },
-        },
-      });
-
-      const breakdown = new Map<
-        string,
-        { name: string; quantity: number; unitPrice: number; subtotal: number }
-      >();
-      let totalAmount = 0;
-
-      const serializedOrders = orders.map((order) => ({
-        ...order,
-        items: order.items.map((item) => {
-          const unitPrice = item.unitPrice.toNumber();
-          const subtotal = Math.round(unitPrice * item.quantity * 100) / 100;
-          totalAmount += subtotal;
-
-          const existing = breakdown.get(item.menuItem.name);
-          if (existing) {
-            existing.quantity += item.quantity;
-            existing.subtotal = Math.round((existing.subtotal + subtotal) * 100) / 100;
-          } else {
-            breakdown.set(item.menuItem.name, {
-              name: item.menuItem.name,
-              quantity: item.quantity,
-              unitPrice,
-              subtotal,
-            });
-          }
-
-          return {
-            ...item,
-            unitPrice,
-            menuItem: {
-              ...item.menuItem,
-              price: item.menuItem.price.toNumber(),
-            },
-          };
-        }),
-      }));
-
-      return {
-        tableNumber: session.table.tableNumber,
-        orders: serializedOrders,
-        totalAmount: Math.round(totalAmount * 100) / 100,
-        itemBreakdown: Array.from(breakdown.values()),
-      };
+      return buildBillSummary(sessionId);
     } catch (error) {
       throw error;
     }

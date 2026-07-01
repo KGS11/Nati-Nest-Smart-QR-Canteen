@@ -18,7 +18,15 @@ import {
 import { AppError } from "../utils/AppError";
 
 export type ExportFormat = "csv" | "xlsx";
-export type ExportType = "orders" | "payments" | "revenue" | "feedback" | "tables" | "catering" | "staff";
+export type ExportType =
+  | "orders"
+  | "payments"
+  | "revenue"
+  | "feedback"
+  | "tables"
+  | "catering"
+  | "staff"
+  | "cancelled-items";
 
 export interface ExportParams {
   filter?: string;
@@ -441,6 +449,64 @@ export class ExportService {
     });
   }
 
+  async exportCancelledItems(params: ExportParams) {
+    const { from, to } = parseDateRange(params);
+    const items = await prisma.orderItem.findMany({
+      where: {
+        status: OrderItemStatus.CANCELLED_BY_ADMIN,
+        cancelledAt: { gte: from, lte: to },
+      },
+      include: {
+        menuItem: { include: { category: true } },
+        cancelledBy: { select: { name: true, phone: true } },
+        order: { include: { session: { include: { table: true } } } },
+      },
+      orderBy: { cancelledAt: "desc" },
+    });
+
+    const columns: ExcelColumn[] = [
+      { header: "Order ID", key: "orderId", width: 12 },
+      { header: "Item ID", key: "itemId", width: 12 },
+      { header: "Table", key: "tableNumber", width: 10 },
+      { header: "Item Name", key: "itemName", width: 24 },
+      { header: "Category", key: "category", width: 18 },
+      { header: "Qty", key: "quantity", width: 8 },
+      { header: "Unit Price Rs", key: "unitPrice", width: 14 },
+      { header: "Amount Deducted Rs", key: "amountDeducted", width: 18 },
+      { header: "Reason", key: "reason", width: 20 },
+      { header: "Notes", key: "notes", width: 35 },
+      { header: "Cancelled By", key: "cancelledBy", width: 20 },
+      { header: "Cancelled At", key: "cancelledAt", width: 18 },
+      { header: "Order Status", key: "orderStatus", width: 14 },
+    ];
+
+    const rows = items.map<Record<string, ExcelCellValue>>((item) => ({
+      orderId: shortId(item.orderId),
+      itemId: shortId(item.id),
+      tableNumber: item.order.session.table.tableNumber,
+      itemName: item.menuItem.name,
+      category: item.menuItem.category.name,
+      quantity: item.quantity,
+      unitPrice: money(item.unitPrice),
+      amountDeducted: money(item.originalAmount ?? Number(item.unitPrice) * item.quantity),
+      reason: item.cancellationReason ?? "",
+      notes: item.cancellationNotes ?? "",
+      cancelledBy: item.cancelledBy?.name ?? "Unknown Admin",
+      cancelledAt: item.cancelledAt ?? "",
+      orderStatus: item.order.status,
+    }));
+
+    return sendSheet("cancelled-items", params, {
+      sheetName: "Cancelled Items",
+      columns,
+      rows,
+      totals: {
+        quantity: rows.reduce((sum, row) => sum + Number(row.quantity ?? 0), 0),
+        amountDeducted: rows.reduce((sum, row) => sum + Number(row.amountDeducted ?? 0), 0),
+      },
+    });
+  }
+
   async export(type: ExportType, params: ExportParams) {
     switch (type) {
       case "orders":
@@ -457,6 +523,8 @@ export class ExportService {
         return this.exportCatering(params);
       case "staff":
         return this.exportStaffActivity(params);
+      case "cancelled-items":
+        return this.exportCancelledItems(params);
       default:
         throw new AppError("Unsupported export type", 400);
     }

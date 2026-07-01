@@ -440,7 +440,7 @@ describe("Nati Nest backend API", () => {
         name: "Ravi",
         phone: "9999999999",
         eventType: "SPORTS",
-        eventDate: "2026-07-01",
+        eventDate: "2026-07-11",
         guestCount: 50,
         location: "Main hall",
       })

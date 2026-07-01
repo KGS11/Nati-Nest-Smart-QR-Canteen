@@ -4,7 +4,7 @@ export interface ReadyOrderItem {
   quantity: number
   unitPrice: number
   specialInstructions: string | null
-  status: 'ACTIVE' | 'REJECTED'
+  status: 'ACTIVE' | 'REJECTED' | 'CANCELLED_BY_ADMIN'
 }
 
 export interface ReadyOrder {

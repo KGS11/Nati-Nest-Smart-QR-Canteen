@@ -111,17 +111,31 @@ export function OrderCard({
             <div className="space-y-3">
               {order.items.map((item) => {
                 const isItemRejected = item.status === "REJECTED";
+                const isAdminCancelled = item.status === "CANCELLED_BY_ADMIN";
+                const itemAmount = Number(item.originalAmount ?? Number(item.unitPrice) * item.quantity);
                 return (
                   <div key={item.id} className="space-y-2">
                     <div className="flex justify-between items-start text-xs text-text-secondary">
                       <div className="min-w-0 pr-4">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className={cn("font-medium", isItemRejected ? "text-red-400/70 line-through" : "text-text-primary")}>
+                          <span
+                            className={cn(
+                              "font-medium",
+                              (isItemRejected || isAdminCancelled)
+                                ? "text-red-400/70 line-through"
+                                : "text-text-primary",
+                            )}
+                          >
                             {item.menuItem?.name}
                           </span>
                           {isItemRejected && (
                             <span className="rounded bg-red-950 px-1.5 py-0.5 text-[9px] font-bold text-red-400 uppercase tracking-wide">
                               Unavailable
+                            </span>
+                          )}
+                          {isAdminCancelled && (
+                            <span className="rounded bg-red-950 px-1.5 py-0.5 text-[9px] font-bold text-red-400 uppercase tracking-wide">
+                              Cancelled by Restaurant
                             </span>
                           )}
                         </div>
@@ -131,7 +145,12 @@ export function OrderCard({
                           </p>
                         )}
                       </div>
-                      <span className="shrink-0 text-text-secondary font-medium whitespace-nowrap">
+                      <span
+                        className={cn(
+                          "shrink-0 text-text-secondary font-medium whitespace-nowrap",
+                          isAdminCancelled && "line-through text-red-400/70",
+                        )}
+                      >
                         {item.quantity} x ₹{Number(item.unitPrice).toFixed(2)}
                       </span>
                     </div>
@@ -154,6 +173,21 @@ export function OrderCard({
                             Replace Item / Return to Menu
                           </Link>
                         </div>
+                      </div>
+                    )}
+
+                    {isAdminCancelled && (
+                      <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs text-red-400 space-y-1.5">
+                        <p className="font-bold">Cancelled By Restaurant</p>
+                        {item.cancellationReason && (
+                          <p className="text-text-secondary italic">
+                            Reason: {item.cancellationReason.replaceAll("_", " ")}
+                          </p>
+                        )}
+                        {item.cancellationNotes && (
+                          <p className="text-text-secondary italic">Notes: {item.cancellationNotes}</p>
+                        )}
+                        <p className="font-semibold">Amount deducted: -₹{itemAmount.toFixed(2)}</p>
                       </div>
                     )}
                   </div>

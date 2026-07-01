@@ -71,13 +71,21 @@ export default function CustomerBillPage() {
         window.sessionStorage.setItem(`paymentCompleted_${sessionId}`, "true");
       }
     };
+    const billUpdated = () => {
+      setMessage("Your bill was updated by the restaurant.");
+      loadBill();
+    };
 
     socket.on("payment:confirmed", confirmed);
+    socket.on("bill:updated", billUpdated);
+    socket.on("order:item_cancelled", billUpdated);
 
     return () => {
       socket.off("payment:confirmed", confirmed);
+      socket.off("bill:updated", billUpdated);
+      socket.off("order:item_cancelled", billUpdated);
     };
-  }, [router, socket, sessionId]);
+  }, [loadBill, router, socket, sessionId]);
 
   // No auto-redirect — user must manually navigate to feedback
   // This prevents the rating page from "refreshing" unexpectedly
@@ -178,6 +186,36 @@ export default function CustomerBillPage() {
             <StatePanel title="No billable items" message="Place an order before requesting the bill." />
           )}
         </section>
+
+        {bill?.cancelledItems?.length ? (
+          <section className="rounded-2xl bg-surface-raised p-lg shadow-md border border-red-500/20">
+            <h2 className="mb-md font-headline-sm text-headline-sm text-text-primary">Restaurant Adjustments</h2>
+            <div className="divide-y divide-border-primary">
+              {bill.cancelledItems.map((item) => (
+                <div key={item.itemId} className="py-md">
+                  <div className="flex items-start justify-between gap-md">
+                    <div className="min-w-0">
+                      <p className="truncate font-label-md text-label-md text-text-secondary line-through">
+                        {item.name}
+                      </p>
+                      <p className="font-body-sm text-body-sm text-red-400">
+                        Cancelled By Restaurant
+                      </p>
+                      {item.reason ? (
+                        <p className="font-body-sm text-body-sm text-text-secondary">
+                          Reason: {item.reason.replaceAll("_", " ")}
+                        </p>
+                      ) : null}
+                    </div>
+                    <span className="shrink-0 font-headline-sm text-headline-sm text-red-400">
+                      -Rs {item.amountDeducted}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         {paymentCompleted ? (
           <div className="bg-surface-raised border border-border-primary rounded-2xl p-8 text-center shadow-md animate-fade-in flex flex-col items-center justify-center">

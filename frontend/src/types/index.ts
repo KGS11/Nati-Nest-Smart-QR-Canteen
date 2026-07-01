@@ -28,6 +28,7 @@ export enum OrderStatus {
 export enum OrderItemStatus {
   ACTIVE = "ACTIVE",
   REJECTED = "REJECTED",
+  CANCELLED_BY_ADMIN = "CANCELLED_BY_ADMIN",
 }
 
 export enum PaymentMethod {

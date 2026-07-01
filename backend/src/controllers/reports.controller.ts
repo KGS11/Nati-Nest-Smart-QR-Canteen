@@ -4,7 +4,16 @@ import { AppError } from "../utils/AppError";
 import { reportsService } from "../services/reports.service";
 
 type GroupBy = "day" | "week" | "month";
-const exportTypes: ExportType[] = ["orders", "payments", "revenue", "feedback", "tables", "catering", "staff"];
+const exportTypes: ExportType[] = [
+  "orders",
+  "payments",
+  "revenue",
+  "feedback",
+  "tables",
+  "catering",
+  "staff",
+  "cancelled-items",
+];
 const exportFormats: ExportFormat[] = ["csv", "xlsx"];
 
 const isExportType = (value: string): value is ExportType =>
@@ -56,6 +65,19 @@ export class ReportsController {
         limit,
         categoryId,
       });
+      return response.status(200).json({ success: true, data: result });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getCancelledItemAnalytics(request: Request, response: Response, next: NextFunction) {
+    try {
+      const { startDate, endDate } = request.query as unknown as {
+        startDate: string;
+        endDate: string;
+      };
+      const result = await reportsService.getCancelledItemAnalytics({ startDate, endDate });
       return response.status(200).json({ success: true, data: result });
     } catch (error) {
       return next(error);

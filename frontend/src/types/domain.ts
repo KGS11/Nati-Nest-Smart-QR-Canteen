@@ -31,6 +31,11 @@ export interface OrderItem {
   status?: string;
   menuItem: MenuItem;
   rejectionReason?: string | null;
+  cancelledAt?: string | null;
+  cancelledById?: string | null;
+  cancellationReason?: string | null;
+  cancellationNotes?: string | null;
+  originalAmount?: number | null;
 }
 
 export interface Order {

@@ -25,6 +25,11 @@ router.use(authenticate, authorize(Role.ADMIN));
 router.get("/dashboard", reportsController.getDashboardSummary.bind(reportsController));
 router.get("/waiter-performance", reportsController.getWaiterPerformanceReport.bind(reportsController));
 router.get("/kitchen-performance", reportsController.getKitchenPerformanceReport.bind(reportsController));
+router.get(
+  "/cancelled-items",
+  validateZodQuery(dateRangeSchema),
+  reportsController.getCancelledItemAnalytics.bind(reportsController),
+);
 router.get("/export/:type", reportsController.exportReport.bind(reportsController));
 router.get(
   "/revenue",
@@ -53,5 +58,4 @@ router.get(
 );
 
 export default router;
-
 

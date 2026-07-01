@@ -310,6 +310,104 @@ export class ReportsService {
     }
   }
 
+  async getCancelledItemAnalytics(params: { startDate: string; endDate: string }) {
+    try {
+      const from = getStartOfDay(params.startDate);
+      const to = getEndOfDay(params.endDate);
+      const where: Prisma.OrderItemWhereInput = {
+        status: OrderItemStatus.CANCELLED_BY_ADMIN,
+        cancelledAt: { gte: from, lte: to },
+      };
+
+      const cancelledItems = await prisma.orderItem.findMany({
+        where,
+        include: {
+          menuItem: {
+            include: { category: { select: { name: true } } },
+          },
+          cancelledBy: { select: { id: true, name: true } },
+          order: {
+            include: {
+              session: {
+                include: { table: { select: { tableNumber: true } } },
+              },
+            },
+          },
+        },
+        orderBy: { cancelledAt: "desc" },
+      });
+
+      const reasonMap = new Map<string, { reason: string; count: number; amount: number }>();
+      const itemMap = new Map<string, { menuItemId: string; name: string; categoryName: string; count: number; quantity: number; amount: number }>();
+      const adminMap = new Map<string, { adminId: string; adminName: string; count: number; amount: number }>();
+
+      cancelledItems.forEach((item) => {
+        const amount = money(item.originalAmount ?? Number(item.unitPrice) * item.quantity);
+        const reason = item.cancellationReason ?? "OTHER";
+        const reasonRow = reasonMap.get(reason) ?? { reason, count: 0, amount: 0 };
+        reasonRow.count += 1;
+        reasonRow.amount = round2(reasonRow.amount + amount);
+        reasonMap.set(reason, reasonRow);
+
+        const itemRow = itemMap.get(item.menuItemId) ?? {
+          menuItemId: item.menuItemId,
+          name: item.menuItem.name,
+          categoryName: item.menuItem.category.name,
+          count: 0,
+          quantity: 0,
+          amount: 0,
+        };
+        itemRow.count += 1;
+        itemRow.quantity += item.quantity;
+        itemRow.amount = round2(itemRow.amount + amount);
+        itemMap.set(item.menuItemId, itemRow);
+
+        const adminId = item.cancelledBy?.id ?? "unknown";
+        const adminRow = adminMap.get(adminId) ?? {
+          adminId,
+          adminName: item.cancelledBy?.name ?? "Unknown Admin",
+          count: 0,
+          amount: 0,
+        };
+        adminRow.count += 1;
+        adminRow.amount = round2(adminRow.amount + amount);
+        adminMap.set(adminId, adminRow);
+      });
+
+      const totalAmount = cancelledItems.reduce(
+        (sum, item) => sum + money(item.originalAmount ?? Number(item.unitPrice) * item.quantity),
+        0,
+      );
+
+      return {
+        summary: {
+          totalCancelledItems: cancelledItems.length,
+          totalAmountDeducted: money(totalAmount),
+          supplierIssues: reasonMap.get("SUPPLIER_ISSUE")?.count ?? 0,
+          tasteComplaints: reasonMap.get("TASTE_ISSUE")?.count ?? 0,
+        },
+        reasonSummary: Array.from(reasonMap.values()).sort((a, b) => b.count - a.count),
+        mostCancelledItems: Array.from(itemMap.values()).sort((a, b) => b.count - a.count).slice(0, 10),
+        adminActivity: Array.from(adminMap.values()).sort((a, b) => b.count - a.count),
+        recentCancellations: cancelledItems.slice(0, 20).map((item) => ({
+          itemId: item.id,
+          orderId: item.orderId,
+          tableNumber: item.order.session.table.tableNumber,
+          name: item.menuItem.name,
+          quantity: item.quantity,
+          amountDeducted: money(item.originalAmount ?? Number(item.unitPrice) * item.quantity),
+          reason: item.cancellationReason,
+          notes: item.cancellationNotes,
+          cancelledAt: item.cancelledAt,
+          cancelledBy: item.cancelledBy?.name ?? "Unknown Admin",
+        })),
+        dateRange: { ...params },
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async getTableUtilization(params: { startDate: string; endDate: string }) {
     try {
       const from = getStartOfDay(params.startDate);

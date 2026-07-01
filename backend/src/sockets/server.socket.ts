@@ -25,6 +25,10 @@ export const initializeServerSockets = (io: Server) => {
           return;
         }
 
+        if (auth.role === Role.ADMIN) {
+          await socket.join(ROOMS.admin);
+        }
+
         await socket.join(ROOMS.server);
         await socket.join(ROOMS.waiter(auth.userId));
         socket.emit("server:joined", {

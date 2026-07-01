@@ -13,16 +13,17 @@ const parseEnvInteger = (name: string, fallback: number) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-export const AUTH_RATE_LIMIT_WINDOW_MS = parseEnvInteger(
-  "AUTH_RATE_LIMIT_WINDOW_MS",
-  DEFAULT_AUTH_RATE_LIMIT_WINDOW_MS,
-);
+export const AUTH_RATE_LIMIT_WINDOW_MS =
+  process.env.NODE_ENV === "test"
+    ? DEFAULT_AUTH_RATE_LIMIT_WINDOW_MS
+    : parseEnvInteger("AUTH_RATE_LIMIT_WINDOW_MS", DEFAULT_AUTH_RATE_LIMIT_WINDOW_MS);
 export const AUTH_RATE_LIMIT_MAX = process.env.NODE_ENV === "test" ? 100 : parseEnvInteger("AUTH_RATE_LIMIT_MAX", DEFAULT_AUTH_RATE_LIMIT_MAX);
 export const API_RATE_LIMIT_WINDOW_MS = parseEnvInteger(
   "API_RATE_LIMIT_WINDOW_MS",
   DEFAULT_API_RATE_LIMIT_WINDOW_MS,
 );
-export const API_RATE_LIMIT_MAX = parseEnvInteger("API_RATE_LIMIT_MAX", DEFAULT_API_RATE_LIMIT_MAX);
+export const API_RATE_LIMIT_MAX =
+  process.env.NODE_ENV === "test" ? DEFAULT_API_RATE_LIMIT_MAX : parseEnvInteger("API_RATE_LIMIT_MAX", DEFAULT_API_RATE_LIMIT_MAX);
 
 type RequestWithId = Request & { requestId?: string };
 
