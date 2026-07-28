@@ -70,9 +70,6 @@ services:
         NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Nati Nest}
         NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     restart: unless-stopped
-    env_file:
-      - path: ./.env
-        required: false
     environment:
       NODE_ENV: production
       PORT: 3000

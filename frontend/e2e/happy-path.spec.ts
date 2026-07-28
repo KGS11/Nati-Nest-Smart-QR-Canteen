@@ -139,6 +139,24 @@ async function installMockApi(page: Page) {
         json: apiResponse({
           tableNumber: "5",
           totalAmount: 80,
+          orders: [
+            {
+              id: "order-1",
+              status: "DELIVERED",
+              placedAt: new Date().toISOString(),
+              session: { table: { tableNumber: "5" } },
+              items: [
+                {
+                  id: "oi-1",
+                  quantity: 1,
+                  unitPrice: 80,
+                  specialInstructions: "Less spicy",
+                  status: "ACTIVE",
+                  menuItem: { id: "item-1", name: "Masala Dosa" },
+                },
+              ],
+            },
+          ],
           itemBreakdown: [{ name: "Masala Dosa", quantity: 1, unitPrice: 80, subtotal: 80 }],
         }),
       });
@@ -156,6 +174,24 @@ async function installMockApi(page: Page) {
           billSummary: {
             tableNumber: "5",
             totalAmount: 80,
+            orders: [
+              {
+                id: "order-1",
+                status: "DELIVERED",
+                placedAt: new Date().toISOString(),
+                session: { table: { tableNumber: "5" } },
+                items: [
+                  {
+                    id: "oi-1",
+                    quantity: 1,
+                    unitPrice: 80,
+                    specialInstructions: "Less spicy",
+                    status: "ACTIVE",
+                    menuItem: { id: "item-1", name: "Masala Dosa" },
+                  },
+                ],
+              },
+            ],
             itemBreakdown: [{ name: "Masala Dosa", quantity: 1, unitPrice: 80, subtotal: 80 }],
           },
         }, "Request sent"),
@@ -179,7 +215,7 @@ async function installMockApi(page: Page) {
       });
     }
 
-    if (path === "/auth/login") {
+    if (path === "/auth/login" || path === "/auth/refresh") {
       return route.fulfill({
         json: apiResponse({
           token: "mock-admin-token",
@@ -227,6 +263,37 @@ async function installMockApi(page: Page) {
       });
     }
 
+    if (path === "/admin/orders/complaint-eligible") {
+      return route.fulfill({
+        json: apiResponse({
+          orders: [],
+          count: 0,
+        }),
+      });
+    }
+
+    if (path === "/tables") {
+      return route.fulfill({
+        json: apiResponse([
+          {
+            id: "table-5",
+            tableNumber: "5",
+            qrCodeUrl: null,
+            status: "OCCUPIED",
+            createdAt: new Date().toISOString(),
+            activeSessionCount: 1,
+            activeAssignment: {
+              sessionId: "mock-session-id",
+              waiterId: "waiter-1",
+              waiterName: "Sudarshan",
+              kitchenStaffId: "kitchen-1",
+              kitchenStaffName: "Swamy",
+            },
+          },
+        ]),
+      });
+    }
+
     if (path === "/kitchen/orders") {
       return route.fulfill({ json: apiResponse({ orders: [], counts: { placed: 0, accepted: 0, preparing: 0, total: 0 } }) });
     }
@@ -243,11 +310,22 @@ async function installMockApi(page: Page) {
       return route.fulfill({ json: apiResponse({ payments: [], count: 0 }) });
     }
 
+    if (path === "/staff") {
+      return route.fulfill({
+        json: apiResponse({
+          items: [],
+          pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
+        }),
+      });
+    }
+
     return route.fulfill({ json: apiResponse({}) });
   });
 }
 
 test.describe("Nati Nest happy path", () => {
+  test.setTimeout(90_000);
+
   test("customer order, payment, feedback, and staff dashboards", async ({ page }) => {
     if (!hasSeededE2e) {
       await installMockApi(page);
@@ -291,17 +369,16 @@ test.describe("Nati Nest happy path", () => {
     await page.getByRole("button", { name: /submit feedback/i }).click();
     await expect(page.getByText(/Thank you|great rating/i)).toBeVisible();
 
-    if (!hasSeededE2e) {
-      await seedMockStaffAuth(page);
-      await page.goto("/admin");
-    } else {
-      await page.goto("/login");
-      await page.getByLabel(/phone/i).fill(adminPhone);
-      await page.getByRole("textbox", { name: /staff password/i }).fill(adminPassword);
-      await page.getByRole("button", { name: /sign in|login/i }).click();
-      await page.waitForURL("**/admin");
-    }
+    await page.goto("/login");
+    await page.getByLabel(/phone/i).fill(adminPhone);
+    await page.getByRole("textbox", { name: /staff password/i }).fill(adminPassword);
+    await page.getByRole("button", { name: /sign in|login/i }).click();
+    await page.waitForURL("**/admin");
     await expect(page.getByText("Admin Panel")).toBeVisible();
+    await page.getByRole("link", { name: /complaints/i }).click();
+    await page.waitForURL("**/admin/complaints");
+    await expect(page.getByRole("heading", { name: "Complaint Management" })).toBeVisible();
+    await expect(page.getByText(/No complaints to review/i)).toBeVisible();
 
     await page.goto("/kitchen");
     await expect(page.getByRole("heading", { name: "Kitchen Dashboard" })).toBeVisible();

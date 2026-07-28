@@ -55,7 +55,7 @@ const nextConfig: NextConfig = {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "img-src 'self' data: blob: res.cloudinary.com images.unsplash.com lh3.googleusercontent.com localhost:5000 127.0.0.1:5000",
       "font-src 'self' data: https://fonts.gstatic.com",
-      "connect-src 'self' http://localhost:5000 http://127.0.0.1:5000 ws://localhost:5000 ws://127.0.0.1:5000 http://10.*.*.*:5000 ws://10.*.*.*:5000 http://192.168.*.*:5000 ws://192.168.*.*:5000",
+      "connect-src 'self' http://localhost:5000 http://127.0.0.1:5000 ws://localhost:5000 ws://127.0.0.1:5000",
       "object-src 'none'",
       "base-uri 'self'",
       "frame-ancestors 'none'",

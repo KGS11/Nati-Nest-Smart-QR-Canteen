@@ -25,7 +25,7 @@ const ROLES = [
 
 export default function LoginPage() {
   const router = useRouter();
-  const { isAuthenticated, login, user } = useAuthStore();
+  const { isAuthenticated, login, token, user } = useAuthStore();
 
   const [apiError, setApiError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -49,10 +49,10 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && token && user) {
       router.replace(roleRoutes[user.role]);
     }
-  }, [isAuthenticated, router, user]);
+  }, [isAuthenticated, router, token, user]);
 
   useEffect(() => {
     setApiError(null);

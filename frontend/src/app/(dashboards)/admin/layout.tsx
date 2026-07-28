@@ -17,6 +17,7 @@ const navLinks = [
   { href: '/admin/tables', label: 'Tables', icon: 'T' },
   { href: '/admin/staff', label: 'Staff', icon: 'S' },
   { href: '/admin/reports', label: 'Reports', icon: 'R' },
+  { href: '/admin/complaints', label: 'Complaints', icon: '!' },
   { href: '/admin/catering', label: 'Catering', icon: 'L' },
   { href: '/admin/settings', label: 'Settings', icon: 'G' }
 ]

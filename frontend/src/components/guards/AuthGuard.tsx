@@ -15,10 +15,17 @@ interface AuthGuardProps {
 export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
   const { user, isAuthenticated, token, login, logout } = useAuthStore();
   const router = useRouter();
+  const [hasMounted, setHasMounted] = useState(false);
   const [isRestoringSession, setIsRestoringSession] = useState(false);
   const allowedRoleKey = useMemo(() => allowedRoles.join(","), [allowedRoles]);
 
   useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasMounted) return;
+
     if (isAuthenticated && !token) {
       let isActive = true;
 
@@ -28,15 +35,14 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
         .then((response) => {
           if (!isActive) return;
           const { token: refreshedToken, refreshToken, user: refreshedUser } = response.data.data;
+          setIsRestoringSession(false);
           login(refreshedToken, refreshedUser, refreshToken);
         })
         .catch(() => {
           if (!isActive) return;
+          setIsRestoringSession(false);
           logout();
           router.replace("/login");
-        })
-        .finally(() => {
-          if (isActive) setIsRestoringSession(false);
         });
 
       return () => {
@@ -55,9 +61,9 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
       else if (user.role === Role.SERVER) router.replace("/server");
       else router.replace("/login");
     }
-  }, [isAuthenticated, token, user, allowedRoleKey, allowedRoles, router, login, logout]);
+  }, [hasMounted, isAuthenticated, token, user, allowedRoleKey, allowedRoles, router, login, logout]);
 
-  if (isRestoringSession || !isAuthenticated || !user || !allowedRoles.includes(user.role)) {
+  if (!hasMounted || isRestoringSession || !isAuthenticated || !user || !allowedRoles.includes(user.role)) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-surface-base text-text-primary">
         <Loader label="Verifying authorization..." />

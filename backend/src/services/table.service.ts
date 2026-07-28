@@ -1,4 +1,4 @@
-import { SessionStatus, TableStatus } from "@prisma/client";
+import { OrderStatus, SessionStatus, TableStatus } from "@prisma/client";
 import { prisma } from "../config/db";
 import { AppError } from "../utils/AppError";
 import { generateQRCodeDataURL, generateTableQRText } from "../utils/qrcode.util";
@@ -31,6 +31,24 @@ export class TableService {
       const tables = await prisma.restaurantTable.findMany({
         orderBy: { tableNumber: "asc" },
         include: {
+          sessions: {
+            where: { status: SessionStatus.ACTIVE },
+            orderBy: { openedAt: "desc" },
+            take: 1,
+            include: {
+              assignedWaiter: {
+                select: { id: true, name: true },
+              },
+              orders: {
+                where: { status: { not: OrderStatus.CANCELLED } },
+                orderBy: { placedAt: "desc" },
+                select: {
+                  assignedKitchenId: true,
+                  assignedKitchenName: true,
+                },
+              },
+            },
+          },
           _count: {
             select: {
               sessions: {
@@ -42,9 +60,23 @@ export class TableService {
       });
 
       return tables.map((table) => ({
-        ...table,
+        id: table.id,
+        tableNumber: table.tableNumber,
+        qrCodeUrl: table.qrCodeUrl,
+        status: table.status,
+        createdAt: table.createdAt,
         activeSessionCount: table._count.sessions,
-        _count: undefined,
+        activeAssignment: table.sessions[0]
+          ? {
+              sessionId: table.sessions[0].id,
+              waiterId: table.sessions[0].assignedWaiterId,
+              waiterName: table.sessions[0].assignedWaiter?.name ?? null,
+              kitchenStaffId:
+                table.sessions[0].orders.find((order) => order.assignedKitchenId)?.assignedKitchenId ?? null,
+              kitchenStaffName:
+                table.sessions[0].orders.find((order) => order.assignedKitchenName)?.assignedKitchenName ?? null,
+            }
+          : null,
       }));
     } catch (error) {
       throw error;

@@ -400,6 +400,7 @@ export class ReportsService {
           notes: item.cancellationNotes,
           cancelledAt: item.cancelledAt,
           cancelledBy: item.cancelledBy?.name ?? "Unknown Admin",
+          orderStatus: item.order.status,
         })),
         dateRange: { ...params },
       };

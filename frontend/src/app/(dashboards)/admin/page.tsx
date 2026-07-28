@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Loader from "@/components/common/Loader";
+import { LiveTableAssignmentsWidget } from "@/components/admin/LiveTableAssignmentsWidget";
 import { KitchenOrderCard } from "@/components/modules/kitchen/KitchenOrderCard";
 import { MaterialIcon } from "@/components/stitch/MaterialIcon";
 import { MetricCard } from "@/components/stitch/MetricCard";
@@ -15,21 +17,14 @@ import { ApiResponse } from "@/types/api";
 import { StaffListResponse, StaffMember } from "@/types/staff.types";
 import { Button } from "@/components/common/Button";
 import { cn } from "@/utils/cn";
+import { useSocket } from "@/hooks/useSocket";
 
 const currency = (value: number) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(value);
 
-const cancellationReasons = [
-  { value: "TASTE_ISSUE", label: "Taste Issue" },
-  { value: "POOR_QUALITY", label: "Poor Quality" },
-  { value: "WRONG_PREPARATION", label: "Wrong Preparation" },
-  { value: "SUPPLIER_ISSUE", label: "Supplier Issue" },
-  { value: "DAMAGED_FOOD", label: "Damaged Food" },
-  { value: "WRONG_ITEM", label: "Wrong Item" },
-  { value: "OTHER", label: "Other" },
-];
-
 export default function AdminPage() {
+  const router = useRouter();
+  const { socket, isConnected } = useSocket();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [popularItems, setPopularItems] = useState<PopularItem[]>([]);
   const [ordersPayload, setOrdersPayload] = useState<KitchenOrdersPayload | null>(null);
@@ -44,14 +39,8 @@ export default function AdminPage() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [overrideError, setOverrideError] = useState<string | null>(null);
   const [overrideSuccess, setOverrideSuccess] = useState<string | null>(null);
-  const [cancelDialog, setCancelDialog] = useState<{
-    order: any;
-    item: any;
-    reason: string;
-    notes: string;
-    confirmStep: boolean;
-  } | null>(null);
-  const [cancellingItemId, setCancellingItemId] = useState<string | null>(null);
+
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadDashboard = async () => {
     try {
@@ -73,6 +62,23 @@ export default function AdminPage() {
     }
   };
 
+  const debouncedLoadDashboard = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = setTimeout(() => {
+      void loadDashboard();
+    }, 300);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
@@ -92,14 +98,56 @@ export default function AdminPage() {
     }
   };
 
-  const refreshComplaintOrders = async () => {
-    try {
-      const orders = await adminService.getComplaintEligibleOrders();
-      setComplaintOrders(orders);
-    } catch (err) {
-      console.error("Failed to refresh complaint orders", err);
+  useEffect(() => {
+    if (!socket) return;
+
+    // Direct targeted refresh for lightweight status transitions
+    const handleStatusUpdate = () => {
+      void refreshActiveOrders();
+    };
+
+    // Debounced full dashboard refresh for major state changes
+    const handleFullRefresh = () => {
+      debouncedLoadDashboard();
+    };
+
+    // Lightweight status/assignment events -> refreshActiveOrders (1 API call)
+    socket.on("order:status_updated", handleStatusUpdate);
+    socket.on("order:released", handleStatusUpdate);
+    socket.on("order:reassigned", handleStatusUpdate);
+    socket.on("order:claimed:kitchen", handleStatusUpdate);
+    socket.on("order:claimed:waiter", handleStatusUpdate);
+
+    // Major operational state events -> debouncedLoadDashboard (300ms trailing debounce)
+    socket.on("order:new", handleFullRefresh);
+    socket.on("order:cancelled", handleFullRefresh);
+    socket.on("order:auto_cancelled", handleFullRefresh);
+    socket.on("order:item_cancelled", handleFullRefresh);
+    socket.on("payment:completed", handleFullRefresh);
+    socket.on("table:available", handleFullRefresh);
+
+    return () => {
+      socket.off("order:status_updated", handleStatusUpdate);
+      socket.off("order:released", handleStatusUpdate);
+      socket.off("order:reassigned", handleStatusUpdate);
+      socket.off("order:claimed:kitchen", handleStatusUpdate);
+      socket.off("order:claimed:waiter", handleStatusUpdate);
+
+      socket.off("order:new", handleFullRefresh);
+      socket.off("order:cancelled", handleFullRefresh);
+      socket.off("order:auto_cancelled", handleFullRefresh);
+      socket.off("order:item_cancelled", handleFullRefresh);
+      socket.off("payment:completed", handleFullRefresh);
+      socket.off("table:available", handleFullRefresh);
+    };
+  }, [socket, debouncedLoadDashboard]);
+
+  // Reconnection catch-up sync
+  useEffect(() => {
+    if (isConnected && !loading) {
+      void loadDashboard();
     }
-  };
+  }, [isConnected]);
 
   const activeOrders = ordersPayload?.orders.slice(0, 3) ?? [];
   const allActiveOrders = ordersPayload?.orders ?? [];
@@ -189,31 +237,6 @@ export default function AdminPage() {
       console.error("Failed to load assignment history", err);
     } finally {
       setHistoryLoading(false);
-    }
-  };
-
-  const handleCancelItem = async () => {
-    if (!cancelDialog) return;
-    if (!cancelDialog.confirmStep) {
-      setCancelDialog({ ...cancelDialog, confirmStep: true });
-      return;
-    }
-
-    setCancellingItemId(cancelDialog.item.id);
-    setOverrideError(null);
-    setOverrideSuccess(null);
-    try {
-      await adminService.cancelOrderItem(cancelDialog.order.id, cancelDialog.item.id, {
-        reason: cancelDialog.reason,
-        notes: cancelDialog.notes.trim() || undefined,
-      });
-      setOverrideSuccess("Order item cancelled and bill adjusted.");
-      setCancelDialog(null);
-      await Promise.all([refreshComplaintOrders(), refreshActiveOrders()]);
-    } catch (err: any) {
-      setOverrideError(err.response?.data?.message || err.message || "Failed to cancel order item.");
-    } finally {
-      setCancellingItemId(null);
     }
   };
 
@@ -345,6 +368,10 @@ export default function AdminPage() {
             <StatePanel title="No sales yet" message="Popular items will appear after paid orders are recorded." />
           )}
         </div>
+      </section>
+
+      <section className="grid grid-cols-1 gap-gutter lg:grid-cols-3">
+        <LiveTableAssignmentsWidget />
       </section>
 
       {/* Realtime Active Orders Display */}
@@ -522,94 +549,35 @@ export default function AdminPage() {
         )}
       </section>
 
-      <section className="rounded-xl border border-outline-variant bg-surface-container-lowest shadow-stitch overflow-hidden">
-        <div className="flex flex-col gap-2 border-b border-outline-variant px-xl py-lg sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 className="font-headline-sm text-headline-sm text-on-surface">Complaint Item Cancellation</h3>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Admin-only adjustments for delivered or paid orders.
-            </p>
+      <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-xl shadow-stitch">
+        <div className="flex flex-col gap-lg lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-md">
+            <span className="rounded-lg bg-error-container p-xs text-on-error-container">
+              <MaterialIcon name="report_problem" />
+            </span>
+            <div>
+              <h3 className="font-headline-sm text-headline-sm text-on-surface">Complaint Management</h3>
+              <p className="mt-xs font-body-sm text-body-sm text-on-surface-variant">
+                Review delivered or paid orders that are eligible for admin item cancellation.
+              </p>
+            </div>
           </div>
-          <span className="bg-semantic_error-500/10 border border-semantic_error-500/20 text-semantic_error-400 rounded-full px-2.5 py-0.5 text-xs font-bold">
-            {complaintOrders.length} eligible
-          </span>
+
+          <div className="flex flex-col gap-md sm:flex-row sm:items-center">
+            <div className="rounded-lg bg-surface-container-low p-md">
+              <p className="font-label-sm text-label-sm text-on-surface-variant">Eligible Orders</p>
+              <p className="mt-xs font-headline-md text-headline-md text-primary">{complaintOrders.length}</p>
+            </div>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => router.push("/admin/complaints")}
+              className="min-h-11 rounded-lg px-4"
+            >
+              Open Complaint Management
+            </Button>
+          </div>
         </div>
-
-        {complaintOrders.length === 0 ? (
-          <div className="p-xl">
-            <StatePanel title="No delivered orders" message="Complaint cancellations will appear here after orders are delivered." />
-          </div>
-        ) : (
-          <div className="grid gap-md p-lg xl:grid-cols-2">
-            {complaintOrders.map((order) => (
-              <div key={order.id} className="rounded-xl border border-outline-variant bg-surface-container-low p-md">
-                <div className="mb-md flex items-start justify-between gap-md">
-                  <div>
-                    <p className="font-headline-sm text-headline-sm text-on-surface">
-                      Table {order.session?.table?.tableNumber || "N/A"}
-                    </p>
-                    <p className="font-label-xs text-label-xs text-on-surface-variant">
-                      #{order.id.slice(-6).toUpperCase()} · {order.status}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-surface-container px-2.5 py-1 font-label-xs text-label-xs text-on-surface-variant">
-                    {order.items?.length ?? 0} items
-                  </span>
-                </div>
-
-                <div className="divide-y divide-outline-variant">
-                  {order.items?.map((item: any) => {
-                    const isCancelled = item.status === "CANCELLED_BY_ADMIN";
-                    const amount = Number(item.originalAmount ?? item.unitPrice * item.quantity);
-                    return (
-                      <div key={item.id} className="flex items-start justify-between gap-md py-md">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className={cn("font-label-md text-label-md", isCancelled ? "text-on-surface-variant line-through" : "text-on-surface")}>
-                              {item.menuItem?.name}
-                            </p>
-                            {isCancelled ? (
-                              <span className="rounded bg-semantic_error-500/10 px-2 py-0.5 text-[10px] font-bold uppercase text-semantic_error-400">
-                                Cancelled
-                              </span>
-                            ) : null}
-                          </div>
-                          <p className="font-body-sm text-body-sm text-on-surface-variant">
-                            {item.quantity} x {currency(Number(item.unitPrice))}
-                          </p>
-                          {isCancelled && item.cancellationReason ? (
-                            <p className="mt-1 font-body-sm text-body-sm text-semantic_error-400">
-                              Reason: {item.cancellationReason.replaceAll("_", " ")} · Deducted {currency(amount)}
-                            </p>
-                          ) : null}
-                        </div>
-
-                        {!isCancelled && item.status === "ACTIVE" ? (
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={() =>
-                              setCancelDialog({
-                                order,
-                                item,
-                                reason: cancellationReasons[0].value,
-                                notes: "",
-                                confirmStep: false,
-                              })
-                            }
-                            className="min-h-10 shrink-0 rounded-lg border-semantic_error-500/30 px-3 py-1 text-label-xs text-semantic_error-400"
-                          >
-                            Cancel Item
-                          </Button>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </section>
 
       {/* Assignment History Logs Modal */}
@@ -666,99 +634,6 @@ export default function AdminPage() {
         </div>
       )}
 
-      {cancelDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-border-default bg-surface-base p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4 border-b border-border-default pb-4">
-              <div>
-                <h3 className="text-headline-sm font-bold text-text-primary">Cancel Order Item</h3>
-                <p className="mt-1 text-body-sm text-text-secondary">
-                  Table {cancelDialog.order.session?.table?.tableNumber} · #{cancelDialog.order.id.slice(-6).toUpperCase()}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCancelDialog(null)}
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-border-default bg-surface-raised text-text-secondary"
-              >
-                <MaterialIcon name="close" />
-              </button>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              <div className="rounded-xl border border-border-default bg-surface-raised p-4">
-                <p className="font-label-md text-label-md text-text-primary">{cancelDialog.item.menuItem?.name}</p>
-                <p className="text-body-sm text-text-secondary">
-                  {cancelDialog.item.quantity} x {currency(Number(cancelDialog.item.unitPrice))}
-                </p>
-                <p className="mt-2 font-label-md text-label-md text-semantic_error-400">
-                  Bill deduction preview: -{currency(Number(cancelDialog.item.unitPrice) * cancelDialog.item.quantity)}
-                </p>
-              </div>
-
-              <label className="block space-y-2">
-                <span className="font-label-sm text-label-sm text-text-secondary">Reason</span>
-                <select
-                  value={cancelDialog.reason}
-                  onChange={(event) =>
-                    setCancelDialog({ ...cancelDialog, reason: event.target.value, confirmStep: false })
-                  }
-                  className="h-12 w-full rounded-xl border border-border-default bg-surface-raised px-3 text-text-primary focus:border-accent-500 focus:outline-none"
-                >
-                  {cancellationReasons.map((reason) => (
-                    <option key={reason.value} value={reason.value}>
-                      {reason.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block space-y-2">
-                <span className="font-label-sm text-label-sm text-text-secondary">Notes (optional)</span>
-                <textarea
-                  value={cancelDialog.notes}
-                  onChange={(event) =>
-                    setCancelDialog({ ...cancelDialog, notes: event.target.value, confirmStep: false })
-                  }
-                  rows={3}
-                  className="w-full resize-none rounded-xl border border-border-default bg-surface-raised p-3 text-text-primary focus:border-accent-500 focus:outline-none"
-                  placeholder="Complaint details or owner approval note"
-                />
-              </label>
-
-              {cancelDialog.confirmStep ? (
-                <div className="rounded-xl border border-semantic_error-500/30 bg-semantic_error-500/10 p-3 text-body-sm text-semantic_error-400">
-                  Confirm again to permanently mark this item as Cancelled By Restaurant. This action is audit logged.
-                </div>
-              ) : null}
-            </div>
-
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setCancelDialog(null)}
-                className="min-h-11 rounded-xl"
-              >
-                Close
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                onClick={handleCancelItem}
-                disabled={cancellingItemId === cancelDialog.item.id}
-                className="min-h-11 rounded-xl bg-semantic_error-500 text-white hover:bg-semantic_error-400"
-              >
-                {cancellingItemId === cancelDialog.item.id
-                  ? "Cancelling..."
-                  : cancelDialog.confirmStep
-                  ? "Confirm Cancellation"
-                  : "Review Cancellation"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import { SocketContext } from '@/context/SocketContext'
 import { useAuthStore } from '@/stores/authStore'
 import { useServerStore } from '@/stores/serverStore'
@@ -179,8 +179,17 @@ export default function ServerBoard() {
   const [toasts, setToasts] = useState<ActiveToast[]>([])
   const [activeMobileTab, setActiveMobileTab] = useState<'incoming' | 'requests' | 'deliver' | 'payments'>('requests')
   const [isTipsOpen, setIsTipsOpen] = useState(false)
+  const recentToastIds = useRef<Set<string>>(new Set())
 
-  const addToast = (title: string, type: 'ready' | 'assistance' | 'payment' | 'error') => {
+  const isDuplicateToast = (eventId: string) => {
+    if (recentToastIds.current.has(eventId)) return true
+    recentToastIds.current.add(eventId)
+    window.setTimeout(() => recentToastIds.current.delete(eventId), 10000)
+    return false
+  }
+
+  const addToast = (title: string, type: 'ready' | 'assistance' | 'payment' | 'error', eventId?: string) => {
+    if (eventId && isDuplicateToast(eventId)) return
     const id = Math.random().toString(36).substring(2, 9)
     setToasts((prev) => [...prev, { id, title, type }])
     setTimeout(() => {
@@ -249,16 +258,16 @@ export default function ServerBoard() {
 
     const handleWaiterAssignmentRequest = (payload: WaiterAssignmentRequest) => {
       store.addAssignmentRequest(payload)
-      addToast(`New assignment request Table ${payload.tableNumber}`, 'assistance')
+      addToast(`New assignment request Table ${payload.tableNumber}`, 'assistance', `waiter:assignment_request:${payload.requestId}`)
     }
 
     const handleWaiterAssignmentAccepted = (payload: { sessionId: string; tableNumber: string; acceptedBy: string; waiterId?: string; isYours?: boolean }) => {
       store.removeAssignmentRequest(payload.sessionId)
       if (payload.waiterId === user?.id || payload.isYours) {
         fetchAllData()
-        addToast(`Table ${payload.tableNumber} assigned to you`, 'ready')
+        addToast(`Table ${payload.tableNumber} assigned to you`, 'ready', `waiter:assignment_accepted:${payload.sessionId}`)
       } else {
-        addToast(`Table ${payload.tableNumber} assigned to ${payload.acceptedBy}`, 'ready')
+        addToast(`Table ${payload.tableNumber} assigned to ${payload.acceptedBy}`, 'ready', `waiter:assignment_accepted:${payload.sessionId}`)
       }
     }
 
@@ -276,7 +285,7 @@ export default function ServerBoard() {
       }
       store.addReadyOrder(newOrder)
       store.removeInProgressOrder(payload.orderId)
-      addToast(`Order prepared Table ${payload.tableNumber}`, 'ready')
+      addToast(`Order prepared Table ${payload.tableNumber}`, 'ready', `order:prepared:${payload.orderId}`)
     }
 
     const handleOrderReady = (payload: OrderReadySocketPayload & { assignedWaiterId?: string | null; assignedWaiterName?: string | null }) => {
@@ -293,7 +302,7 @@ export default function ServerBoard() {
       }
       store.addReadyOrder(newOrder)
       store.removeInProgressOrder(payload.orderId)
-      addToast(`Order ready  Table ${payload.tableNumber}`, 'ready')
+      addToast(`Order ready  Table ${payload.tableNumber}`, 'ready', `order:ready:${payload.orderId}`)
     }
 
     const handleOrderStatusUpdated = (payload: { orderId: string; status: string; assignedKitchenName?: string | null }) => {
@@ -342,7 +351,7 @@ export default function ServerBoard() {
           ? ` Bill  Table ${payload.tableNumber}`
           : ` Help  Table ${payload.tableNumber}`
 
-      addToast(toastMessage, 'assistance')
+      addToast(toastMessage, 'assistance', `assistance:new:${payload.requestId}`)
     }
 
     const handleAssistanceResolved = (payload: AssistanceResolvedSocketPayload) => {
@@ -366,7 +375,7 @@ export default function ServerBoard() {
 
     const handlePaymentCompleted = (payload: PaymentCompletedPayload) => {
       store.removePendingPayment(payload.paymentId)
-      addToast(` Payment confirmed  Table ${payload.tableNumber}`, 'payment')
+      addToast(` Payment confirmed  Table ${payload.tableNumber}`, 'payment', `payment:completed:${payload.paymentId}`)
     }
 
     const handleOrderClaimedWaiter = (payload: {

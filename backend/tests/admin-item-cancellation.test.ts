@@ -241,4 +241,38 @@ describe("admin order item cancellation", () => {
       ),
     ).rejects.toMatchObject({ statusCode: 400 });
   });
+
+  it("limits default complaint eligibility to today's delivered or paid orders", async () => {
+    mocks.prisma.order.findMany.mockResolvedValue([]);
+
+    const result = await adminService.getComplaintEligibleOrders();
+
+    expect(result).toEqual([]);
+    expect(mocks.prisma.order.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        OR: [
+          {
+            status: OrderStatus.DELIVERED,
+            deliveredAt: { gte: expect.any(Date), lt: expect.any(Date) },
+          },
+          {
+            status: OrderStatus.PAID,
+            paidAt: { gte: expect.any(Date), lt: expect.any(Date) },
+          },
+          {
+            status: OrderStatus.PAID,
+            paidAt: null,
+            deliveredAt: { gte: expect.any(Date), lt: expect.any(Date) },
+          },
+        ],
+      },
+    }));
+
+    const [[query]] = mocks.prisma.order.findMany.mock.calls;
+    const deliveredWindow = query.where.OR[0].deliveredAt;
+    expect(deliveredWindow.gte.getHours()).toBe(0);
+    expect(deliveredWindow.gte.getMinutes()).toBe(0);
+    expect(deliveredWindow.gte.getSeconds()).toBe(0);
+    expect(deliveredWindow.lt.getTime() - deliveredWindow.gte.getTime()).toBe(24 * 60 * 60 * 1000);
+  });
 });

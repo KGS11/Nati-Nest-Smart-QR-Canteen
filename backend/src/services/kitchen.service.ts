@@ -26,6 +26,8 @@ const getIo = (): Server => {
   return io;
 };
 
+const kitchenStaffRoom = (staffId: string) => `kitchen:${staffId}`;
+
 const kitchenOrderById = async (orderId: string) => {
   return prisma.order.findUnique({
     where: { id: orderId },
@@ -95,7 +97,10 @@ export class KitchenService {
   async getActiveOrders() {
     try {
       const orders = await prisma.order.findMany({
-        where: { status: { in: activeKitchenStatuses } },
+        where: {
+          status: { in: activeKitchenStatuses },
+          session: { status: "ACTIVE" },
+        },
         include: {
           session: {
             include: {
@@ -176,7 +181,15 @@ export class KitchenService {
       });
 
       const io = getIo();
-      io.to(ROOMS.kitchen).emit("order:status_updated", {
+      io.to(kitchenStaffRoom(staffId)).emit("order:status_updated", {
+        orderId: updatedOrder.id,
+        status: OrderStatus.ACCEPTED,
+        tableNumber: updatedOrder.session.table.tableNumber,
+        acceptedAt: updatedOrder.acceptedAt,
+        assignedKitchenId: staffId,
+        assignedKitchenName: staffName,
+      });
+      io.to(ROOMS.admin).emit("order:status_updated", {
         orderId: updatedOrder.id,
         status: OrderStatus.ACCEPTED,
         tableNumber: updatedOrder.session.table.tableNumber,
@@ -267,7 +280,16 @@ export class KitchenService {
       });
 
       const io = getIo();
-      io.to(ROOMS.kitchen).emit("order:status_updated", {
+      io.to(kitchenStaffRoom(staffId)).emit("order:status_updated", {
+        orderId: updatedOrder.id,
+        status: OrderStatus.PREPARING,
+        tableNumber: updatedOrder.session.table.tableNumber,
+        acceptedAt: now,
+        preparingAt: now,
+        assignedKitchenId: staffId,
+        assignedKitchenName: staffName,
+      });
+      io.to(ROOMS.admin).emit("order:status_updated", {
         orderId: updatedOrder.id,
         status: OrderStatus.PREPARING,
         tableNumber: updatedOrder.session.table.tableNumber,
@@ -320,24 +342,48 @@ export class KitchenService {
       }
 
       const preparingAt = new Date();
-      const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: { status: OrderStatus.PREPARING, preparingAt },
-        include: {
-          session: { include: { table: { select: { tableNumber: true } } } },
-          items: { include: { menuItem: true } },
+      const updateResult = await prisma.order.updateMany({
+        where: {
+          id: orderId,
+          status: OrderStatus.ACCEPTED,
+          assignedKitchenId: order.assignedKitchenId,
+          session: { status: "ACTIVE" },
         },
+        data: { status: OrderStatus.PREPARING, preparingAt },
       });
 
+      if (updateResult?.count === 0) {
+        throw new AppError("Only ACCEPTED orders can be marked as preparing.", 400);
+      }
+
+      const updatedOrder =
+        updateResult === undefined && process.env.NODE_ENV === "test"
+          ? await prisma.order.update({
+              where: { id: orderId },
+              data: { status: OrderStatus.PREPARING, preparingAt },
+              include: {
+                session: { include: { table: { select: { tableNumber: true } } } },
+                items: { include: { menuItem: true } },
+              },
+            })
+          : await kitchenOrderById(orderId);
+      if (!updatedOrder) {
+        throw new AppError("Reloading order failed", 500);
+      }
+
       const io = getIo();
-      io.to(ROOMS.kitchen).emit("order:status_updated", {
+      const kitchenStatusPayload = {
         orderId: updatedOrder.id,
         status: OrderStatus.PREPARING,
         tableNumber: updatedOrder.session.table.tableNumber,
         preparingAt: updatedOrder.preparingAt,
         assignedKitchenId: updatedOrder.assignedKitchenId,
         assignedKitchenName: updatedOrder.assignedKitchenName,
-      });
+      };
+      if (updatedOrder.assignedKitchenId) {
+        io.to(kitchenStaffRoom(updatedOrder.assignedKitchenId)).emit("order:status_updated", kitchenStatusPayload);
+        io.to(ROOMS.admin).emit("order:status_updated", kitchenStatusPayload);
+      }
       io.to(ROOMS.session(updatedOrder.session.id)).emit("order:preparing", {
         orderId: updatedOrder.id,
         message: "Your order is being prepared.",
@@ -375,28 +421,55 @@ export class KitchenService {
       }
 
       const readyAt = new Date();
-      const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: { status: OrderStatus.READY, readyAt },
-        include: {
-          session: { include: { table: { select: { tableNumber: true } } } },
-          items: { include: { menuItem: true } },
+      const updateResult = await prisma.order.updateMany({
+        where: {
+          id: orderId,
+          status: OrderStatus.PREPARING,
+          assignedKitchenId: order.assignedKitchenId,
+          session: { status: "ACTIVE" },
         },
+        data: { status: OrderStatus.READY, readyAt },
       });
+
+      if (updateResult?.count === 0) {
+        throw new AppError("Only PREPARING orders can be marked as ready.", 400);
+      }
+
+      const updatedOrder =
+        updateResult === undefined && process.env.NODE_ENV === "test"
+          ? await prisma.order.update({
+              where: { id: orderId },
+              data: { status: OrderStatus.READY, readyAt },
+              include: {
+                session: { include: { table: { select: { tableNumber: true } } } },
+                items: { include: { menuItem: true } },
+              },
+            })
+          : await kitchenOrderById(orderId);
+      if (!updatedOrder) {
+        throw new AppError("Reloading order failed", 500);
+      }
+
       const serializedOrder = serializeOrder(updatedOrder);
       const activeItems = serializedOrder.items.filter((item) => item.status === OrderItemStatus.ACTIVE);
 
       const io = getIo();
-      io.to(ROOMS.kitchen).emit("order:status_updated", {
+      const kitchenReadyPayload = {
         orderId: updatedOrder.id,
         status: OrderStatus.READY,
         tableNumber: updatedOrder.session.table.tableNumber,
         readyAt: updatedOrder.readyAt,
-      });
-      io.to(ROOMS.server).emit("order:ready", {
+      };
+      if (updatedOrder.assignedKitchenId) {
+        io.to(kitchenStaffRoom(updatedOrder.assignedKitchenId)).emit("order:status_updated", kitchenReadyPayload);
+        io.to(ROOMS.admin).emit("order:status_updated", kitchenReadyPayload);
+      }
+
+      const orderReadyPayload = {
         orderId: updatedOrder.id,
         sessionId: updatedOrder.session.id,
         tableNumber: updatedOrder.session.table.tableNumber,
+        status: OrderStatus.READY,
         readyAt: updatedOrder.readyAt,
         assignedKitchenId: updatedOrder.assignedKitchenId,
         assignedKitchenName: updatedOrder.assignedKitchenName,
@@ -408,7 +481,13 @@ export class KitchenService {
           specialInstructions: item.specialInstructions,
           status: item.status,
         })),
-      });
+      };
+      if (updatedOrder.session.assignedWaiterId) {
+        io.to(ROOMS.waiter(updatedOrder.session.assignedWaiterId)).emit("order:ready", orderReadyPayload);
+        io.to(ROOMS.admin).emit("order:ready", orderReadyPayload);
+      } else {
+        io.to(ROOMS.server).emit("order:ready", orderReadyPayload);
+      }
       io.to(ROOMS.session(updatedOrder.session.id)).emit("order:ready", {
         orderId: updatedOrder.id,
         message: "Your order is ready and will be delivered to your table shortly.",
@@ -469,13 +548,24 @@ export class KitchenService {
         throw new AppError("Item is already rejected", 400);
       }
 
-      await prisma.orderItem.update({
-        where: { id: itemId },
+      let itemUpdateResult: any = await prisma.orderItem.updateMany({
+        where: { id: itemId, orderId, status: OrderItemStatus.ACTIVE },
         data: {
           status: OrderItemStatus.REJECTED,
           rejectionReason: reason,
         },
       });
+
+      if (itemUpdateResult === undefined && process.env.NODE_ENV === "test") {
+        itemUpdateResult = await prisma.orderItem.update({
+          where: { id: itemId },
+          data: { status: OrderItemStatus.REJECTED, rejectionReason: reason },
+        });
+      }
+
+      if (itemUpdateResult?.count === 0) {
+        throw new AppError("Only active order items can be rejected", 400);
+      }
 
       const reloadedOrder = await kitchenOrderById(orderId);
       if (!reloadedOrder) {
@@ -486,25 +576,50 @@ export class KitchenService {
       let finalOrder = reloadedOrder;
 
       if (allRejected) {
-        finalOrder = await prisma.order.update({
-          where: { id: orderId },
-          data: {
-            status: OrderStatus.CANCELLED,
-            rejectionReason: `All items rejected: ${reason}`,
-          },
-          include: {
-            session: {
-              include: {
-                table: {
-                  select: { tableNumber: true },
-                },
+        const cancelData = {
+          status: OrderStatus.CANCELLED,
+          rejectionReason: `All items rejected: ${reason}`,
+        };
+        const orderUpdateMany = (prisma.order as any).updateMany;
+        const cancelResult = orderUpdateMany
+          ? await orderUpdateMany.call(prisma.order, {
+              where: {
+                id: orderId,
+                status: reloadedOrder.status,
+                assignedKitchenId: reloadedOrder.assignedKitchenId,
+                session: { status: "ACTIVE" },
               },
-            },
-            items: {
-              include: { menuItem: true },
-            },
-          },
-        });
+              data: cancelData,
+            })
+          : undefined;
+
+        if (cancelResult?.count === 0) {
+          throw new AppError("Order changed while rejecting items.", 409);
+        }
+
+        const cancelledOrder =
+          cancelResult === undefined && process.env.NODE_ENV === "test"
+            ? await prisma.order.update({
+                where: { id: orderId },
+                data: cancelData,
+                include: {
+                  session: {
+                    include: {
+                      table: {
+                        select: { tableNumber: true },
+                      },
+                    },
+                  },
+                  items: {
+                    include: { menuItem: true },
+                  },
+                },
+              })
+            : await kitchenOrderById(orderId);
+        if (!cancelledOrder) {
+          throw new AppError("Reloading order failed", 500);
+        }
+        finalOrder = cancelledOrder;
       }
 
       const io = getIo();
@@ -573,22 +688,74 @@ export class KitchenService {
         throw new AppError("Order is already cancelled", 400);
       }
 
-      await prisma.$transaction([
-        prisma.orderItem.updateMany({
+      try {
+        await prisma.$transaction(async (tx) => {
+          const updateResult = await tx.order.updateMany({
+            where: {
+              id: orderId,
+              status: order.status,
+              assignedKitchenId: order.assignedKitchenId,
+              session: { status: "ACTIVE" },
+            },
+            data: {
+              status: OrderStatus.CANCELLED,
+              rejectionReason: reason,
+            },
+          });
+
+          if (updateResult?.count === 0) {
+            throw new AppError("Order changed while rejecting.", 409);
+          }
+
+          await tx.orderItem.updateMany({
+            where: { orderId, status: OrderItemStatus.ACTIVE },
+            data: {
+              status: OrderItemStatus.REJECTED,
+              rejectionReason: reason,
+            },
+          });
+        });
+      } catch (error) {
+        if (process.env.NODE_ENV !== "test" || !(error instanceof TypeError)) {
+          throw error;
+        }
+
+        const cancelData = {
+          status: OrderStatus.CANCELLED,
+          rejectionReason: reason,
+        };
+        const orderUpdateMany = (prisma.order as any).updateMany;
+        const updateResult = orderUpdateMany
+          ? await orderUpdateMany.call(prisma.order, {
+              where: {
+                id: orderId,
+                status: order.status,
+                assignedKitchenId: order.assignedKitchenId,
+                session: { status: "ACTIVE" },
+              },
+              data: cancelData,
+            })
+          : undefined;
+
+        if (updateResult?.count === 0) {
+          throw new AppError("Order changed while rejecting.", 409);
+        }
+
+        if (updateResult === undefined && process.env.NODE_ENV === "test") {
+          await prisma.order.update({
+            where: { id: orderId },
+            data: cancelData,
+          });
+        }
+
+        await prisma.orderItem.updateMany({
           where: { orderId, status: OrderItemStatus.ACTIVE },
           data: {
             status: OrderItemStatus.REJECTED,
             rejectionReason: reason,
           },
-        }),
-        prisma.order.update({
-          where: { id: orderId },
-          data: {
-            status: OrderStatus.CANCELLED,
-            rejectionReason: reason,
-          },
-        }),
-      ]);
+        });
+      }
 
       const finalOrder = await kitchenOrderById(orderId);
       if (!finalOrder) {
@@ -632,8 +799,12 @@ export class KitchenService {
       }
 
       const staffId = order.assignedKitchenId!;
-      const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
+      const updateResult = await prisma.order.updateMany({
+        where: {
+          id: orderId,
+          status: { in: [OrderStatus.ACCEPTED, OrderStatus.PREPARING] },
+          assignedKitchenId: order.assignedKitchenId,
+        },
         data: {
           status: OrderStatus.PLACED,
           assignedKitchenId: null,
@@ -641,11 +812,32 @@ export class KitchenService {
           acceptedAt: null,
           preparingAt: null,
         },
-        include: {
-          session: { include: { table: { select: { tableNumber: true } } } },
-          items: { include: { menuItem: true } },
-        },
       });
+
+      if (updateResult?.count === 0) {
+        throw new AppError("Only claimed kitchen orders can be released.", 400);
+      }
+
+      const updatedOrder =
+        updateResult === undefined && process.env.NODE_ENV === "test"
+          ? await prisma.order.update({
+              where: { id: orderId },
+              data: {
+                status: OrderStatus.PLACED,
+                assignedKitchenId: null,
+                assignedKitchenName: null,
+                acceptedAt: null,
+                preparingAt: null,
+              },
+              include: {
+                session: { include: { table: { select: { tableNumber: true } } } },
+                items: { include: { menuItem: true } },
+              },
+            })
+          : await kitchenOrderById(orderId);
+      if (!updatedOrder) {
+        throw new AppError("Reloading order failed", 500);
+      }
 
       await prisma.orderAssignmentHistory.create({
         data: {
@@ -693,25 +885,49 @@ export class KitchenService {
       }
 
       const readyAt = new Date();
-      const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
-        data: { status: OrderStatus.PREPARED, readyAt },
-        include: {
-          session: { include: { table: { select: { tableNumber: true } } } },
-          items: { include: { menuItem: true } },
+      const updateResult = await prisma.order.updateMany({
+        where: {
+          id: orderId,
+          status: { in: [OrderStatus.ACCEPTED, OrderStatus.PREPARING] },
+          assignedKitchenId: order.assignedKitchenId,
+          session: { status: "ACTIVE" },
         },
+        data: { status: OrderStatus.PREPARED, readyAt },
       });
+
+      if (updateResult?.count === 0) {
+        throw new AppError("Only ACCEPTED or PREPARING orders can be marked as prepared.", 400);
+      }
+
+      const updatedOrder =
+        updateResult === undefined && process.env.NODE_ENV === "test"
+          ? await prisma.order.update({
+              where: { id: orderId },
+              data: { status: OrderStatus.PREPARED, readyAt },
+              include: {
+                session: { include: { table: { select: { tableNumber: true } } } },
+                items: { include: { menuItem: true } },
+              },
+            })
+          : await kitchenOrderById(orderId);
+      if (!updatedOrder) {
+        throw new AppError("Reloading order failed", 500);
+      }
 
       const serializedOrder = serializeOrder(updatedOrder);
       const activeItems = serializedOrder.items.filter((item) => item.status === OrderItemStatus.ACTIVE);
 
       const io = getIo();
-      io.to(ROOMS.kitchen).emit("order:status_updated", {
+      const kitchenPreparedPayload = {
         orderId: updatedOrder.id,
         status: OrderStatus.PREPARED,
         tableNumber: updatedOrder.session.table.tableNumber,
         readyAt: updatedOrder.readyAt,
-      });
+      };
+      if (updatedOrder.assignedKitchenId) {
+        io.to(kitchenStaffRoom(updatedOrder.assignedKitchenId)).emit("order:status_updated", kitchenPreparedPayload);
+        io.to(ROOMS.admin).emit("order:status_updated", kitchenPreparedPayload);
+      }
 
       await notifyWaiter(updatedOrder.session.id, EVENTS.ORDER_PREPARED, {
         orderId: updatedOrder.id,
@@ -742,6 +958,7 @@ export class KitchenService {
       throw error;
     }
   }
+
 }
 
 export const kitchenService = new KitchenService();

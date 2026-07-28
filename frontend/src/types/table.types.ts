@@ -7,6 +7,13 @@ export interface RestaurantTable {
   status: TableStatus;
   createdAt: string;
   activeSessionCount?: number;
+  activeAssignment?: {
+    sessionId: string;
+    waiterId?: string | null;
+    waiterName?: string | null;
+    kitchenStaffId?: string | null;
+    kitchenStaffName?: string | null;
+  } | null;
   _count?: {
     sessions: number;
   };

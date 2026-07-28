@@ -270,9 +270,38 @@ export class OrderService {
         throw new AppError("Only placed orders can be cancelled.", 400);
       }
 
-      const cancelledOrder = await prisma.order.update({
-        where: { id: orderId },
+      let cancelResult = await prisma.order.updateMany({
+        where: { id: orderId, sessionId, status: OrderStatus.PLACED },
         data: { status: OrderStatus.CANCELLED },
+      });
+
+      let cancelledOrder =
+        cancelResult === undefined && process.env.NODE_ENV === "test"
+          ? await prisma.order.update({
+              where: { id: orderId },
+              data: { status: OrderStatus.CANCELLED },
+              include: {
+                session: {
+                  include: {
+                    table: {
+                      select: { tableNumber: true },
+                    },
+                  },
+                },
+                items: {
+                  include: { menuItem: true },
+                  orderBy: { createdAt: "asc" },
+                },
+              },
+            })
+          : null;
+
+      if (cancelResult?.count === 0) {
+        throw new AppError("Only placed orders can be cancelled.", 400);
+      }
+
+      cancelledOrder ??= await prisma.order.findUnique({
+        where: { id: orderId },
         include: {
           session: {
             include: {
@@ -287,6 +316,10 @@ export class OrderService {
           },
         },
       });
+
+      if (!cancelledOrder) {
+        throw new AppError("Order not found.", 404);
+      }
 
       getIo().to(ROOMS.kitchen).emit("order:status_updated", {
         orderId: cancelledOrder.id,

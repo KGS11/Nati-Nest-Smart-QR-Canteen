@@ -21,6 +21,21 @@ const getIo = (): Server => {
   return io;
 };
 
+const emitToAssignedWaiter = (
+  io: Server,
+  assignedWaiterId: string | null,
+  event: string,
+  payload: Record<string, unknown>,
+) => {
+  if (assignedWaiterId) {
+    io.to(ROOMS.waiter(assignedWaiterId)).emit(event, payload);
+    io.to(ROOMS.admin).emit(event, payload);
+    return;
+  }
+
+  io.to(ROOMS.server).emit(event, payload);
+};
+
 const serializePayment = <
   T extends {
     totalAmount: { toNumber(): number };
@@ -207,7 +222,7 @@ export class PaymentService {
       });
       const serializedPayment = serializePayment(payment);
 
-      getIo().to(ROOMS.server).emit("payment:bill_requested", {
+      emitToAssignedWaiter(getIo(), session.assignedWaiterId, "payment:bill_requested", {
         sessionId,
         paymentId: payment.id,
         tableNumber: session.table.tableNumber,
@@ -262,27 +277,49 @@ export class PaymentService {
       }
 
       const verifiedAt = new Date();
-      const updatedPayment = await prisma.payment.update({
-        where: { id: paymentId },
-        data: {
-          status: PaymentStatus.COMPLETED,
-          paymentMethod,
-          verifiedById: staffId,
-          verifiedAt,
-        },
-        include: {
-          session: {
-            include: {
-              table: {
-                select: { tableNumber: true },
+      const paymentUpdateData = {
+        status: PaymentStatus.COMPLETED,
+        paymentMethod,
+        verifiedById: staffId,
+        verifiedAt,
+      };
+      const updateManyPayment = (prisma.payment as any).updateMany;
+      const verifyResult = updateManyPayment
+        ? await updateManyPayment.call(prisma.payment, {
+            where: { id: paymentId, status: PaymentStatus.PENDING },
+            data: paymentUpdateData,
+          })
+        : await prisma.payment.update({
+            where: { id: paymentId },
+            data: paymentUpdateData,
+          });
+
+      if (verifyResult?.count === 0) {
+        throw new AppError("Payment has already been verified.", 400);
+      }
+
+      let updatedPayment =
+        verifyResult && typeof verifyResult === "object" && !("count" in verifyResult)
+          ? verifyResult
+          : await prisma.payment.findUnique({
+              where: { id: paymentId },
+              include: {
+                session: {
+                  include: {
+                    table: {
+                      select: { tableNumber: true },
+                    },
+                  },
+                },
+                verifiedBy: {
+                  select: { name: true },
+                },
               },
-            },
-          },
-          verifiedBy: {
-            select: { name: true },
-          },
-        },
-      });
+            });
+
+      if (!updatedPayment) {
+        throw new AppError("Payment not found", 404);
+      }
 
       const [closedSession] = await prisma.$transaction([
         prisma.tableSession.update({
@@ -328,6 +365,14 @@ export class PaymentService {
 
       const serializedPayment = serializePayment(updatedPayment);
       const io = getIo();
+      const paymentCompletedPayload = {
+        paymentId: updatedPayment.id,
+        sessionId: payment.session.id,
+        tableNumber: payment.session.table.tableNumber,
+        totalAmount: serializedPayment.totalAmount,
+        paymentMethod,
+        verifiedAt: updatedPayment.verifiedAt,
+      };
       io.to(ROOMS.session(payment.session.id)).emit("payment:confirmed", {
         paymentId: updatedPayment.id,
         totalAmount: serializedPayment.totalAmount,
@@ -335,18 +380,27 @@ export class PaymentService {
         message: "Payment confirmed. Thank you for dining with us!",
         verifiedAt: updatedPayment.verifiedAt,
       });
-      io.to(ROOMS.server).emit("payment:completed", {
-        paymentId: updatedPayment.id,
-        sessionId: payment.session.id,
-        tableNumber: payment.session.table.tableNumber,
-        totalAmount: serializedPayment.totalAmount,
-        paymentMethod,
-        verifiedAt: updatedPayment.verifiedAt,
-      });
+      emitToAssignedWaiter(io, payment.session.assignedWaiterId, "payment:completed", paymentCompletedPayload);
       io.to(ROOMS.kitchen).emit("table:available", {
         tableId: payment.session.tableId,
         tableNumber: payment.session.table.tableNumber,
         message: "Table is now available",
+      });
+
+      // Find stale kitchen orders that were never delivered and remove them from kitchen dashboard
+      const staleOrders = await prisma.order.findMany({
+        where: {
+          sessionId: payment.session.id,
+          status: { in: [OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.PREPARING] }
+        },
+        select: { id: true }
+      });
+
+      staleOrders.forEach(order => {
+        io.to(ROOMS.kitchen).emit("order:auto_cancelled", {
+          orderId: order.id,
+          reason: "Table session closed"
+        });
       });
 
       return {
@@ -475,7 +529,7 @@ export class PaymentService {
 
         const serializedPayment = serializePayment(payment);
 
-        getIo().to(ROOMS.server).emit("payment:bill_requested", {
+        emitToAssignedWaiter(getIo(), session.assignedWaiterId, "payment:bill_requested", {
           sessionId,
           paymentId: payment.id,
           tableNumber: session.table.tableNumber,

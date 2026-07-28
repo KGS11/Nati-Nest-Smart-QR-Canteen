@@ -19,7 +19,7 @@ const param = (request: Request, key: string) => {
 export class ServerController {
   async getReadyOrders(request: Request, response: Response, next: NextFunction) {
     try {
-      const own = request.query.own !== "false";
+      const own = request.user!.role === "ADMIN" ? request.query.own !== "false" : true;
       const orders = await serverService.getReadyOrders(request.user?.userId, own);
       return response.status(200).json({
         success: true,
@@ -107,7 +107,7 @@ export class ServerController {
 
   async getAssistanceRequests(request: Request, response: Response, next: NextFunction) {
     try {
-      const own = request.query.own !== "false";
+      const own = request.user!.role === "ADMIN" ? request.query.own !== "false" : true;
       const requests = await serverService.getAssistanceRequests(request.user?.userId, own);
       return response.status(200).json({
         success: true,

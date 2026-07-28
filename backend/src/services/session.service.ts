@@ -243,22 +243,29 @@ export class SessionService {
   async acceptWaiterAssignment(requestId: string, waiterId: string) {
     try {
       const result = await prisma.$transaction(async (tx) => {
-        const request = await tx.waiterAssignmentRequest.findUnique({
-          where: { id: requestId },
-        });
-
-        if (!request || request.status !== "PENDING") {
-          return { success: false, alreadyTaken: true };
-        }
-
-        const updatedRequest = await tx.waiterAssignmentRequest.update({
-          where: { id: requestId },
+        const acceptResult = await tx.waiterAssignmentRequest.updateMany({
+          where: {
+            id: requestId,
+            status: "PENDING",
+          },
           data: {
             status: "ACCEPTED",
             acceptedById: waiterId,
             acceptedAt: new Date(),
           },
         });
+
+        if (acceptResult.count === 0) {
+          return { success: false, alreadyTaken: true };
+        }
+
+        const request = await tx.waiterAssignmentRequest.findUnique({
+          where: { id: requestId },
+        });
+
+        if (!request) {
+          return { success: false, alreadyTaken: true };
+        }
 
         await tx.tableSession.update({
           where: { id: request.sessionId },

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import Loader from "@/components/ui/Loader";
 import { ExportFormat, ExportType, useExport } from "@/hooks/useExport";
+import ReportViewerModal from "@/components/admin/shared/ReportViewerModal";
 import apiClient from "@/lib/api-client";
 import { ApiResponse, ClientApiError } from "@/types/api";
 import { DashboardSummary, PopularItem } from "@/types/domain";
@@ -98,6 +99,16 @@ const currency = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
+const reportConfigs: Array<{ type: ExportType; name: string; description: string }> = [
+  { type: "revenue", name: "Revenue Report", description: "Financial breakdown & payment method summary" },
+  { type: "orders", name: "Orders Analytics", description: "Order counts, completion rate & peak times" },
+  { type: "payments", name: "Payments Summary", description: "Cash vs UPI payment details & daily totals" },
+  { type: "tables", name: "Tables Utilization", description: "Table session frequency & revenue metrics" },
+  { type: "feedback", name: "Customer Feedback", description: "Ratings distribution & customer comments" },
+  { type: "staff", name: "Staff Activity", description: "Staff delivery metrics & tip performance" },
+  { type: "cancelled-items", name: "Cancelled Items", description: "Voided items, reasons & revenue impact" },
+];
+
 const getPresetRange = (preset: Preset) => {
   const end = new Date();
   const start = new Date();
@@ -159,6 +170,7 @@ export default function AdminReportsPage() {
   const [feedback, setFeedback] = useState<FeedbackReport | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [viewingReport, setViewingReport] = useState<ExportType | null>(null);
   const { downloadExport, isExporting, error: exportError } = useExport();
 
   const groupBy: GroupBy = preset === "month" ? "day" : "day";
@@ -276,39 +288,55 @@ export default function AdminReportsPage() {
         </Button>
       </div>
 
-      <div className="mb-6 rounded-xl border border-border-default bg-surface-raised p-4">
-        <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-6 rounded-xl border border-border-default bg-surface-raised p-5">
+        <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-label-sm font-bold text-text-primary">Export Reports</h2>
-            <p className="text-label-xs text-text-tertiary">Download the current report range as CSV or Excel.</p>
+            <h2 className="text-label-md font-bold text-text-primary">Reports Hub</h2>
+            <p className="text-label-xs text-text-tertiary">Preview reports inline or download exported CSV / Excel spreadsheets.</p>
           </div>
           {isExporting ? <span className="text-label-xs font-semibold text-brand-500 animate-pulse">Exporting...</span> : null}
         </div>
         {exportError ? (
-          <p role="alert" className="mb-3 text-label-xs font-semibold text-semantic_error-400">{exportError}</p>
+          <p role="alert" className="mb-4 text-label-xs font-semibold text-semantic_error-400">{exportError}</p>
         ) : null}
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
-          {(["revenue", "orders", "payments", "tables", "feedback", "staff", "cancelled-items"] as ExportType[]).map((type) => (
-            <div key={type} className="flex min-w-0 gap-2 rounded-lg bg-surface-base p-2">
-              <span className="flex-1 truncate px-2 py-2 text-label-xs font-bold capitalize text-text-secondary">
-                {type === "staff" ? "Staff Activity" : type}
-              </span>
-              <button
-                type="button"
-                disabled={isExporting}
-                onClick={() => runExport(type, "csv")}
-                className="min-h-10 rounded-md border border-border-default px-2 text-label-xs font-semibold text-text-secondary hover:text-text-primary disabled:opacity-50"
-              >
-                CSV
-              </button>
-              <button
-                type="button"
-                disabled={isExporting}
-                onClick={() => runExport(type, "xlsx")}
-                className="min-h-10 rounded-md bg-brand-500 px-2 text-label-xs font-bold text-brand-950 hover:bg-brand-400 disabled:opacity-50"
-              >
-                XLSX
-              </button>
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {reportConfigs.map(({ type, name, description }) => (
+            <div
+              key={type}
+              className="flex flex-col justify-between rounded-xl border border-border-default bg-surface-base p-4 transition-colors hover:border-border-secondary"
+            >
+              <div>
+                <h3 className="text-label-md font-bold text-text-primary">{name}</h3>
+                <p className="mt-1 text-label-xs text-text-tertiary leading-relaxed">{description}</p>
+              </div>
+
+              <div className="mt-4 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => setViewingReport(type)}
+                  className="flex w-full items-center justify-center min-h-9 rounded-lg bg-surface-overlay border border-border-default px-3 text-label-xs font-bold text-text-primary hover:bg-surface-raised transition-colors cursor-pointer"
+                >
+                  View Report
+                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={isExporting}
+                    onClick={() => runExport(type, "csv")}
+                    className="flex items-center justify-center min-h-9 rounded-lg border border-border-default px-2 text-label-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-overlay disabled:opacity-50 transition-colors cursor-pointer"
+                  >
+                    CSV
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isExporting}
+                    onClick={() => runExport(type, "xlsx")}
+                    className="flex items-center justify-center min-h-9 rounded-lg bg-brand-500 px-2 text-label-xs font-bold text-brand-950 hover:bg-brand-400 disabled:opacity-50 transition-colors cursor-pointer"
+                  >
+                    XLSX
+                  </button>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -459,6 +487,22 @@ export default function AdminReportsPage() {
             </div>
           </section>
         </div>
+      )}
+
+      {viewingReport && (
+        <ReportViewerModal
+          reportType={viewingReport}
+          title={viewingReport === "staff" ? "Staff Activity" : viewingReport === "cancelled-items" ? "Cancelled Items" : viewingReport}
+          startDate={range.startDate}
+          endDate={range.endDate}
+          exportFilter={exportFilter}
+          onClose={() => setViewingReport(null)}
+          revenueData={revenue}
+          ordersData={orders}
+          tablesData={tables}
+          feedbackData={feedback}
+          popularData={popular}
+        />
       )}
     </div>
   );

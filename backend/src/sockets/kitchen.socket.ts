@@ -30,6 +30,7 @@ export const initializeKitchenSockets = (io: Server) => {
         }
 
         await socket.join(ROOMS.kitchen);
+        await socket.join(`kitchen:${auth.userId}`);
         socket.emit("kitchen:joined", {
           message: "Connected to kitchen dashboard",
           staffName: user.name,

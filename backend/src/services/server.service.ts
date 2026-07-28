@@ -254,18 +254,27 @@ export class ServerService {
       }
 
       const staffId = order.assignedWaiterId;
-      const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
+      const releaseResult = await prisma.order.updateMany({
+        where: {
+          id: orderId,
+          status: { in: [OrderStatus.READY, OrderStatus.PREPARED] },
+          assignedWaiterId: order.assignedWaiterId,
+        },
         data: {
           assignedWaiterId: null,
           assignedWaiterName: null,
           assignedAt: null,
         },
-        include: {
-          session: { include: { table: { select: { tableNumber: true } } } },
-          items: { include: { menuItem: true } },
-        },
       });
+
+      if (releaseResult?.count === 0) {
+        throw new AppError("Only READY or PREPARED orders can be released.", 400);
+      }
+
+      const updatedOrder = await serverOrderById(orderId);
+      if (!updatedOrder) {
+        throw new AppError("Order not found", 404);
+      }
 
       await prisma.orderAssignmentHistory.create({
         data: {
@@ -310,18 +319,27 @@ export class ServerService {
       }
 
       const deliveredAt = new Date();
-      const updatedOrder = await prisma.order.update({
-        where: { id: orderId },
+      const deliverResult = await prisma.order.updateMany({
+        where: {
+          id: orderId,
+          status: { in: [OrderStatus.READY, OrderStatus.PREPARED] },
+          assignedWaiterId: order.assignedWaiterId,
+        },
         data: {
           status: OrderStatus.DELIVERED,
           deliveredAt,
           deliveredBy: staffName,
         },
-        include: {
-          session: { include: { table: { select: { tableNumber: true } } } },
-          items: { include: { menuItem: true } },
-        },
       });
+
+      if (deliverResult?.count === 0) {
+        throw new AppError("Only READY or PREPARED orders can be marked as delivered.", 400);
+      }
+
+      const updatedOrder = await serverOrderById(orderId);
+      if (!updatedOrder) {
+        throw new AppError("Order not found", 404);
+      }
 
       await prisma.orderAssignmentHistory.create({
         data: {
@@ -423,13 +441,21 @@ export class ServerService {
         throw new AppError("This request has already been resolved.", 400);
       }
 
-      const updatedRequest = await prisma.assistanceRequest.update({
-        where: { id: requestId },
+      const resolveResult = await prisma.assistanceRequest.updateMany({
+        where: { id: requestId, status: AssistanceStatus.PENDING },
         data: {
           status: AssistanceStatus.RESOLVED,
           resolvedById: staffId,
           resolvedAt: new Date(),
         },
+      });
+
+      if (resolveResult?.count === 0) {
+        throw new AppError("This request has already been resolved.", 400);
+      }
+
+      const updatedRequest = await prisma.assistanceRequest.findUnique({
+        where: { id: requestId },
         include: {
           session: {
             include: {
@@ -440,6 +466,10 @@ export class ServerService {
           },
         },
       });
+
+      if (!updatedRequest) {
+        throw new AppError("Assistance request not found", 404);
+      }
 
       await notifyWaiter(updatedRequest.session.id, "assistance:resolved", {
         requestId: updatedRequest.id,

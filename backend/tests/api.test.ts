@@ -326,13 +326,47 @@ describe("Nati Nest backend API", () => {
 
   it("supports table CRUD and QR generation", async () => {
     tableService.createTable.mockResolvedValue({ id, tableNumber: "T1", qrCodeUrl: "data:image/png;base64,qr" });
-    tableService.getAllTables.mockResolvedValue([{ id, tableNumber: "T1" }]);
+    tableService.getAllTables.mockResolvedValue([
+      {
+        id,
+        tableNumber: "T1",
+        qrCodeUrl: "data:image/png;base64,qr",
+        status: "OCCUPIED",
+        createdAt: "2026-07-28T00:00:00.000Z",
+        activeSessionCount: 1,
+        activeAssignment: {
+          sessionId: "session-1",
+          waiterId: "waiter-1",
+          waiterName: "Sudarshan",
+          kitchenStaffId: "kitchen-1",
+          kitchenStaffName: "Swamy",
+        },
+      },
+    ]);
     tableService.updateTable.mockResolvedValue({ id, tableNumber: "T2" });
     tableService.regenerateQRCode.mockResolvedValue({ id, qrCodeUrl: "data:image/png;base64,new" });
     tableService.deleteTable.mockResolvedValue(undefined);
 
     await request(app).post("/api/tables").set("Authorization", auth(adminToken)).send({ tableNumber: "T1" }).expect(201);
-    await request(app).get("/api/tables").set("Authorization", auth(adminToken)).expect(200);
+    await request(app)
+      .get("/api/tables")
+      .set("Authorization", auth(adminToken))
+      .expect(200)
+      .expect(({ body }) => {
+        expect(body.data[0]).toMatchObject({
+          id,
+          tableNumber: "T1",
+          qrCodeUrl: "data:image/png;base64,qr",
+          status: "OCCUPIED",
+          createdAt: "2026-07-28T00:00:00.000Z",
+          activeSessionCount: 1,
+        });
+        expect(body.data[0].activeAssignment).toMatchObject({
+          sessionId: "session-1",
+          waiterName: "Sudarshan",
+          kitchenStaffName: "Swamy",
+        });
+      });
     await request(app).put(`/api/tables/${id}`).set("Authorization", auth(adminToken)).send({ tableNumber: "T2" }).expect(200);
     await request(app).patch(`/api/tables/${id}/qr`).set("Authorization", auth(adminToken)).expect(200);
     await request(app).delete(`/api/tables/${id}`).set("Authorization", auth(adminToken)).expect(200);
@@ -433,6 +467,10 @@ describe("Nati Nest backend API", () => {
     cateringService.updateStatus.mockResolvedValue({ id, name: "Ravi", status: "CONTACTED" });
     cateringService.exportCsv.mockResolvedValue("Name,Phone\nRavi,9999999999");
 
+    const futureEventDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+
     await request(app)
       .post("/api/catering/leads")
       .set("Authorization", auth(sessionToken))
@@ -440,7 +478,7 @@ describe("Nati Nest backend API", () => {
         name: "Ravi",
         phone: "9999999999",
         eventType: "SPORTS",
-        eventDate: "2026-07-11",
+        eventDate: futureEventDate,
         guestCount: 50,
         location: "Main hall",
       })

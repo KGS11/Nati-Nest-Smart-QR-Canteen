@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/common/Button";
 import Loader from "@/components/common/Loader";
 import { useSocketContext } from "@/context/SocketContext";
@@ -95,6 +95,14 @@ export function KitchenBoard() {
   const [activeTab, setActiveTab] = useState<"PLACED" | "IN_PROGRESS">("PLACED");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"available" | "my-orders">("available");
+  const recentNotificationIds = useRef<Set<string>>(new Set());
+
+  const isDuplicateNotification = (eventId: string) => {
+    if (recentNotificationIds.current.has(eventId)) return true;
+    recentNotificationIds.current.add(eventId);
+    window.setTimeout(() => recentNotificationIds.current.delete(eventId), 10000);
+    return false;
+  };
 
   const isConnectedStore = useKitchenStore((s) => s.isConnected);
   const isLoading = useKitchenStore((s) => s.isLoading);
@@ -148,10 +156,12 @@ export function KitchenBoard() {
       setActionError(payload.message || "Kitchen socket error.");
     };
     const handleNewOrder = (payload: OrderNewSocketPayload) => {
-      setNewOrderAlert({ orderId: payload.orderId, tableNumber: payload.tableNumber });
-      playNewOrderAlert();
-      setFlashIncoming(true);
-      setTimeout(() => setFlashIncoming(false), 500);
+      if (!isDuplicateNotification(`order:new:${payload.orderId}`)) {
+        setNewOrderAlert({ orderId: payload.orderId, tableNumber: payload.tableNumber });
+        playNewOrderAlert();
+        setFlashIncoming(true);
+        setTimeout(() => setFlashIncoming(false), 500);
+      }
       fetchOrders();
     };
     const handleStatusUpdated = (payload: OrderStatusUpdatedPayload & { assignedKitchenId?: string | null; assignedKitchenName?: string | null }) => {
