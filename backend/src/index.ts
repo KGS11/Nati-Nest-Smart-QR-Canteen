@@ -40,9 +40,10 @@ app.set("trust proxy", 1);
 const server = http.createServer(app);
 const port = env.PORT;
 const clientUrl = env.CLIENT_URL;
+const developmentOrigins =
+  env.NODE_ENV === "production" ? [] : ["http://localhost:3000", "http://127.0.0.1:3000"];
 const allowedOrigins = [
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
+  ...developmentOrigins,
   ...((env.CORS_ORIGINS ?? "")
     .split(",")
     .map((origin) => origin.trim())
@@ -61,7 +62,9 @@ const isLocalOrigin = (origin: string): boolean => {
       hostname === "127.0.0.1" ||
       hostname.startsWith("10.") ||
       hostname.startsWith("192.168.") ||
-      hostname.startsWith("172.")
+      hostname.startsWith("172.") ||
+      hostname.endsWith(".loca.lt") ||
+      hostname === "loca.lt"
     );
   } catch {
     return false;
@@ -98,7 +101,7 @@ const corsOriginChecker = (
   origin: string | undefined,
   callback: (err: Error | null, allow?: boolean) => void,
 ) => {
-  if (!origin || isLocalOrigin(origin) || allowedOrigins.includes(origin)) {
+  if (!origin || allowedOrigins.includes(origin) || (env.NODE_ENV !== "production" && isLocalOrigin(origin))) {
     callback(null, true);
   } else {
     callback(new Error("Not allowed by CORS"));
@@ -122,12 +125,16 @@ app.use(
           "'self'",
           ...allowedOrigins,
           ...allowedOrigins.map(url => url.replace(/^http/, "ws")),
-          "ws://*:5000",
-          "http://*:5000",
+          ...(env.NODE_ENV === "production" ? [] : ["ws://*:5000", "http://*:5000"]),
         ],
         frameAncestors: ["'none'"],
         fontSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "res.cloudinary.com", "localhost:5000", "127.0.0.1:5000"],
+        imgSrc: [
+          "'self'",
+          "data:",
+          "res.cloudinary.com",
+          ...(env.NODE_ENV === "production" ? [] : ["localhost:5000", "127.0.0.1:5000"]),
+        ],
         objectSrc: ["'none'"],
         scriptSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],

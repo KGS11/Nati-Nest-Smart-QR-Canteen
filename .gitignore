@@ -1,12 +1,17 @@
 node_modules/
 .env
+.env.production
 .env.local
+.env.*.local
 .next/
 dist/
+build/
 coverage/
 backend/uploads/
 frontend/test-results/
 *.tsbuildinfo
+*.js.map
+prisma/generated/
 
 # Database backups
 backups/

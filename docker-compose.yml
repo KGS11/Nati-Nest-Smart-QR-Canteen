@@ -8,7 +8,7 @@ services:
       - path: ./.env
         required: false
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-development}
       PORT: 5000
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
@@ -64,9 +64,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api}
-        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-http://localhost}
-        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://yourdomain.com/api}
+        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-https://yourdomain.com}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://yourdomain.com}
         NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Nati Nest}
         NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     restart: unless-stopped

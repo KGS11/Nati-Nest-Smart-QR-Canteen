@@ -4,9 +4,9 @@ WORKDIR /app
 
 RUN npm install -g npm@11.6.2
 
-ARG NEXT_PUBLIC_API_URL=http://localhost/api
-ARG NEXT_PUBLIC_SOCKET_URL=http://localhost
-ARG NEXT_PUBLIC_APP_URL=http://localhost
+ARG NEXT_PUBLIC_API_URL=https://yourdomain.com/api
+ARG NEXT_PUBLIC_SOCKET_URL=https://yourdomain.com
+ARG NEXT_PUBLIC_APP_URL=https://yourdomain.com
 ARG NEXT_PUBLIC_APP_NAME=Nati Nest
 ARG NEXT_PUBLIC_SENTRY_DSN=
 

@@ -8,10 +8,16 @@ const getEnv = () => {
     };
   }
 
+  const productionOrigin = "https://yourdomain.com";
+  const developmentOrigin = "http://localhost:3000";
+  const developmentBackend = "http://localhost:5000";
+  const fallbackOrigin = process.env.NODE_ENV === "production" ? productionOrigin : developmentOrigin;
+  const fallbackBackend = process.env.NODE_ENV === "production" ? productionOrigin : developmentBackend;
+
   return {
-    apiUrl: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
-    socketUrl: process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000",
-    appUrl: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    apiUrl: process.env.NEXT_PUBLIC_API_URL || `${fallbackBackend}/api`,
+    socketUrl: process.env.NEXT_PUBLIC_SOCKET_URL || fallbackBackend,
+    appUrl: process.env.NEXT_PUBLIC_APP_URL || fallbackOrigin,
   };
 };
 

@@ -52,6 +52,36 @@ const validateDatabaseUrl = (databaseUrl: string, nodeEnv: z.infer<typeof nodeEn
   return null;
 };
 
+const isLocalUrl = (value: string) => {
+  try {
+    const parsed = new URL(value);
+    return ["localhost", "127.0.0.1"].includes(parsed.hostname);
+  } catch {
+    return false;
+  }
+};
+
+const validateProductionOrigins = (corsOrigins: string | undefined) => {
+  const origins = (corsOrigins ?? "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  if (!origins.length) {
+    return "CORS_ORIGINS is required in production";
+  }
+
+  if (origins.some((origin) => origin === "*" || isLocalUrl(origin))) {
+    return "CORS_ORIGINS must contain production HTTPS origins only";
+  }
+
+  if (origins.some((origin) => !origin.startsWith("https://"))) {
+    return "CORS_ORIGINS must use HTTPS in production";
+  }
+
+  return null;
+};
+
 const validateJwtExpiry = (value: string) => {
   const match = value.match(/^(\d+)([smhd])$/);
   if (!match) return false;
@@ -93,6 +123,19 @@ export const validateEnv = (): AppEnv => {
     if (!env.SESSION_JWT_SECRET || env.SESSION_JWT_SECRET.length < 64) {
       errors.push("SESSION_JWT_SECRET must be at least 64 characters");
     }
+  }
+
+  if (env.NODE_ENV === "production") {
+    if (isLocalUrl(env.CLIENT_URL) || !env.CLIENT_URL.startsWith("https://")) {
+      errors.push("CLIENT_URL must be a production HTTPS URL");
+    }
+
+    if (!env.BACKEND_URL || isLocalUrl(env.BACKEND_URL) || !env.BACKEND_URL.startsWith("https://")) {
+      errors.push("BACKEND_URL must be a production HTTPS URL");
+    }
+
+    const corsError = validateProductionOrigins(env.CORS_ORIGINS);
+    if (corsError) errors.push(corsError);
   }
 
   if (env.NODE_ENV !== "test" && !validateJwtExpiry(env.JWT_EXPIRES_IN)) {

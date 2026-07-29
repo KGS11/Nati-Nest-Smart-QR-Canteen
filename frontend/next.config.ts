@@ -1,5 +1,27 @@
 import type { NextConfig } from "next";
 
+const isProduction = process.env.NODE_ENV === "production";
+const productionAppUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://yourdomain.com";
+const productionApiUrl = process.env.NEXT_PUBLIC_API_URL ?? `${productionAppUrl}/api`;
+const productionSocketUrl = process.env.NEXT_PUBLIC_SOCKET_URL ?? productionAppUrl;
+const developmentBackendUrl = "http://localhost:5000";
+const backendBase = (isProduction ? productionApiUrl : (process.env.NEXT_PUBLIC_API_URL ?? `${developmentBackendUrl}/api`)).replace(
+  /\/api\/?$/,
+  "",
+);
+const devImageSources = isProduction ? [] : ["localhost:5000", "127.0.0.1:5000"];
+const devConnectSources = isProduction
+  ? []
+  : [
+      "http://localhost:5000",
+      "http://127.0.0.1:5000",
+      "ws://localhost:5000",
+      "ws://127.0.0.1:5000",
+    ];
+const productionConnectSources = isProduction
+  ? [productionAppUrl, productionApiUrl, productionSocketUrl, productionSocketUrl.replace(/^http/, "ws")]
+  : [];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: "standalone",
@@ -19,22 +41,23 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "res.cloudinary.com",
       },
-      {
-        protocol: "http",
-        hostname: "localhost",
-        port: "5000",
-      },
-      {
-        protocol: "http",
-        hostname: "127.0.0.1",
-        port: "5000",
-      },
+      ...(!isProduction
+        ? [
+            {
+              protocol: "http" as const,
+              hostname: "localhost",
+              port: "5000",
+            },
+            {
+              protocol: "http" as const,
+              hostname: "127.0.0.1",
+              port: "5000",
+            },
+          ]
+        : []),
     ],
   },
   async rewrites() {
-    const backendBase = process.env.NEXT_PUBLIC_API_URL
-      ? process.env.NEXT_PUBLIC_API_URL.replace("/api", "")
-      : "http://localhost:5000";
     return [
       {
         // Proxy all API requests through Next.js so the phone doesn't need
@@ -53,9 +76,9 @@ const nextConfig: NextConfig = {
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "img-src 'self' data: blob: res.cloudinary.com images.unsplash.com lh3.googleusercontent.com localhost:5000 127.0.0.1:5000",
+      `img-src 'self' data: blob: res.cloudinary.com images.unsplash.com lh3.googleusercontent.com ${devImageSources.join(" ")}`.trim(),
       "font-src 'self' data: https://fonts.gstatic.com",
-      "connect-src 'self' http://localhost:5000 http://127.0.0.1:5000 ws://localhost:5000 ws://127.0.0.1:5000",
+      `connect-src 'self' ${[...productionConnectSources, ...devConnectSources].join(" ")}`.trim(),
       "object-src 'none'",
       "base-uri 'self'",
       "frame-ancestors 'none'",
