@@ -321,7 +321,13 @@ export class OrderService {
         throw new AppError("Order not found.", 404);
       }
 
-      getIo().to(ROOMS.kitchen).emit("order:status_updated", {
+      const io = getIo();
+      io.to(ROOMS.kitchen).emit("order:status_updated", {
+        orderId: cancelledOrder.id,
+        status: OrderStatus.CANCELLED,
+        tableNumber: cancelledOrder.session.table.tableNumber,
+      });
+      io.to(ROOMS.session(cancelledOrder.session.id)).emit("order:cancelled", {
         orderId: cancelledOrder.id,
         status: OrderStatus.CANCELLED,
         tableNumber: cancelledOrder.session.table.tableNumber,

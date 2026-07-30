@@ -380,10 +380,11 @@ export class KitchenService {
         assignedKitchenId: updatedOrder.assignedKitchenId,
         assignedKitchenName: updatedOrder.assignedKitchenName,
       };
+      const kitchenStatusRooms: string[] = [ROOMS.kitchen, ROOMS.admin];
       if (updatedOrder.assignedKitchenId) {
-        io.to(kitchenStaffRoom(updatedOrder.assignedKitchenId)).emit("order:status_updated", kitchenStatusPayload);
-        io.to(ROOMS.admin).emit("order:status_updated", kitchenStatusPayload);
+        kitchenStatusRooms.push(kitchenStaffRoom(updatedOrder.assignedKitchenId));
       }
+      io.to(kitchenStatusRooms).emit("order:status_updated", kitchenStatusPayload);
       io.to(ROOMS.session(updatedOrder.session.id)).emit("order:preparing", {
         orderId: updatedOrder.id,
         message: "Your order is being prepared.",
@@ -460,10 +461,11 @@ export class KitchenService {
         tableNumber: updatedOrder.session.table.tableNumber,
         readyAt: updatedOrder.readyAt,
       };
+      const kitchenReadyRooms: string[] = [ROOMS.kitchen, ROOMS.admin];
       if (updatedOrder.assignedKitchenId) {
-        io.to(kitchenStaffRoom(updatedOrder.assignedKitchenId)).emit("order:status_updated", kitchenReadyPayload);
-        io.to(ROOMS.admin).emit("order:status_updated", kitchenReadyPayload);
+        kitchenReadyRooms.push(kitchenStaffRoom(updatedOrder.assignedKitchenId));
       }
+      io.to(kitchenReadyRooms).emit("order:status_updated", kitchenReadyPayload);
 
       const orderReadyPayload = {
         orderId: updatedOrder.id,

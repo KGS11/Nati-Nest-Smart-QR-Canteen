@@ -1,6 +1,6 @@
 'use client'
 
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { SocketContext } from '@/context/SocketContext'
 import { useAuthStore } from '@/stores/authStore'
 import { useServerStore } from '@/stores/serverStore'
@@ -181,25 +181,26 @@ export default function ServerBoard() {
   const [isTipsOpen, setIsTipsOpen] = useState(false)
   const recentToastIds = useRef<Set<string>>(new Set())
 
-  const isDuplicateToast = (eventId: string) => {
+  const isDuplicateToast = useCallback((eventId: string) => {
     if (recentToastIds.current.has(eventId)) return true
     recentToastIds.current.add(eventId)
     window.setTimeout(() => recentToastIds.current.delete(eventId), 10000)
     return false
-  }
+  }, [])
 
-  const addToast = (title: string, type: 'ready' | 'assistance' | 'payment' | 'error', eventId?: string) => {
+  const addToast = useCallback((title: string, type: 'ready' | 'assistance' | 'payment' | 'error', eventId?: string) => {
     if (eventId && isDuplicateToast(eventId)) return
     const id = Math.random().toString(36).substring(2, 9)
     setToasts((prev) => [...prev, { id, title, type }])
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id))
     }, 4000)
-  }
+  }, [isDuplicateToast])
 
-  const fetchAllData = async () => {
-    store.setLoading(true)
-    store.setError(null)
+  const fetchAllData = useCallback(async () => {
+    const currentStore = useServerStore.getState()
+    currentStore.setLoading(true)
+    currentStore.setError(null)
     try {
       const [ordersRes, inProgressRes, assistanceRes, paymentsRes, myTablesRes, assignmentRequestsRes] = await Promise.all([
         apiClient.get('/server/orders/ready'),
@@ -217,24 +218,24 @@ export default function ServerBoard() {
       const myTables = (myTablesRes.data?.data?.myTables || []) as MyTableSession[]
       const assignmentRequests = (assignmentRequestsRes.data?.data?.requests || []) as WaiterAssignmentRequest[]
 
-      store.setReadyOrders(orders.map(normalizeReadyOrder))
-      store.setInProgressOrders(inProgress.map(normalizeInProgressOrder))
-      store.setAssistanceRequests(requests.map(normalizeAssistanceRequest))
-      store.setPendingPayments(payments.map(normalizePendingPayment))
-      store.setMyTables(myTables)
-      store.setAssignmentRequests(assignmentRequests)
+      const latestStore = useServerStore.getState()
+      latestStore.setReadyOrders(orders.map(normalizeReadyOrder))
+      latestStore.setInProgressOrders(inProgress.map(normalizeInProgressOrder))
+      latestStore.setAssistanceRequests(requests.map(normalizeAssistanceRequest))
+      latestStore.setPendingPayments(payments.map(normalizePendingPayment))
+      latestStore.setMyTables(myTables)
+      latestStore.setAssignmentRequests(assignmentRequests)
     } catch (err: any) {
-      store.setError(err?.message || 'Failed to fetch server dashboard data.')
+      useServerStore.getState().setError(err?.message || 'Failed to fetch server dashboard data.')
     } finally {
-      store.setLoading(false)
+      useServerStore.getState().setLoading(false)
     }
-  }
+  }, [])
 
   // Initial Fetch
   useEffect(() => {
     fetchAllData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [fetchAllData])
 
   // Socket Connection Setup
   useEffect(() => {
@@ -249,20 +250,20 @@ export default function ServerBoard() {
     }
 
     const handleJoined = () => {
-      store.setConnected(true)
+      useServerStore.getState().setConnected(true)
     }
 
     const handleError = () => {
-      store.setConnected(false)
+      useServerStore.getState().setConnected(false)
     }
 
     const handleWaiterAssignmentRequest = (payload: WaiterAssignmentRequest) => {
-      store.addAssignmentRequest(payload)
+      useServerStore.getState().addAssignmentRequest(payload)
       addToast(`New assignment request Table ${payload.tableNumber}`, 'assistance', `waiter:assignment_request:${payload.requestId}`)
     }
 
     const handleWaiterAssignmentAccepted = (payload: { sessionId: string; tableNumber: string; acceptedBy: string; waiterId?: string; isYours?: boolean }) => {
-      store.removeAssignmentRequest(payload.sessionId)
+      useServerStore.getState().removeAssignmentRequest(payload.sessionId)
       if (payload.waiterId === user?.id || payload.isYours) {
         fetchAllData()
         addToast(`Table ${payload.tableNumber} assigned to you`, 'ready', `waiter:assignment_accepted:${payload.sessionId}`)
@@ -283,8 +284,9 @@ export default function ServerBoard() {
         assignedWaiterId: payload.assignedWaiterId ?? null,
         assignedWaiterName: payload.assignedWaiterName ?? null
       }
-      store.addReadyOrder(newOrder)
-      store.removeInProgressOrder(payload.orderId)
+      const currentStore = useServerStore.getState()
+      currentStore.addReadyOrder(newOrder)
+      currentStore.removeInProgressOrder(payload.orderId)
       addToast(`Order prepared Table ${payload.tableNumber}`, 'ready', `order:prepared:${payload.orderId}`)
     }
 
@@ -300,18 +302,20 @@ export default function ServerBoard() {
         assignedWaiterId: payload.assignedWaiterId ?? null,
         assignedWaiterName: payload.assignedWaiterName ?? null
       }
-      store.addReadyOrder(newOrder)
-      store.removeInProgressOrder(payload.orderId)
+      const currentStore = useServerStore.getState()
+      currentStore.addReadyOrder(newOrder)
+      currentStore.removeInProgressOrder(payload.orderId)
       addToast(`Order ready  Table ${payload.tableNumber}`, 'ready', `order:ready:${payload.orderId}`)
     }
 
     const handleOrderStatusUpdated = (payload: { orderId: string; status: string; assignedKitchenName?: string | null }) => {
+      const currentStore = useServerStore.getState()
       if (payload.status === 'DELIVERED') {
-        store.removeReadyOrder(payload.orderId)
+        currentStore.removeReadyOrder(payload.orderId)
       } else if (payload.status === 'CANCELLED') {
-        store.removeInProgressOrder(payload.orderId)
+        currentStore.removeInProgressOrder(payload.orderId)
       } else {
-        store.updateInProgressOrder(payload.orderId, {
+        currentStore.updateInProgressOrder(payload.orderId, {
           status: payload.status as any,
           ...(payload.assignedKitchenName ? { assignedKitchenName: payload.assignedKitchenName } : {})
         })
@@ -328,10 +332,11 @@ export default function ServerBoard() {
         createdAt: payload.createdAt,
         resolvedAt: null
       }
-      store.addAssistanceRequest(newRequest)
+      const currentStore = useServerStore.getState()
+      currentStore.addAssistanceRequest(newRequest)
 
       if (payload.requestType === 'BILL' && payload.payment) {
-        store.addPendingPayment({
+        currentStore.addPendingPayment({
           id: payload.payment.paymentId,
           sessionId: payload.sessionId,
           tableNumber: payload.tableNumber,
@@ -355,13 +360,14 @@ export default function ServerBoard() {
     }
 
     const handleAssistanceResolved = (payload: AssistanceResolvedSocketPayload) => {
-      store.resolveAssistanceRequest(payload.requestId)
+      useServerStore.getState().resolveAssistanceRequest(payload.requestId)
     }
 
     const handlePaymentBillRequested = (payload: PaymentBillRequestedPayload) => {
-      const exists = store.pendingPayments.some((p) => p.id === payload.paymentId)
+      const currentStore = useServerStore.getState()
+      const exists = currentStore.pendingPayments.some((p) => p.id === payload.paymentId)
       if (!exists) {
-        store.addPendingPayment({
+        currentStore.addPendingPayment({
           id: payload.paymentId,
           sessionId: payload.sessionId,
           tableNumber: payload.tableNumber,
@@ -374,7 +380,7 @@ export default function ServerBoard() {
     }
 
     const handlePaymentCompleted = (payload: PaymentCompletedPayload) => {
-      store.removePendingPayment(payload.paymentId)
+      useServerStore.getState().removePendingPayment(payload.paymentId)
       addToast(` Payment confirmed  Table ${payload.tableNumber}`, 'payment', `payment:completed:${payload.paymentId}`)
     }
 
@@ -383,46 +389,48 @@ export default function ServerBoard() {
       assignedWaiterId: string
       assignedWaiterName: string
     }) => {
-      store.updateReadyOrder(payload.orderId, {
+      useServerStore.getState().updateReadyOrder(payload.orderId, {
         assignedWaiterId: payload.assignedWaiterId,
         assignedWaiterName: payload.assignedWaiterName
       })
     }
 
     const handleReleased = (payload: { orderId: string; role: string; status: string }) => {
+      const currentStore = useServerStore.getState()
       if (payload.role === 'SERVER') {
-        store.updateReadyOrder(payload.orderId, {
+        currentStore.updateReadyOrder(payload.orderId, {
           assignedWaiterId: null,
           assignedWaiterName: null
         })
       } else if (payload.role === 'KITCHEN') {
-        store.removeReadyOrder(payload.orderId)
+        currentStore.removeReadyOrder(payload.orderId)
       }
     }
 
     const handleNewOrder = (payload: InProgressOrder) => {
-      const isMyTable = store.myTables.some(t => t.sessionId === payload.sessionId)
+      const currentStore = useServerStore.getState()
+      const isMyTable = currentStore.myTables.some(t => t.sessionId === payload.sessionId)
       if (isMyTable) {
-        store.addInProgressOrder(payload)
+        currentStore.addInProgressOrder(payload)
         addToast(`New order placed Table ${payload.tableNumber}`, 'ready')
       }
     }
 
     const handleOrderItemsUpdated = (payload: { orderId: string; items: ReadyOrderItem[]; subtotal: number }) => {
-      store.updateInProgressOrder(payload.orderId, {
+      useServerStore.getState().updateInProgressOrder(payload.orderId, {
         items: payload.items,
         subtotal: payload.subtotal
       })
     }
 
     const handleConnect = () => {
-      store.setConnected(true)
+      useServerStore.getState().setConnected(true)
       joinServer()
       fetchAllData()
     }
 
     const handleDisconnect = () => {
-      store.setConnected(false)
+      useServerStore.getState().setConnected(false)
     }
 
     // Join Server room
@@ -465,8 +473,7 @@ export default function ServerBoard() {
       socket.off('connect', handleConnect)
       socket.off('disconnect', handleDisconnect)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [socket, token])
+  }, [addToast, fetchAllData, socket, token, user?.id])
 
   // Actions Handlers
   const handleDeliver = async (orderId: string) => {
