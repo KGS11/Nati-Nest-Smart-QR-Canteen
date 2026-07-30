@@ -1,9 +1,17 @@
 const getEnv = () => {
   if (typeof window !== "undefined") {
     const origin = window.location.origin;
+
+    // NEXT_PUBLIC_* vars are inlined at build time by Next.js, so they are
+    // available in the browser via process.env.  We must honour them because
+    // the Socket.IO server lives on a different port (Express backend) and
+    // the Next.js rewrite proxy only handles HTTP — not WebSocket upgrades.
+    const socketUrl =
+      process.env.NEXT_PUBLIC_SOCKET_URL || origin;
+
     return {
-      apiUrl: `${origin}/api`,
-      socketUrl: origin,
+      apiUrl: `${origin}/api`,   // proxied through Next.js rewrites
+      socketUrl,                  // direct connection to Express backend
       appUrl: origin,
     };
   }

@@ -9,8 +9,10 @@ interface AuthState {
   refreshToken: string | null;
   user: User | null;
   isAuthenticated: boolean;
+  hasHydrated: boolean;
   login: (token: string, user: User, refreshToken?: string | null) => void;
   logout: () => void;
+  setHasHydrated: (hasHydrated: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -20,9 +22,11 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       user: null,
       isAuthenticated: false,
+      hasHydrated: false,
       login: (token, user, refreshToken = null) =>
         set({ token, refreshToken, user, isAuthenticated: true }),
       logout: () => set({ token: null, refreshToken: null, user: null, isAuthenticated: false }),
+      setHasHydrated: (hasHydrated) => set({ hasHydrated }),
     }),
     {
       name: "nati-nest-staff-auth",
@@ -30,6 +34,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
+        refreshToken: state.refreshToken,
       }),
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<AuthState> | undefined;
@@ -39,8 +44,12 @@ export const useAuthStore = create<AuthState>()(
           user: persisted?.user ?? null,
           isAuthenticated: Boolean(persisted?.isAuthenticated && persisted?.user),
           token: null,
-          refreshToken: null,
+          refreshToken: persisted?.refreshToken ?? null,
+          hasHydrated: false,
         };
+      },
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
       },
     },
   ),

@@ -13,25 +13,20 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
-  const { user, isAuthenticated, token, login, logout } = useAuthStore();
+  const { user, isAuthenticated, token, refreshToken, hasHydrated, login, logout } = useAuthStore();
   const router = useRouter();
-  const [hasMounted, setHasMounted] = useState(false);
   const [isRestoringSession, setIsRestoringSession] = useState(false);
   const allowedRoleKey = useMemo(() => allowedRoles.join(","), [allowedRoles]);
 
   useEffect(() => {
-    setHasMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hasMounted) return;
+    if (!hasHydrated) return;
 
     if (isAuthenticated && !token) {
       let isActive = true;
 
       setIsRestoringSession(true);
       apiClient
-        .post("/auth/refresh", {})
+        .post("/auth/refresh", { refreshToken })
         .then((response) => {
           if (!isActive) return;
           const { token: refreshedToken, refreshToken, user: refreshedUser } = response.data.data;
@@ -51,6 +46,7 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
     }
 
     if (!token || !isAuthenticated) {
+      setIsRestoringSession(false);
       router.replace("/login");
       return;
     }
@@ -61,9 +57,16 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
       else if (user.role === Role.SERVER) router.replace("/server");
       else router.replace("/login");
     }
-  }, [hasMounted, isAuthenticated, token, user, allowedRoleKey, allowedRoles, router, login, logout]);
+  }, [hasHydrated, isAuthenticated, token, user, allowedRoleKey, allowedRoles, router, login, logout]);
 
-  if (!hasMounted || isRestoringSession || !isAuthenticated || !user || !allowedRoles.includes(user.role)) {
+  if (
+    !hasHydrated ||
+    isRestoringSession ||
+    !isAuthenticated ||
+    !token ||
+    !user ||
+    !allowedRoles.includes(user.role)
+  ) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-surface-base text-text-primary">
         <Loader label="Verifying authorization..." />
