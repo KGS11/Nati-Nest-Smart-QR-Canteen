@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
 const isProduction = process.env.NODE_ENV === "production";
-const productionAppUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://yourdomain.com";
-const productionApiUrl = process.env.NEXT_PUBLIC_API_URL ?? `${productionAppUrl}/api`;
-const productionSocketUrl = process.env.NEXT_PUBLIC_SOCKET_URL ?? productionAppUrl;
+const productionAppUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://nati-nest-smart-qr-canteen.vercel.app";
+const productionBackendUrl = "https://nati-nest-smart-qr-canteen-production.up.railway.app";
+const productionApiUrl = process.env.NEXT_PUBLIC_API_URL ?? `${productionBackendUrl}/api`;
+const productionSocketUrl = process.env.NEXT_PUBLIC_SOCKET_URL ?? productionApiUrl.replace(/\/api\/?$/, "");
 const developmentBackendUrl = "http://localhost:5000";
 const backendBase = (isProduction ? productionApiUrl : (process.env.NEXT_PUBLIC_API_URL ?? `${developmentBackendUrl}/api`)).replace(
   /\/api\/?$/,

@@ -1,30 +1,31 @@
+const productionAppUrl = "https://nati-nest-smart-qr-canteen.vercel.app";
+const productionBackendUrl = "https://nati-nest-smart-qr-canteen-production.up.railway.app";
+
+const stripApiSuffix = (url: string) => url.replace(/\/api\/?$/, "");
+
 const getEnv = () => {
   if (typeof window !== "undefined") {
     const origin = window.location.origin;
-
-    // NEXT_PUBLIC_* vars are inlined at build time by Next.js, so they are
-    // available in the browser via process.env.  We must honour them because
-    // the Socket.IO server lives on a different port (Express backend) and
-    // the Next.js rewrite proxy only handles HTTP — not WebSocket upgrades.
+    const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL;
     const socketUrl =
-      process.env.NEXT_PUBLIC_SOCKET_URL || origin;
+      process.env.NEXT_PUBLIC_SOCKET_URL ||
+      (configuredApiUrl ? stripApiSuffix(configuredApiUrl) : productionBackendUrl);
 
     return {
-      apiUrl: `${origin}/api`,   // proxied through Next.js rewrites
-      socketUrl,                  // direct connection to Express backend
+      apiUrl: `${origin}/api`,
+      socketUrl,
       appUrl: origin,
     };
   }
 
-  const productionOrigin = "https://yourdomain.com";
   const developmentOrigin = "http://localhost:3000";
   const developmentBackend = "http://localhost:5000";
-  const fallbackOrigin = process.env.NODE_ENV === "production" ? productionOrigin : developmentOrigin;
-  const fallbackBackend = process.env.NODE_ENV === "production" ? productionOrigin : developmentBackend;
+  const fallbackOrigin = process.env.NODE_ENV === "production" ? productionAppUrl : developmentOrigin;
+  const fallbackBackend = process.env.NODE_ENV === "production" ? productionBackendUrl : developmentBackend;
 
   return {
     apiUrl: process.env.NEXT_PUBLIC_API_URL || `${fallbackBackend}/api`,
-    socketUrl: process.env.NEXT_PUBLIC_SOCKET_URL || fallbackBackend,
+    socketUrl: process.env.NEXT_PUBLIC_SOCKET_URL || stripApiSuffix(process.env.NEXT_PUBLIC_API_URL || fallbackBackend),
     appUrl: process.env.NEXT_PUBLIC_APP_URL || fallbackOrigin,
   };
 };
