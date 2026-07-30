@@ -1,126 +1,275 @@
-async login(phone: string, password: string) {
-  try {
-    console.log("[LOGIN] STEP 1 - Login request received", { phone });
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import jwt, { SignOptions } from "jsonwebtoken";
+import { User } from "@prisma/client";
+import { prisma } from "../config/db";
+import { AppError } from "../utils/AppError";
+import { getStaffJwtSecret, staffSignOptions } from "../utils/jwt.utils";
 
-    const user = await prisma.user.findUnique({
-      where: { phone },
-    });
+const REFRESH_TOKEN_EXPIRATION_DAYS = 30;
 
-    console.log("[LOGIN] STEP 2 - User lookup completed", {
-      found: !!user,
-      userId: user?.id,
-    });
+export class AuthService {
+  private hashToken(rawToken: string): string {
+    return crypto.createHash("sha256").update(rawToken).digest("hex");
+  }
 
-    if (!user) {
-      throw new AppError("Invalid credentials", 401);
-    }
-
-    console.log("[LOGIN] STEP 3 - User is active check");
-
-    if (!user.isActive) {
-      throw new AppError("Account inactive", 401);
-    }
-
-    console.log("[LOGIN] STEP 4 - Lock check");
-
-    if (user.lockUntil && user.lockUntil > new Date()) {
-      const remainingMs = user.lockUntil.getTime() - Date.now();
-      const remainingMin = Math.ceil(remainingMs / (60 * 1000));
-
-      throw new AppError(
-        `Too many failed attempts. Please try again in ${remainingMin} minute${remainingMin > 1 ? "s" : ""}.`,
-        401
-      );
-    }
-
-    console.log("[LOGIN] STEP 5 - Before bcrypt.compare");
-
-    const isPasswordValid = await bcrypt.compare(
-      password,
-      user.passwordHash
+  private createAccessToken(user: { id: string; role: string; name: string }): string {
+    const secret = getStaffJwtSecret();
+    const expiresIn = (process.env.JWT_EXPIRES_IN ?? "15m") as SignOptions["expiresIn"];
+    return jwt.sign(
+      {
+        userId: user.id,
+        role: user.role,
+        name: user.name,
+      },
+      secret,
+      staffSignOptions(expiresIn)
     );
+  }
 
-    console.log("[LOGIN] STEP 6 - Password compared", {
-      valid: isPasswordValid,
+  private async createRefreshToken(userId: string, familyId?: string): Promise<string> {
+    const rawToken = crypto.randomBytes(40).toString("hex");
+    const tokenHash = this.hashToken(rawToken);
+    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_EXPIRATION_DAYS * 24 * 60 * 60 * 1000);
+
+    await prisma.refreshToken.create({
+      data: {
+        userId,
+        tokenHash,
+        familyId: familyId ?? crypto.randomUUID(),
+        expiresAt,
+      },
     });
 
-    if (!isPasswordValid) {
-      const newFailedAttempts = user.failedAttempts + 1;
-      let lockUntil: Date | null = null;
+    return rawToken;
+  }
 
-      if (newFailedAttempts >= 15) {
-        lockUntil = new Date(Date.now() + 15 * 60 * 1000);
-      } else if (newFailedAttempts >= 10) {
-        lockUntil = new Date(Date.now() + 5 * 60 * 1000);
-      } else if (newFailedAttempts >= 5) {
-        lockUntil = new Date(Date.now() + 1 * 60 * 1000);
-      }
+  async login(phone: string, password: string) {
+    try {
+      console.log("[LOGIN] STEP 1 - Login request received", { phone });
 
-      console.log("[LOGIN] STEP 7 - Updating failed attempts");
-
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          failedAttempts: newFailedAttempts,
-          lastFailedAttempt: new Date(),
-          lockUntil,
-        },
+      const user = await prisma.user.findUnique({
+        where: { phone },
       });
 
-      if (lockUntil) {
-        const lockMin =
-          newFailedAttempts >= 15
-            ? 15
-            : newFailedAttempts >= 10
-            ? 5
-            : 1;
+      console.log("[LOGIN] STEP 2 - User lookup completed", {
+        found: !!user,
+        userId: user?.id,
+      });
+
+      if (!user) {
+        throw new AppError("Invalid credentials", 401);
+      }
+
+      console.log("[LOGIN] STEP 3 - User is active check");
+
+      if (!user.isActive) {
+        throw new AppError("Account inactive", 401);
+      }
+
+      console.log("[LOGIN] STEP 4 - Lock check");
+
+      if (user.lockUntil && user.lockUntil > new Date()) {
+        const remainingMs = user.lockUntil.getTime() - Date.now();
+        const remainingMin = Math.ceil(remainingMs / (60 * 1000));
 
         throw new AppError(
-          `Too many failed attempts. Please try again in ${lockMin} minute${lockMin > 1 ? "s" : ""}.`,
+          `Too many failed attempts. Please try again in ${remainingMin} minute${remainingMin > 1 ? "s" : ""}.`,
           401
         );
       }
 
-      throw new AppError("Invalid credentials", 401);
+      console.log("[LOGIN] STEP 5 - Before bcrypt.compare");
+
+      const isPasswordValid = await bcrypt.compare(
+        password,
+        user.passwordHash
+      );
+
+      console.log("[LOGIN] STEP 6 - Password compared", {
+        valid: isPasswordValid,
+      });
+
+      if (!isPasswordValid) {
+        const newFailedAttempts = user.failedAttempts + 1;
+        let lockUntil: Date | null = null;
+
+        if (newFailedAttempts >= 15) {
+          lockUntil = new Date(Date.now() + 15 * 60 * 1000);
+        } else if (newFailedAttempts >= 10) {
+          lockUntil = new Date(Date.now() + 5 * 60 * 1000);
+        } else if (newFailedAttempts >= 5) {
+          lockUntil = new Date(Date.now() + 1 * 60 * 1000);
+        }
+
+        console.log("[LOGIN] STEP 7 - Updating failed attempts");
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            failedAttempts: newFailedAttempts,
+            lastFailedAttempt: new Date(),
+            lockUntil,
+          },
+        });
+
+        if (lockUntil) {
+          const lockMin =
+            newFailedAttempts >= 15
+              ? 15
+              : newFailedAttempts >= 10
+              ? 5
+              : 1;
+
+          throw new AppError(
+            `Too many failed attempts. Please try again in ${lockMin} minute${lockMin > 1 ? "s" : ""}.`,
+            401
+          );
+        }
+
+        throw new AppError("Invalid credentials", 401);
+      }
+
+      console.log("[LOGIN] STEP 8 - Reset failed attempts if needed");
+
+      if (user.failedAttempts > 0 || user.lockUntil || user.lastFailedAttempt) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            failedAttempts: 0,
+            lastFailedAttempt: null,
+            lockUntil: null,
+          },
+        });
+      }
+
+      console.log("[LOGIN] STEP 9 - Creating JWT");
+
+      const token = this.createAccessToken(user);
+
+      console.log("[LOGIN] STEP 10 - JWT created");
+
+      console.log("[LOGIN] STEP 11 - Creating refresh token");
+
+      const refreshToken = await this.createRefreshToken(user.id);
+
+      console.log("[LOGIN] STEP 12 - Refresh token created");
+
+      return {
+        token,
+        refreshToken,
+        user: {
+          id: user.id,
+          name: user.name,
+          phone: user.phone,
+          role: user.role,
+        },
+      };
+    } catch (error) {
+      console.error("[LOGIN] ERROR:", error);
+      throw error;
+    }
+  }
+
+  async refresh(refreshToken: string) {
+    const tokenHash = this.hashToken(refreshToken);
+
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
+
+    if (!storedToken) {
+      throw new AppError("Invalid refresh token", 401);
     }
 
-    console.log("[LOGIN] STEP 8 - Reset failed attempts if needed");
+    if (storedToken.revokedAt) {
+      // Security measure: revoke all tokens in family on reuse detection
+      await prisma.refreshToken.updateMany({
+        where: { familyId: storedToken.familyId },
+        data: { revokedAt: new Date() },
+      });
+      throw new AppError("Refresh token revoked", 401);
+    }
 
-    if (user.failedAttempts > 0 || user.lockUntil || user.lastFailedAttempt) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          failedAttempts: 0,
-          lastFailedAttempt: null,
-          lockUntil: null,
-        },
+    if (storedToken.expiresAt < new Date()) {
+      throw new AppError("Refresh token expired", 401);
+    }
+
+    if (!storedToken.user.isActive) {
+      throw new AppError("Account inactive", 401);
+    }
+
+    // Revoke old token
+    await prisma.refreshToken.update({
+      where: { id: storedToken.id },
+      data: { revokedAt: new Date() },
+    });
+
+    // Create new token pair in the same family
+    const newToken = this.createAccessToken(storedToken.user);
+    const newRefreshToken = await this.createRefreshToken(
+      storedToken.userId,
+      storedToken.familyId
+    );
+
+    return {
+      token: newToken,
+      refreshToken: newRefreshToken,
+      user: {
+        id: storedToken.user.id,
+        name: storedToken.user.name,
+        phone: storedToken.user.phone,
+        role: storedToken.user.role,
+      },
+    };
+  }
+
+  async logout(refreshToken: string) {
+    const tokenHash = this.hashToken(refreshToken);
+
+    const storedToken = await prisma.refreshToken.findUnique({
+      where: { tokenHash },
+    });
+
+    if (storedToken) {
+      await prisma.refreshToken.updateMany({
+        where: { familyId: storedToken.familyId },
+        data: { revokedAt: new Date() },
       });
     }
 
-    console.log("[LOGIN] STEP 9 - Creating JWT");
+    return { success: true };
+  }
 
-    const token = this.createAccessToken(user);
+  async logoutAll(userId: string) {
+    await prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
 
-    console.log("[LOGIN] STEP 10 - JWT created");
+    return { success: true };
+  }
 
-    console.log("[LOGIN] STEP 11 - Creating refresh token");
-
-    const refreshToken = await this.createRefreshToken(user.id);
-
-    console.log("[LOGIN] STEP 12 - Refresh token created");
-
-    return {
-      token,
-      refreshToken,
-      user: {
-        id: user.id,
-        name: user.name,
-        phone: user.phone,
-        role: user.role,
+  async me(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        role: true,
+        isActive: true,
+        createdAt: true,
       },
-    };
-  } catch (error) {
-    console.error("[LOGIN] ERROR:", error);
-    throw error;
+    });
+
+    if (!user || !user.isActive) {
+      throw new AppError("User not found or inactive", 404);
+    }
+
+    return user;
   }
 }
+
+export const authService = new AuthService();
