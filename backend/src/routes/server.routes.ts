@@ -3,11 +3,20 @@ import { Router } from "express";
 import { serverController } from "../controllers/server.controller";
 import { authenticate } from "../middlewares/authenticate";
 import { authorize } from "../middlewares/authorize";
+import { uploadImage } from "../middlewares/upload";
 
 const router = Router();
 
 router.use(authenticate, authorize(Role.SERVER, Role.ADMIN));
 
+router.get("/payment-qr", authorize(Role.SERVER), serverController.getMyPaymentQr.bind(serverController));
+router.post(
+  "/payment-qr",
+  authorize(Role.SERVER),
+  uploadImage,
+  serverController.uploadMyPaymentQr.bind(serverController),
+);
+router.delete("/payment-qr", authorize(Role.SERVER), serverController.deleteMyPaymentQr.bind(serverController));
 router.get("/orders/ready", serverController.getReadyOrders.bind(serverController));
 router.get("/orders/in-progress", serverController.getInProgressOrders.bind(serverController));
 router.patch("/orders/:orderId/claim", serverController.claimDelivery.bind(serverController));

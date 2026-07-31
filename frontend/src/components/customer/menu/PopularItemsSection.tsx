@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { MenuItem } from "@/types/domain";
 import { useCart } from "@/hooks/useCart";
 import { getValidImageUrl } from "@/utils/imageUrl";
+import { useState } from "react";
 
 interface PopularItemsSectionProps {
   items: MenuItem[];
@@ -39,13 +39,7 @@ export function PopularItemsSection({ items }: PopularItemsSectionProps) {
               className="w-36 flex-shrink-0 bg-surface-raised border border-border-default rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm"
             >
               <div className="relative h-32 w-full bg-surface-base">
-                <Image
-                  src={getValidImageUrl(item.imageUrl) || fallbackImage}
-                  alt={item.name}
-                  fill
-                  sizes="144px"
-                  className="object-cover"
-                />
+                <PopularItemImage item={item} />
               </div>
 
               <div className="p-3 flex-1 flex flex-col justify-between">
@@ -93,5 +87,19 @@ export function PopularItemsSection({ items }: PopularItemsSectionProps) {
         })}
       </div>
     </div>
+  );
+}
+
+function PopularItemImage({ item }: { item: MenuItem }) {
+  const [imageSrc, setImageSrc] = useState(getValidImageUrl(item.imageUrl) || fallbackImage);
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={imageSrc}
+      alt={item.name}
+      onError={() => setImageSrc(fallbackImage)}
+      className="h-full w-full object-cover"
+    />
   );
 }

@@ -22,6 +22,7 @@ import { OrderCardSkeleton } from '@/components/ui/Skeleton'
 import { MaterialIcon } from '@/components/stitch/MaterialIcon'
 import TipsReportModal from './TipsReportModal'
 import { AssignmentRequestBanner } from './AssignmentRequestBanner'
+import MyPaymentQrDialog from './MyPaymentQrDialog'
 
 import {
   ReadyOrder,
@@ -179,6 +180,8 @@ export default function ServerBoard() {
   const [toasts, setToasts] = useState<ActiveToast[]>([])
   const [activeMobileTab, setActiveMobileTab] = useState<'incoming' | 'requests' | 'deliver' | 'payments'>('requests')
   const [isTipsOpen, setIsTipsOpen] = useState(false)
+  const [isPaymentQrOpen, setIsPaymentQrOpen] = useState(false)
+  const [paymentQrVersion, setPaymentQrVersion] = useState(0)
   const recentToastIds = useRef<Set<string>>(new Set())
 
   const isDuplicateToast = useCallback((eventId: string) => {
@@ -566,6 +569,14 @@ export default function ServerBoard() {
           <Button
             type="button"
             variant="secondary"
+            onClick={() => setIsPaymentQrOpen(true)}
+            className="min-h-10 text-xs bg-surface-overlay hover:bg-neutral-800 text-text-primary font-bold"
+          >
+            My Payment QR
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
             onClick={() => setIsTipsOpen(true)}
             className="min-h-10 text-xs bg-accent-500 hover:bg-accent-400 text-surface-base border-0 font-bold"
           >
@@ -859,6 +870,18 @@ export default function ServerBoard() {
           onClose={store.closeModal}
           onVerified={handlePaymentVerified}
           onError={(msg) => addToast(msg, 'error')}
+          onUploadMyQr={() => setIsPaymentQrOpen(true)}
+          paymentQrVersion={paymentQrVersion}
+        />
+      )}
+
+      {isPaymentQrOpen && (
+        <MyPaymentQrDialog
+          onClose={() => setIsPaymentQrOpen(false)}
+          onChanged={() => {
+            setPaymentQrVersion((version) => version + 1)
+            addToast('Payment QR updated', 'ready')
+          }}
         />
       )}
 

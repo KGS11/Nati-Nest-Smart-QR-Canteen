@@ -80,6 +80,7 @@ model User {
   failedAttempts Int    @default(0)
   lastFailedAttempt DateTime?
   lockUntil    DateTime?
+  paymentQrUrl String?  @map("payment_qr_url")
   createdAt    DateTime @default(now())
 
   paymentsVerified   Payment[]                @relation("VerifiedBy")

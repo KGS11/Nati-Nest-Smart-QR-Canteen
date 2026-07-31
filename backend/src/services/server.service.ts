@@ -12,6 +12,11 @@ import { AppError } from "../utils/AppError";
 import { notifyWaiter } from "../utils/notification.util";
 import { logger } from "../config/logger";
 import { buildBillSummary, paymentService } from "./payment.service";
+import {
+  deleteCloudinaryImage,
+  extractCloudinaryPublicId,
+  uploadImageBuffer,
+} from "../utils/cloudinary.utils";
 
 type ServerOrder = Awaited<ReturnType<typeof serverOrderById>>;
 
@@ -100,6 +105,71 @@ const resolvedMessage = (requestType: AssistanceType) => {
 };
 
 export class ServerService {
+  async getMyPaymentQr(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { paymentQrUrl: true },
+    });
+
+    if (!user) {
+      throw new AppError("Staff member not found", 404);
+    }
+
+    return { paymentQrUrl: user.paymentQrUrl ?? "" };
+  }
+
+  async updateMyPaymentQr(userId: string, imageFile: Express.Multer.File) {
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { paymentQrUrl: true },
+    });
+
+    if (!existing) {
+      throw new AppError("Staff member not found", 404);
+    }
+
+    const paymentQrUrl = await uploadImageBuffer(imageFile.buffer, "natinest/server-payment-qrs");
+
+    if (existing.paymentQrUrl) {
+      const publicId = extractCloudinaryPublicId(existing.paymentQrUrl);
+      if (publicId) {
+        void deleteCloudinaryImage(publicId);
+      }
+    }
+
+    return prisma.user.update({
+      where: { id: userId },
+      data: { paymentQrUrl },
+      select: { paymentQrUrl: true },
+    });
+  }
+
+  async deleteMyPaymentQr(userId: string) {
+    const existing = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { paymentQrUrl: true },
+    });
+
+    if (!existing) {
+      throw new AppError("Staff member not found", 404);
+    }
+
+    if (existing.paymentQrUrl) {
+      const publicId = extractCloudinaryPublicId(existing.paymentQrUrl);
+      if (publicId) {
+        void deleteCloudinaryImage(publicId);
+      }
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { paymentQrUrl: null },
+      select: { id: true },
+    });
+
+    return { paymentQrUrl: "" };
+  }
+
   async getReadyOrders(userId?: string, own: boolean = true) {
     try {
       const whereClause: any = {

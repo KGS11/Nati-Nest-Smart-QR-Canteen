@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { useState } from "react";
 import { MenuItem } from "@/types/domain";
 import { cn } from "@/utils/cn";
 import { getValidImageUrl } from "@/utils/imageUrl";
@@ -26,6 +26,7 @@ export function MenuItemCard({
 }: MenuItemCardProps) {
   const isAvailable = item.isAvailable;
   const isPopular = item.isPopular;
+  const [imageSrc, setImageSrc] = useState(getValidImageUrl(item.imageUrl) || fallbackImage);
 
   return (
     <div
@@ -42,13 +43,13 @@ export function MenuItemCard({
           "md:w-full md:h-40"
         )}
       >
-        <Image
-          src={getValidImageUrl(item.imageUrl) || fallbackImage}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imageSrc}
           alt={item.name}
-          fill
-          sizes="(max-width: 768px) 96px, 250px"
+          onError={() => setImageSrc(fallbackImage)}
           className={cn(
-            "object-cover transition-all duration-300",
+            "absolute inset-0 h-full w-full object-cover transition-all duration-300",
             !isAvailable && "grayscale opacity-60"
           )}
         />

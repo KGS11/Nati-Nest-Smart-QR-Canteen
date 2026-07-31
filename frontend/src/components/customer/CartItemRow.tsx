@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { CartItem } from "@/stores/cartStore";
 import { SpecialInstructionsModal } from "./SpecialInstructionsModal";
 import { MaterialIcon } from "@/components/stitch/MaterialIcon";
@@ -22,17 +21,18 @@ export function CartItemRow({
   onRemove,
 }: CartItemRowProps) {
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [imageSrc, setImageSrc] = useState(getValidImageUrl(item.imageUrl));
 
   return (
     <div className="flex gap-3 py-3 border-b border-border-default last:border-0">
-      {item.imageUrl ? (
+      {imageSrc ? (
         <div className="relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 bg-surface-raised">
-          <Image
-            src={getValidImageUrl(item.imageUrl)!}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={imageSrc}
             alt={item.name}
-            fill
-            sizes="64px"
-            className="object-cover"
+            onError={() => setImageSrc(null)}
+            className="h-full w-full object-cover"
           />
         </div>
       ) : (

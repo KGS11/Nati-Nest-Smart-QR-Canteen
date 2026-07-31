@@ -12,6 +12,8 @@ interface PaymentVerificationModalProps {
   onClose: () => void
   onVerified: (paymentId: string) => void
   onError?: (message: string) => void
+  onUploadMyQr?: () => void
+  paymentQrVersion?: number
 }
 
 export default function PaymentVerificationModal({
@@ -19,7 +21,9 @@ export default function PaymentVerificationModal({
   tableNumber,
   onClose,
   onVerified,
-  onError
+  onError,
+  onUploadMyQr,
+  paymentQrVersion = 0
 }: PaymentVerificationModalProps) {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null)
   const [isVerifying, setIsVerifying] = useState(false)
@@ -34,13 +38,13 @@ export default function PaymentVerificationModal({
         setIsLoadingQr(true)
         setLocalError(null)
         try {
-          const res = await apiClient.get('/settings/upi-qr')
+          const res = await apiClient.get('/server/payment-qr')
           if (!active) return
-          const qrUrl = res.data?.data?.upiQrUrl || res.data?.upiQrUrl || ''
+          const qrUrl = res.data?.data?.paymentQrUrl || ''
           setUpiQrUrl(getValidImageUrl(qrUrl))
         } catch (err: any) {
           if (!active) return
-          setLocalError('Failed to load UPI QR code.')
+          setLocalError('Failed to load personal payment QR.')
         } finally {
           if (active) setIsLoadingQr(false)
         }
@@ -50,7 +54,7 @@ export default function PaymentVerificationModal({
     return () => {
       active = false
     }
-  }, [selectedMethod])
+  }, [selectedMethod, paymentQrVersion])
 
   const handleVerify = async () => {
     if (!selectedMethod) return
@@ -138,13 +142,25 @@ export default function PaymentVerificationModal({
                   className="w-48 h-48 mx-auto bg-white p-2 rounded-lg border border-border-primary"
                 />
                 <p className="text-xs text-text-secondary mt-1">
-                  Ask customer to scan and pay
+                  Ask customer to scan your QR and pay
                 </p>
               </div>
             ) : (
-              <p className="text-red-400 text-sm font-medium py-4">
-                UPI QR not configured. Contact admin.
-              </p>
+              <div className="py-4 flex flex-col items-center gap-3">
+                <p className="text-text-secondary text-sm font-medium">
+                  No personal payment QR uploaded.
+                </p>
+                <button
+                  type="button"
+                  onClick={onUploadMyQr}
+                  className="px-4 py-2 rounded-lg bg-accent-500 hover:bg-accent-400 text-surface-base text-sm font-bold border-0 cursor-pointer"
+                >
+                  Upload My QR
+                </button>
+                <p className="text-xs text-text-tertiary max-w-xs">
+                  You can still collect online payment outside the application and continue verification.
+                </p>
+              </div>
             )}
           </div>
         )}
@@ -169,7 +185,7 @@ export default function PaymentVerificationModal({
           <button
             type="button"
             onClick={handleVerify}
-            disabled={!selectedMethod || isVerifying || (selectedMethod === 'UPI' && !upiQrUrl && !isLoadingQr)}
+            disabled={!selectedMethod || isVerifying}
             className="w-full py-3 bg-accent-500 hover:bg-accent-400 text-surface-base font-bold rounded-xl transition-colors text-center text-sm shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isVerifying ? (

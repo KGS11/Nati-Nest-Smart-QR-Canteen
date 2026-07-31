@@ -17,6 +17,51 @@ const param = (request: Request, key: string) => {
 };
 
 export class ServerController {
+  async getMyPaymentQr(request: Request, response: Response, next: NextFunction) {
+    try {
+      const qr = await serverService.getMyPaymentQr(request.user!.userId);
+      return response.status(200).json({
+        success: true,
+        data: qr,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async uploadMyPaymentQr(request: Request, response: Response, next: NextFunction) {
+    try {
+      if (!request.file) {
+        return response.status(400).json({
+          success: false,
+          message: "Image file is required",
+        });
+      }
+
+      const qr = await serverService.updateMyPaymentQr(request.user!.userId, request.file);
+      return response.status(200).json({
+        success: true,
+        message: "Payment QR updated successfully",
+        data: qr,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async deleteMyPaymentQr(request: Request, response: Response, next: NextFunction) {
+    try {
+      const qr = await serverService.deleteMyPaymentQr(request.user!.userId);
+      return response.status(200).json({
+        success: true,
+        message: "Payment QR deleted successfully",
+        data: qr,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async getReadyOrders(request: Request, response: Response, next: NextFunction) {
     try {
       const own = request.user!.role === "ADMIN" ? request.query.own !== "false" : true;
