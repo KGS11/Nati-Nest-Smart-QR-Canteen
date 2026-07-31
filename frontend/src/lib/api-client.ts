@@ -4,6 +4,12 @@ import { useAuthStore } from "@/stores/authStore";
 import { useSessionStore } from "@/stores/sessionStore";
 import { ApiErrorResponse, ClientApiError } from "@/types/api";
 
+type TimedRequestConfig = InternalAxiosRequestConfig & {
+  metadata?: {
+    startedAt: number;
+  };
+};
+
 export const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
@@ -26,6 +32,9 @@ const isCustomerPath = (config: InternalAxiosRequestConfig): boolean => {
 // Dynamically resolve the baseURL per request so that opening via Wi-Fi IP
 // or localhost both route correctly to the backend on port 5000.
 apiClient.interceptors.request.use((config) => {
+  (config as TimedRequestConfig).metadata = {
+    startedAt: performance.now(),
+  };
   if (!config.baseURL) {
     config.baseURL = env.apiUrl;
   }
@@ -61,8 +70,34 @@ apiClient.interceptors.request.use(
 );
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const config = response.config as TimedRequestConfig;
+    const startedAt = config.metadata?.startedAt;
+    if (startedAt) {
+      console.debug("perf:api", {
+        method: config.method?.toUpperCase(),
+        url: config.url,
+        status: response.status,
+        durationMs: Math.round(performance.now() - startedAt),
+        serverResponseTime: response.headers["x-response-time"] ?? null,
+        requestId: response.headers["x-request-id"] ?? null,
+      });
+    }
+    return response;
+  },
   async (error: AxiosError<ApiErrorResponse>) => {
+    const config = error.config as TimedRequestConfig | undefined;
+    const startedAt = config?.metadata?.startedAt;
+    if (startedAt) {
+      console.debug("perf:api", {
+        method: config?.method?.toUpperCase(),
+        url: config?.url,
+        status: error.response?.status ?? null,
+        durationMs: Math.round(performance.now() - startedAt),
+        serverResponseTime: error.response?.headers?.["x-response-time"] ?? null,
+        requestId: error.response?.headers?.["x-request-id"] ?? null,
+      });
+    }
     const status = error.response?.status;
     const message = error.response?.data?.message || "An unexpected error occurred.";
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };

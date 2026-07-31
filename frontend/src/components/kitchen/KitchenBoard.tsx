@@ -114,6 +114,7 @@ export function KitchenBoard() {
   const setLoading = useKitchenStore((s) => s.setLoading);
   const setError = useKitchenStore((s) => s.setError);
   const setOrders = useKitchenStore((s) => s.setOrders);
+  const addOrder = useKitchenStore((s) => s.addOrder);
   const removeOrder = useKitchenStore((s) => s.removeOrder);
   const updateOrderStatus = useKitchenStore((s) => s.updateOrderStatus);
   const setNewOrderAlert = useKitchenStore((s) => s.setNewOrderAlert);
@@ -156,13 +157,27 @@ export function KitchenBoard() {
       setActionError(payload.message || "Kitchen socket error.");
     };
     const handleNewOrder = (payload: OrderNewSocketPayload) => {
+      const socketReceivedAt = performance.now();
       if (!isDuplicateNotification(`order:new:${payload.orderId}`)) {
         setNewOrderAlert({ orderId: payload.orderId, tableNumber: payload.tableNumber });
         playNewOrderAlert();
         setFlashIncoming(true);
         setTimeout(() => setFlashIncoming(false), 500);
       }
-      fetchOrders();
+      const kitchenOrder = toKitchenOrder(payload as unknown as Order);
+      if (kitchenOrder) {
+        addOrder(kitchenOrder);
+        requestAnimationFrame(() => {
+          const emittedAt = typeof payload.emittedAt === "string" ? Date.parse(payload.emittedAt) : null;
+          console.debug("perf:kitchen:order_new", {
+            orderId: payload.orderId,
+            socketReceiveToUiMs: Math.round(performance.now() - socketReceivedAt),
+            emitToReceiveMs: emittedAt ? Math.round(Date.now() - emittedAt) : null,
+          });
+        });
+      } else {
+        fetchOrders();
+      }
     };
     const handleStatusUpdated = (payload: OrderStatusUpdatedPayload & { assignedKitchenId?: string | null; assignedKitchenName?: string | null }) => {
       if (
@@ -249,7 +264,7 @@ export function KitchenBoard() {
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
     };
-  }, [fetchOrders, socket, token, setConnected, setNewOrderAlert, removeOrder, updateOrderStatus]);
+  }, [addOrder, fetchOrders, socket, token, setConnected, setNewOrderAlert, removeOrder, updateOrderStatus]);
 
   useEffect(() => {
     if (!newOrderAlert) return;

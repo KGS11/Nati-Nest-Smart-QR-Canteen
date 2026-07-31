@@ -9,7 +9,7 @@ import { StatePanel } from "@/components/stitch/StatePanel";
 import { useSocket } from "@/hooks/useSocket";
 import { customerService } from "@/services/customerService";
 import { useSessionStore } from "@/stores/sessionStore";
-import { AssistanceType } from "@/types";
+import { AssistanceType, OrderStatus } from "@/types";
 import { ClientApiError } from "@/types/api";
 import { Order } from "@/types/domain";
 
@@ -64,15 +64,48 @@ export default function CustomerTrackPage() {
   useEffect(() => {
     if (!socket) return;
 
+    const updateOrderStatusWithMessage = (
+      text: string,
+      payload: { orderId?: string; acceptedAt?: string; preparingAt?: string; readyAt?: string; deliveredAt?: string },
+      status: Order["status"],
+    ) => {
+      const socketReceivedAt = performance.now();
+      setMessage(text);
+      if (payload.orderId) {
+        setOrders((current) =>
+          current.map((order) =>
+            order.id === payload.orderId
+              ? {
+                  ...order,
+                  status,
+                  acceptedAt: payload.acceptedAt ?? order.acceptedAt,
+                  preparingAt: payload.preparingAt ?? order.preparingAt,
+                  readyAt: payload.readyAt ?? order.readyAt,
+                  deliveredAt: payload.deliveredAt ?? order.deliveredAt,
+                }
+              : order,
+          ),
+        );
+        requestAnimationFrame(() => {
+          console.debug("perf:customer:track_update", {
+            orderId: payload.orderId,
+            status,
+            socketReceiveToUiMs: Math.round(performance.now() - socketReceivedAt),
+          });
+        });
+      } else {
+        loadOrders();
+      }
+    };
     const refreshWithMessage = (text: string) => {
       setMessage(text);
       loadOrders();
     };
-    const accepted = () => refreshWithMessage("Order accepted! Kitchen is on it.");
-    const preparing = () => refreshWithMessage("Your order is being prepared.");
-    const ready = () => refreshWithMessage("Order is ready!");
-    const delivered = () => refreshWithMessage("Enjoy your meal!");
-    const cancelled = (payload: any) => refreshWithMessage(payload.reason ? `Order cancelled: ${payload.reason}` : "Your order was cancelled.");
+    const accepted = (payload: any) => updateOrderStatusWithMessage("Order accepted! Kitchen is on it.", payload, OrderStatus.ACCEPTED);
+    const preparing = (payload: any) => updateOrderStatusWithMessage("Your order is being prepared.", payload, OrderStatus.PREPARING);
+    const ready = (payload: any) => updateOrderStatusWithMessage("Order is ready!", payload, OrderStatus.READY);
+    const delivered = (payload: any) => updateOrderStatusWithMessage("Enjoy your meal!", payload, OrderStatus.DELIVERED);
+    const cancelled = (payload: any) => updateOrderStatusWithMessage(payload.reason ? `Order cancelled: ${payload.reason}` : "Your order was cancelled.", payload, OrderStatus.CANCELLED);
     const itemRejected = (payload: any) => refreshWithMessage(`Item unavailable: ${payload.name}.`);
     const itemCancelled = (payload: any) => refreshWithMessage(`Restaurant adjusted your bill: ${payload.name} cancelled.`);
 

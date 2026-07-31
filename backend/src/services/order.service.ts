@@ -6,6 +6,7 @@ import { AppError } from "../utils/AppError";
 import { notifyWaiter } from "../utils/notification.util";
 import { CreateOrderInput } from "../validators/order.validators";
 import { sessionService } from "./session.service";
+import { logger } from "../config/logger";
 
 type OrderWithRelations = Awaited<ReturnType<typeof findOrderById>>;
 
@@ -133,6 +134,7 @@ export class OrderService {
         }
       }
 
+      const dbStart = Date.now();
       const createdOrder = await prisma.$transaction(async (tx) => {
         const order = await tx.order.create({
           data: {
@@ -174,17 +176,25 @@ export class OrderService {
         });
       }, { timeout: 15000 });
 
+      const dbLatencyMs = Date.now() - dbStart;
       const serializedOrder = serializeOrder(createdOrder);
-      getIo().to(ROOMS.kitchen).emit("order:new", {
+      const committedAt = Date.now();
+      const io = getIo();
+      const kitchenPayload = {
+        ...serializedOrder,
         orderId: serializedOrder.id,
         tableNumber: session.table.tableNumber,
         sessionId,
         itemCount: serializedOrder.itemCount,
         placedAt: serializedOrder.placedAt,
         specialNotes: serializedOrder.specialNotes,
-      });
+        emittedAt: new Date(committedAt).toISOString(),
+      };
+      const socketEmitStart = Date.now();
+      io.to(ROOMS.kitchen).emit("order:new", kitchenPayload);
+      const socketEmitMs = Date.now() - socketEmitStart;
 
-      await notifyWaiter(sessionId, "order:new", {
+      const waiterPayload = {
         id: serializedOrder.id,
         status: serializedOrder.status,
         tableNumber: session.table.tableNumber,
@@ -200,11 +210,32 @@ export class OrderService {
         })),
         subtotal: serializedOrder.totalAmount,
         assignedKitchenName: null,
-      });
+        emittedAt: kitchenPayload.emittedAt,
+      };
 
-      if (!session.assignedWaiterId) {
-        await sessionService.requestWaiterAssignment(sessionId);
-      }
+      void (async () => {
+        try {
+          await notifyWaiter(sessionId, "order:new", waiterPayload);
+
+          if (!session.assignedWaiterId) {
+            await sessionService.requestWaiterAssignment(sessionId);
+          }
+        } catch (error) {
+          logger.error("order:create:post_commit_notification_failed", {
+            sessionId,
+            orderId: serializedOrder.id,
+            error,
+          });
+        }
+      })();
+
+      logger.info("perf:order:create", {
+        sessionId,
+        orderId: serializedOrder.id,
+        dbLatencyMs,
+        dbToSocketEmitMs: socketEmitStart - committedAt,
+        socketEmitMs,
+      });
 
       return serializedOrder;
     } catch (error) {

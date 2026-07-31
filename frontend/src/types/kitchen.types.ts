@@ -37,6 +37,8 @@ export interface OrderNewSocketPayload {
   tableNumber: string;
   placedAt: string;
   itemCount: number;
+  emittedAt?: string;
+  [key: string]: unknown;
 }
 
 export interface OrderStatusUpdatedPayload {

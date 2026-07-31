@@ -10,6 +10,7 @@ import { prisma } from "../config/db";
 import { ROOMS } from "../sockets/rooms";
 import { AppError } from "../utils/AppError";
 import { notifyWaiter } from "../utils/notification.util";
+import { logger } from "../config/logger";
 import { buildBillSummary, paymentService } from "./payment.service";
 
 type ServerOrder = Awaited<ReturnType<typeof serverOrderById>>;
@@ -359,15 +360,37 @@ export class ServerService {
         assignedWaiterName: updatedOrder.assignedWaiterName,
         deliveredBy: staffName,
       };
-      await notifyWaiter(updatedOrder.session.id, "order:status_updated", payload);
-      await notifyWaiter(updatedOrder.session.id, "order:delivered", {
-        orderId: updatedOrder.id,
-        deliveredBy: staffName,
-      });
+      const emittedAt = new Date().toISOString();
+      const socketEmitStart = Date.now();
       getIo().to(ROOMS.session(updatedOrder.session.id)).emit("order:delivered", {
         orderId: updatedOrder.id,
         message: "Your order has been delivered. Enjoy your meal!",
         deliveredAt: updatedOrder.deliveredAt,
+        emittedAt,
+      });
+      const socketEmitMs = Date.now() - socketEmitStart;
+
+      void (async () => {
+        try {
+          await notifyWaiter(updatedOrder.session.id, "order:status_updated", { ...payload, emittedAt });
+          await notifyWaiter(updatedOrder.session.id, "order:delivered", {
+            orderId: updatedOrder.id,
+            deliveredBy: staffName,
+            emittedAt,
+          });
+        } catch (error) {
+          logger.error("server:deliver:post_commit_notification_failed", {
+            orderId: updatedOrder.id,
+            sessionId: updatedOrder.session.id,
+            error,
+          });
+        }
+      })();
+
+      logger.info("perf:server:deliver", {
+        orderId: updatedOrder.id,
+        sessionId: updatedOrder.session.id,
+        socketEmitMs,
       });
 
       return serializeOrder(updatedOrder);
