@@ -13,6 +13,7 @@ interface KitchenColumnProps {
   onPreparing?: (orderId: string) => Promise<void>;
   onReady?: (orderId: string) => Promise<void>;
   onRelease?: (orderId: string) => Promise<void>;
+  onItemPrepared?: (orderId: string, itemId: string) => Promise<void>;
   flash?: boolean;
 }
 
@@ -38,6 +39,7 @@ export function KitchenColumn({
   onPreparing,
   onReady,
   onRelease,
+  onItemPrepared,
   flash,
 }: KitchenColumnProps) {
   return (
@@ -80,6 +82,7 @@ export function KitchenColumn({
               onPreparing={onPreparing}
               onReady={onReady}
               onRelease={onRelease}
+              onItemPrepared={onItemPrepared}
             />
           ))
         )}

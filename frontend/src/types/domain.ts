@@ -1,4 +1,4 @@
-import { AssistanceStatus, AssistanceType, OrderStatus, PaymentMethod, PaymentStatus, TableStatus } from "@/types";
+import { AssistanceStatus, AssistanceType, ItemPreparationStatus, OrderStatus, PaymentMethod, PaymentStatus, TableStatus } from "@/types";
 
 export interface MenuCategory {
   id: string;
@@ -36,6 +36,11 @@ export interface OrderItem {
   cancellationReason?: string | null;
   cancellationNotes?: string | null;
   originalAmount?: number | null;
+  itemStatus?: ItemPreparationStatus;
+  preparedAt?: string | null;
+  servedAt?: string | null;
+  preparedById?: string | null;
+  servedById?: string | null;
 }
 
 export interface Order {

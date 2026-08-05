@@ -112,6 +112,7 @@ export function OrderCard({
               {order.items.map((item) => {
                 const isItemRejected = item.status === "REJECTED";
                 const isAdminCancelled = item.status === "CANCELLED_BY_ADMIN";
+                const itemStage = item.itemStatus ?? "PENDING";
                 const itemAmount = Number(item.originalAmount ?? Number(item.unitPrice) * item.quantity);
                 return (
                   <div key={item.id} className="space-y-2">
@@ -136,6 +137,24 @@ export function OrderCard({
                           {isAdminCancelled && (
                             <span className="rounded bg-red-950 px-1.5 py-0.5 text-[9px] font-bold text-red-400 uppercase tracking-wide">
                               Cancelled by Restaurant
+                            </span>
+                          )}
+                          {!isItemRejected && !isAdminCancelled && (
+                            <span
+                              className={cn(
+                                "rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide",
+                                itemStage === "SERVED" && "bg-semantic_success-500/10 text-semantic_success-400",
+                                itemStage === "PREPARED" && "bg-accent-500/10 text-accent-400",
+                                (itemStage === "PENDING" || itemStage === "PREPARING") && "bg-surface-overlay text-text-tertiary",
+                              )}
+                            >
+                              {itemStage === "SERVED"
+                                ? "Served"
+                                : itemStage === "PREPARED"
+                                  ? "Ready"
+                                  : itemStage === "PREPARING"
+                                    ? "Preparing"
+                                    : "Waiting"}
                             </span>
                           )}
                         </div>

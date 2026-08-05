@@ -12,6 +12,7 @@ interface ReadyOrdersPanelProps {
   onViewBill: (sessionId: string) => void
   onClaim?: (orderId: string) => Promise<void>
   onRelease?: (orderId: string) => Promise<void>
+  onServeItem?: (orderId: string, itemId: string) => Promise<void>
 }
 
 export default function ReadyOrdersPanel({
@@ -19,7 +20,8 @@ export default function ReadyOrdersPanel({
   onDeliver,
   onViewBill,
   onClaim,
-  onRelease
+  onRelease,
+  onServeItem
 }: ReadyOrdersPanelProps) {
   const { user } = useAuthStore()
   const [viewMode, setViewMode] = useState<'available' | 'my-deliveries'>('available')
@@ -89,6 +91,7 @@ export default function ReadyOrdersPanel({
               onViewBill={onViewBill}
               onClaim={onClaim}
               onRelease={onRelease}
+              onServeItem={onServeItem}
             />
           ))}
         </div>

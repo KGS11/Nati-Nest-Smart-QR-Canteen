@@ -13,6 +13,7 @@ interface DeliverOrderCardProps {
   onViewBill: (sessionId: string) => void
   onClaim?: (orderId: string) => Promise<void>
   onRelease?: (orderId: string) => Promise<void>
+  onServeItem?: (orderId: string, itemId: string) => Promise<void>
 }
 
 export default function DeliverOrderCard({
@@ -20,7 +21,8 @@ export default function DeliverOrderCard({
   onDeliver,
   onViewBill,
   onClaim,
-  onRelease
+  onRelease,
+  onServeItem
 }: DeliverOrderCardProps) {
   const { user } = useAuthStore()
   const [isDelivering, setIsDelivering] = useState(false)
@@ -32,6 +34,7 @@ export default function DeliverOrderCard({
   const isAssignedToMe = order.assignedWaiterId === user?.id
   const isAssignedToOther = !!(order.assignedWaiterId && order.assignedWaiterId !== user?.id)
   const isUnassigned = !order.assignedWaiterId
+  const isDelivered = order.status === 'DELIVERED'
 
   // Swipe gesture state
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
@@ -105,12 +108,12 @@ export default function DeliverOrderCard({
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (!isAssignedToMe) return
+    if (!isAssignedToMe || isDelivered) return
     setTouchStartX(e.touches[0].clientX)
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isAssignedToMe || touchStartX === null) return
+    if (!isAssignedToMe || isDelivered || touchStartX === null) return
     const diffX = e.touches[0].clientX - touchStartX
     if (diffX > 0) {
       setSwipeTranslation(Math.min(120, diffX))
@@ -118,7 +121,7 @@ export default function DeliverOrderCard({
   }
 
   const handleTouchEnd = () => {
-    if (!isAssignedToMe) return
+    if (!isAssignedToMe || isDelivered) return
     if (swipeTranslation > 100 && !isDelivering) {
       handleDeliver()
       const nextCount = swipeCount + 1
@@ -132,6 +135,10 @@ export default function DeliverOrderCard({
   }
 
   const shortId = order.id.slice(-6).toUpperCase()
+  const readyItems = order.items.filter((item) => item.itemStatus === 'PREPARED')
+  const servedItems = order.items.filter((item) => item.itemStatus === 'SERVED')
+  const waitingItems = order.items.filter((item) => item.itemStatus !== 'PREPARED' && item.itemStatus !== 'SERVED')
+  const canServeItems = Boolean(isAssignedToMe && onServeItem)
   const visibleItems = order.items.slice(0, 4)
   const overflowCount = order.items.length - 4
 
@@ -180,7 +187,64 @@ export default function DeliverOrderCard({
         </div>
       )}
 
-      <div className="space-y-1 my-1">
+      <div className="space-y-3 my-1">
+        {readyItems.length > 0 ? (
+          <div className="rounded-xl border border-semantic_success-500/20 bg-semantic_success-500/5 p-2.5">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-semantic_success-400">
+              Ready to serve ({readyItems.length})
+            </p>
+            <div className="space-y-2">
+              {readyItems.map((item) => (
+                <div key={item.id} className="flex items-center justify-between gap-2 text-sm text-text-primary">
+                  <span className="min-w-0 truncate">{item.name}</span>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="font-semibold">x{item.quantity}</span>
+                    {canServeItems ? (
+                      <button
+                        type="button"
+                        onClick={() => onServeItem?.(order.id, item.id)}
+                        className="min-h-9 rounded-lg bg-semantic_success-500 px-3 text-xs font-bold text-surface-base active:scale-95"
+                      >
+                        Serve
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {waitingItems.length > 0 ? (
+          <div className="rounded-xl border border-border-primary bg-surface-base/50 p-2.5">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-text-tertiary">
+              Still preparing ({waitingItems.length})
+            </p>
+            {waitingItems.map((item) => (
+              <div key={item.id} className="flex justify-between gap-2 text-sm text-text-tertiary">
+                <span className="min-w-0 truncate">{item.name}</span>
+                <span className="font-semibold">x{item.quantity}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {servedItems.length > 0 ? (
+          <div className="rounded-xl border border-border-primary bg-surface-base/40 p-2.5">
+            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-text-tertiary">
+              Served ({servedItems.length})
+            </p>
+            {servedItems.map((item) => (
+              <div key={item.id} className="flex justify-between gap-2 text-sm text-text-tertiary line-through">
+                <span className="min-w-0 truncate">{item.name}</span>
+                <span className="font-semibold">x{item.quantity}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="hidden">
         {visibleItems.map((item) => (
           <div
             key={item.id}
@@ -205,7 +269,7 @@ export default function DeliverOrderCard({
         )}
       </div>
 
-      {isAssignedToMe && swipeCount < 3 && (
+      {isAssignedToMe && !isDelivered && swipeCount < 3 && (
         <div className="text-[10px] text-text-tertiary text-right animate-pulse select-none">
           → swipe right to deliver
         </div>
@@ -220,7 +284,7 @@ export default function DeliverOrderCard({
           View Bill
         </button>
 
-        {isUnassigned && (
+        {isUnassigned && !isDelivered && (
           <Button
             type="button"
             onClick={handleClaim}
@@ -237,7 +301,7 @@ export default function DeliverOrderCard({
           </span>
         )}
 
-        {isAssignedToMe && (
+        {isAssignedToMe && !isDelivered && (
           <div className="flex gap-2">
             <Button
               type="button"

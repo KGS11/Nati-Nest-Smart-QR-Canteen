@@ -6,6 +6,9 @@ export interface KitchenOrderItem {
   unitPrice: number;
   specialInstructions: string | null;
   status: "ACTIVE" | "REJECTED" | "CANCELLED_BY_ADMIN";
+  itemStatus: "PENDING" | "PREPARING" | "PREPARED" | "SERVED";
+  preparedAt: string | null;
+  servedAt: string | null;
 }
 
 export interface KitchenOrder {
@@ -54,4 +57,15 @@ export interface OrderCancelledPayload {
   orderId: string;
   tableNumber: string;
   cancelledAt: string;
+}
+
+export interface OrderItemPreparedPayload {
+  orderId: string;
+  orderItemId: string;
+  itemName: string;
+  itemStatus: "PREPARED";
+  preparedAt: string;
+  preparedCount: number;
+  totalCount: number;
+  allPrepared: boolean;
 }

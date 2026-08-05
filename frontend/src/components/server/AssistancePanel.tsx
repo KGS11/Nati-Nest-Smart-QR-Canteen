@@ -15,6 +15,7 @@ interface AssistancePanelProps {
   onVerifyPayment?: (paymentId: string, tableNumber: string) => void
   onClaim?: (orderId: string) => Promise<void>
   onRelease?: (orderId: string) => Promise<void>
+  onServeItem?: (orderId: string, itemId: string) => Promise<void>
 }
 
 function getElapsedTime(dateStr: string): string {
@@ -36,7 +37,8 @@ export default function AssistancePanel({
   onDeliver,
   onVerifyPayment,
   onClaim,
-  onRelease
+  onRelease,
+  onServeItem
 }: AssistancePanelProps) {
   // Sort utility
   const sortByTime = (a: { createdAt?: string; readyAt?: string }, b: { createdAt?: string; readyAt?: string }) => {
@@ -190,6 +192,7 @@ export default function AssistancePanel({
                     onViewBill={onViewBill}
                     onClaim={onClaim}
                     onRelease={onRelease}
+                    onServeItem={onServeItem}
                   />
                 ))}
               </div>

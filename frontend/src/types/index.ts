@@ -31,6 +31,13 @@ export enum OrderItemStatus {
   CANCELLED_BY_ADMIN = "CANCELLED_BY_ADMIN",
 }
 
+export enum ItemPreparationStatus {
+  PENDING = "PENDING",
+  PREPARING = "PREPARING",
+  PREPARED = "PREPARED",
+  SERVED = "SERVED",
+}
+
 export enum PaymentMethod {
   CASH = "CASH",
   UPI = "UPI",

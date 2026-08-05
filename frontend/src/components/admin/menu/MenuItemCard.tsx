@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { MenuItem } from '@/types/menu.types'
 import AvailabilityToggle from './AvailabilityToggle'
 import { formatCurrency } from '@/utils/format'
@@ -18,17 +19,21 @@ export default function MenuItemCard({
   onDelete,
   onToggleAvailability
 }: MenuItemCardProps) {
+  const [imageError, setImageError] = useState(false)
   const imageUrl = getValidImageUrl(item.imageUrl)
+
+  const showPlaceholder = !imageUrl || imageError
 
   return (
     <div className="bg-surface-raised border border-border-primary rounded-xl overflow-hidden hover:border-border-secondary transition-colors flex flex-col justify-between shadow-md">
       <div>
         {/* Image Section */}
-        {imageUrl ? (
+        {!showPlaceholder ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={imageUrl}
+            src={imageUrl!}
             alt={item.name}
+            onError={() => setImageError(true)}
             className="w-full h-40 object-cover border-b border-border-primary"
           />
         ) : (

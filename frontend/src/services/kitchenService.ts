@@ -46,6 +46,13 @@ export const kitchenService = {
     return response.data.data.order;
   },
 
+  async markItemPrepared(orderId: string, itemId: string) {
+    const response = await apiClient.patch<ApiResponse<{ order: Order }>>(
+      `/kitchen/orders/${orderId}/items/${itemId}/prepare`,
+    );
+    return response.data.data;
+  },
+
   async releaseOrder(orderId: string) {
     const response = await apiClient.patch<ApiResponse<{ order: Order }>>(
       `/kitchen/orders/${orderId}/release`,

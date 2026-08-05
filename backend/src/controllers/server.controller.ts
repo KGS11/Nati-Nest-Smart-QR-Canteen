@@ -150,6 +150,31 @@ export class ServerController {
     }
   }
 
+  async markItemServed(request: Request, response: Response, next: NextFunction) {
+    try {
+      const orderId = param(request, "orderId");
+      const itemId = param(request, "itemId");
+      if (!UUID_REGEX.test(orderId) || !UUID_REGEX.test(itemId)) {
+        return response.status(400).json({ success: false, message: "Invalid ID format." });
+      }
+
+      const result = await serverService.markItemServed(
+        orderId,
+        itemId,
+        request.user!.userId,
+        request.user!.name,
+        request.user!.role,
+      );
+      return response.status(200).json({
+        success: true,
+        message: "Order item served successfully",
+        data: result,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async getAssistanceRequests(request: Request, response: Response, next: NextFunction) {
     try {
       const own = request.user!.role === "ADMIN" ? request.query.own !== "false" : true;

@@ -17,6 +17,12 @@ interface KitchenState {
     status: KitchenOrder["status"],
     fields?: Partial<KitchenOrder>,
   ) => void;
+  updateItemStatus: (
+    orderId: string,
+    itemId: string,
+    itemStatus: KitchenOrder["items"][number]["itemStatus"],
+    fields?: Partial<KitchenOrder["items"][number]>,
+  ) => void;
   removeOrder: (orderId: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -43,6 +49,20 @@ export const useKitchenStore = create<KitchenState>()((set, get) => ({
     set((state) => ({
       orders: state.orders.map((order) =>
         order.id === orderId ? { ...order, status, ...fields } : order,
+      ),
+    })),
+
+  updateItemStatus: (orderId, itemId, itemStatus, fields) =>
+    set((state) => ({
+      orders: state.orders.map((order) =>
+        order.id !== orderId
+          ? order
+          : {
+              ...order,
+              items: order.items.map((item) =>
+                item.id === itemId ? { ...item, itemStatus, ...fields } : item,
+              ),
+            },
       ),
     })),
 

@@ -95,11 +95,11 @@ describe("customer payment and feedback components", () => {
 
     render(<UpiPaymentDisplay sessionId="session-1" totalAmount={160} onBack={vi.fn()} />);
 
-    // The new UI shows "Online Payment" heading and a scanner button
+    // The simplified online flow lets the customer notify the server directly.
     expect(screen.getByText("Online Payment")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /open camera scanner/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /notify server/i })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /completed payment/i }));
+    fireEvent.click(screen.getByRole("button", { name: /notify server/i }));
 
     await waitFor(() => {
       expect(mocks.requestAssistance).toHaveBeenCalledWith(AssistanceType.BILL);
@@ -120,7 +120,7 @@ describe("customer payment and feedback components", () => {
     // Wait for the UI to render
     expect(screen.getByText("Online Payment")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /completed payment/i }));
+    fireEvent.click(screen.getByRole("button", { name: /notify server/i }));
     confirmPayment();
 
     expect(await screen.findByText(/Payment Confirmed/i)).toBeInTheDocument();

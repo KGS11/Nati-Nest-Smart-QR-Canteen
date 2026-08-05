@@ -30,6 +30,8 @@ import {
   AssistanceRequest,
   PendingPayment,
   OrderReadySocketPayload,
+  OrderItemPreparedPayload,
+  OrderItemServedPayload,
   AssistanceNewSocketPayload,
   AssistanceResolvedSocketPayload,
   PaymentBillRequestedPayload,
@@ -51,6 +53,9 @@ interface BackendOrderItem {
   unitPrice: number
   specialInstructions: string | null
   status: 'ACTIVE' | 'REJECTED'
+  itemStatus?: 'PENDING' | 'PREPARING' | 'PREPARED' | 'SERVED'
+  preparedAt?: string | null
+  servedAt?: string | null
   menuItem: {
     name: string
   }
@@ -58,7 +63,7 @@ interface BackendOrderItem {
 
 interface BackendReadyOrder {
   id: string
-  status: 'READY' | 'PREPARED'
+  status: 'READY' | 'PREPARED' | 'DELIVERED'
   sessionId: string
   readyAt: string
   subtotal?: number
@@ -121,7 +126,10 @@ const normalizeItem = (item: BackendOrderItem): ReadyOrderItem => ({
   quantity: item.quantity,
   unitPrice: item.unitPrice,
   specialInstructions: item.specialInstructions,
-  status: item.status
+  status: item.status,
+  itemStatus: item.itemStatus ?? 'PENDING',
+  preparedAt: item.preparedAt ?? null,
+  servedAt: item.servedAt ?? null
 })
 
 const normalizeInProgressOrder = (order: BackendInProgressOrder): InProgressOrder => ({
@@ -314,9 +322,12 @@ export default function ServerBoard() {
     const handleOrderStatusUpdated = (payload: { orderId: string; status: string; assignedKitchenName?: string | null }) => {
       const currentStore = useServerStore.getState()
       if (payload.status === 'DELIVERED') {
-        currentStore.removeReadyOrder(payload.orderId)
+        currentStore.updateReadyOrder(payload.orderId, {
+          status: 'DELIVERED'
+        })
       } else if (payload.status === 'CANCELLED') {
         currentStore.removeInProgressOrder(payload.orderId)
+        currentStore.removeReadyOrder(payload.orderId)
       } else {
         currentStore.updateInProgressOrder(payload.orderId, {
           status: payload.status as any,
@@ -383,7 +394,11 @@ export default function ServerBoard() {
     }
 
     const handlePaymentCompleted = (payload: PaymentCompletedPayload) => {
-      useServerStore.getState().removePendingPayment(payload.paymentId)
+      const currentStore = useServerStore.getState()
+      currentStore.removePendingPayment(payload.paymentId)
+      currentStore.readyOrders
+        .filter((order) => order.sessionId === payload.sessionId)
+        .forEach((order) => currentStore.removeReadyOrder(order.id))
       addToast(` Payment confirmed  Table ${payload.tableNumber}`, 'payment', `payment:completed:${payload.paymentId}`)
     }
 
@@ -426,6 +441,26 @@ export default function ServerBoard() {
       })
     }
 
+    const handleItemPrepared = (payload: OrderItemPreparedPayload) => {
+      const currentStore = useServerStore.getState()
+      currentStore.updateInProgressOrderItem(payload.orderId, payload.orderItemId, 'PREPARED', {
+        preparedAt: payload.preparedAt
+      })
+      currentStore.updateReadyOrderItem(payload.orderId, payload.orderItemId, 'PREPARED', {
+        preparedAt: payload.preparedAt
+      })
+    }
+
+    const handleItemServed = (payload: OrderItemServedPayload) => {
+      const currentStore = useServerStore.getState()
+      currentStore.updateReadyOrderItem(payload.orderId, payload.orderItemId, 'SERVED', {
+        servedAt: payload.servedAt
+      })
+      if (payload.allServed) {
+        currentStore.updateReadyOrder(payload.orderId, { status: 'DELIVERED' })
+      }
+    }
+
     const handleConnect = () => {
       useServerStore.getState().setConnected(true)
       joinServer()
@@ -445,6 +480,8 @@ export default function ServerBoard() {
     socket.on('order:status_updated', handleOrderStatusUpdated)
     socket.on('order:new', handleNewOrder)
     socket.on('order:items_updated', handleOrderItemsUpdated)
+    socket.on('orderItem:prepared', handleItemPrepared)
+    socket.on('orderItem:served', handleItemServed)
     socket.on('assistance:new', handleAssistanceNew)
     socket.on('assistance:resolved', handleAssistanceResolved)
     socket.on('payment:bill_requested', handlePaymentBillRequested)
@@ -464,6 +501,8 @@ export default function ServerBoard() {
       socket.off('order:status_updated', handleOrderStatusUpdated)
       socket.off('order:new', handleNewOrder)
       socket.off('order:items_updated', handleOrderItemsUpdated)
+      socket.off('orderItem:prepared', handleItemPrepared)
+      socket.off('orderItem:served', handleItemServed)
       socket.off('assistance:new', handleAssistanceNew)
       socket.off('assistance:resolved', handleAssistanceResolved)
       socket.off('payment:bill_requested', handlePaymentBillRequested)
@@ -487,6 +526,18 @@ export default function ServerBoard() {
     } catch (err: any) {
       store.setReadyOrders(previousOrders)
       addToast(err?.response?.data?.message || err?.message || 'Failed to deliver order.', 'error')
+    }
+  }
+
+  const handleServeItem = async (orderId: string, itemId: string) => {
+    const previousOrders = useServerStore.getState().readyOrders
+    const servedAt = new Date().toISOString()
+    store.updateReadyOrderItem(orderId, itemId, 'SERVED', { servedAt })
+    try {
+      await serverService.markItemServed(orderId, itemId)
+    } catch (err: any) {
+      store.setReadyOrders(previousOrders)
+      addToast(err?.response?.data?.message || err?.message || 'Failed to serve item.', 'error')
     }
   }
 
@@ -682,6 +733,7 @@ export default function ServerBoard() {
                   onViewBill={handleOpenBill}
                   onClaim={handleClaim}
                   onRelease={handleRelease}
+                  onServeItem={handleServeItem}
                 />
               </div>
 
@@ -697,6 +749,7 @@ export default function ServerBoard() {
                   onVerifyPayment={handleOpenPaymentVerification}
                   onClaim={handleClaim}
                   onRelease={handleRelease}
+                  onServeItem={handleServeItem}
                 />
               </div>
 
@@ -761,6 +814,7 @@ export default function ServerBoard() {
                 onVerifyPayment={handleOpenPaymentVerification}
                 onClaim={handleClaim}
                 onRelease={handleRelease}
+                onServeItem={handleServeItem}
               />
             )}
             {activeMobileTab === 'deliver' && (

@@ -18,6 +18,7 @@ interface OrderCardProps {
   onPreparing?: (orderId: string) => Promise<void>;
   onReady?: (orderId: string) => Promise<void>;
   onRelease?: (orderId: string) => Promise<void>;
+  onItemPrepared?: (orderId: string, itemId: string) => Promise<void>;
 }
 
 const accentClass: Record<KitchenOrder["status"], string> = {
@@ -30,7 +31,7 @@ const accentClass: Record<KitchenOrder["status"], string> = {
 
 const shortId = (orderId: string) => `#${orderId.replace(/-/g, "").slice(-4).toUpperCase()}`;
 
-export function OrderCard({ order, onAccept, onAcceptAndPrepare, onPreparing, onReady, onRelease }: OrderCardProps) {
+export function OrderCard({ order, onAccept, onAcceptAndPrepare, onPreparing, onReady, onRelease, onItemPrepared }: OrderCardProps) {
   const { user } = useAuthStore();
   const [isActioning, setIsActioning] = useState(false);
   const [isNew, setIsNew] = useState(
@@ -93,6 +94,9 @@ export function OrderCard({ order, onAccept, onAcceptAndPrepare, onPreparing, on
   const activeItemCount = order.items
     .filter((item) => item.status === "ACTIVE")
     .reduce((sum, item) => sum + item.quantity, 0);
+  const activeItems = order.items.filter((item) => item.status === "ACTIVE");
+  const preparedCount = activeItems.filter((item) => item.itemStatus === "PREPARED" || item.itemStatus === "SERVED").length;
+  const progressPct = activeItems.length ? Math.round((preparedCount / activeItems.length) * 100) : 0;
 
   const hasSpecialInstructions = order.items.some(
     (item) => item.specialInstructions && item.specialInstructions.trim() !== "",
@@ -156,6 +160,16 @@ export function OrderCard({ order, onAccept, onAcceptAndPrepare, onPreparing, on
             key={item.id}
             item={item}
             orderStatus={order.status}
+            onPrepare={
+              onItemPrepared &&
+              isAssignedToMe &&
+              item.status === "ACTIVE" &&
+              item.itemStatus !== "PREPARED" &&
+              item.itemStatus !== "SERVED" &&
+              (order.status === "ACCEPTED" || order.status === "PREPARING")
+                ? () => onItemPrepared(order.id, item.id)
+                : undefined
+            }
             onReject={
               order.status !== "READY" && order.status !== "PREPARED" && item.status !== "REJECTED" && isAssignedToMe
                 ? (reason) => handleRejectItem(item.id, reason)
@@ -164,6 +178,21 @@ export function OrderCard({ order, onAccept, onAcceptAndPrepare, onPreparing, on
           />
         ))}
       </div>
+
+      {activeItems.length > 0 && (order.status === "ACCEPTED" || order.status === "PREPARING") ? (
+        <div className="mt-4 rounded-xl border border-border-default bg-surface-raised/60 p-3">
+          <div className="mb-2 flex items-center justify-between text-label-xs font-bold uppercase tracking-wide text-text-tertiary">
+            <span>Item progress</span>
+            <span>{preparedCount}/{activeItems.length} prepared</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-surface-overlay">
+            <div
+              className="h-full rounded-full bg-semantic_success-500 transition-all duration-300"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
 
       <footer className="mt-4 flex flex-wrap min-h-12 items-center justify-between gap-3">
         <span className="text-label-sm font-semibold text-text-tertiary">

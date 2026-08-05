@@ -13,9 +13,11 @@ import {
   KitchenOrder,
   KitchenOrderItem,
   OrderCancelledPayload,
+  OrderItemPreparedPayload,
   OrderNewSocketPayload,
   OrderStatusUpdatedPayload,
 } from "@/types/kitchen.types";
+import { kitchenService } from "@/services/kitchenService";
 import { KitchenColumn } from "./KitchenColumn";
 import { KitchenConnectionStatus } from "./KitchenConnectionStatus";
 import { NewOrderToast } from "./NewOrderToast";
@@ -50,6 +52,9 @@ const toKitchenItem = (item: Order["items"][number]): KitchenOrderItem => ({
   unitPrice: item.unitPrice,
   specialInstructions: item.specialInstructions ?? item.notes ?? null,
   status: item.status === "REJECTED" ? "REJECTED" : "ACTIVE",
+  itemStatus: item.itemStatus ?? "PENDING",
+  preparedAt: item.preparedAt ?? null,
+  servedAt: item.servedAt ?? null,
 });
 
 const toKitchenOrder = (order: Order): KitchenOrder | null => {
@@ -117,6 +122,7 @@ export function KitchenBoard() {
   const addOrder = useKitchenStore((s) => s.addOrder);
   const removeOrder = useKitchenStore((s) => s.removeOrder);
   const updateOrderStatus = useKitchenStore((s) => s.updateOrderStatus);
+  const updateItemStatus = useKitchenStore((s) => s.updateItemStatus);
   const setNewOrderAlert = useKitchenStore((s) => s.setNewOrderAlert);
   const getOrdersByStatus = useKitchenStore((s) => s.getOrdersByStatus);
 
@@ -202,6 +208,14 @@ export function KitchenBoard() {
     const handleCancelled = (payload: OrderCancelledPayload) => {
       removeOrder(payload.orderId);
     };
+    const handleItemPrepared = (payload: OrderItemPreparedPayload) => {
+      updateItemStatus(payload.orderId, payload.orderItemId, "PREPARED", {
+        preparedAt: payload.preparedAt,
+      });
+      if (payload.allPrepared) {
+        removeOrder(payload.orderId);
+      }
+    };
     const handleClaimedKitchen = (payload: {
       orderId: string;
       assignedKitchenId: string;
@@ -248,6 +262,7 @@ export function KitchenBoard() {
     socket.on("order:notes_updated", handleNotesUpdated);
     socket.on("order:claimed:kitchen", handleClaimedKitchen);
     socket.on("order:released", handleReleased);
+    socket.on("orderItem:prepared", handleItemPrepared);
     socket.on("connect", handleConnect);
     socket.on("disconnect", handleDisconnect);
 
@@ -261,10 +276,11 @@ export function KitchenBoard() {
       socket.off("order:notes_updated", handleNotesUpdated);
       socket.off("order:claimed:kitchen", handleClaimedKitchen);
       socket.off("order:released", handleReleased);
+      socket.off("orderItem:prepared", handleItemPrepared);
       socket.off("connect", handleConnect);
       socket.off("disconnect", handleDisconnect);
     };
-  }, [addOrder, fetchOrders, socket, token, setConnected, setNewOrderAlert, removeOrder, updateOrderStatus]);
+  }, [addOrder, fetchOrders, socket, token, setConnected, setNewOrderAlert, removeOrder, updateOrderStatus, updateItemStatus]);
 
   useEffect(() => {
     if (!newOrderAlert) return;
@@ -353,6 +369,22 @@ export function KitchenBoard() {
       "Failed to mark order prepared.",
     );
 
+  const handleItemPrepared = async (orderId: string, itemId: string) => {
+    const previousOrders = useKitchenStore.getState().orders;
+    const preparedAt = new Date().toISOString();
+    try {
+      updateItemStatus(orderId, itemId, "PREPARED", { preparedAt });
+      const result = await kitchenService.markItemPrepared(orderId, itemId);
+      if (result.order?.status === "READY" || result.order?.status === "PREPARED") {
+        removeOrder(orderId);
+      }
+    } catch (error) {
+      const clientError = error as ClientApiError;
+      setOrders(previousOrders);
+      setActionError(clientError.message || "Failed to mark item prepared.");
+    }
+  };
+
   const handleRelease = (orderId: string) =>
     updateWithOptimism(
       orderId,
@@ -384,6 +416,7 @@ export function KitchenBoard() {
         emptyMessage: "Nothing cooking",
         onReady: handlePrepared,
         onRelease: handleRelease,
+        onItemPrepared: handleItemPrepared,
       },
     ],
     [incoming, preparing, user?.id],
@@ -494,6 +527,7 @@ export function KitchenBoard() {
                   emptyMessage="Nothing cooking"
                   onReady={handlePrepared}
                   onRelease={handleRelease}
+                  onItemPrepared={handleItemPrepared}
                 />
               )}
             </div>
@@ -596,6 +630,7 @@ export function KitchenBoard() {
                 onAccept={column.onAccept}
                 onReady={column.onReady}
                 onRelease={column.onRelease}
+                onItemPrepared={column.onItemPrepared}
                 flash={column.title === "New Orders" ? flashIncoming : undefined}
               />
             ))}

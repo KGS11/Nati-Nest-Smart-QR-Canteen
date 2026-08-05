@@ -11,7 +11,7 @@
  * 3. Collapsing these states would lose this timing granularity and disrupt reports generated in reports.service.ts.
  */
 
-import { OrderItemStatus, OrderStatus, Role } from "@prisma/client";
+import { ItemPreparationStatus, OrderItemStatus, OrderStatus, Role } from "@prisma/client";
 import { Server } from "socket.io";
 import { prisma } from "../config/db";
 import { AppError } from "../utils/AppError";
@@ -86,6 +86,92 @@ const statusPriority: Record<string, number> = {
 };
 
 const activeKitchenStatuses = [OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.PREPARING];
+
+const itemPreparedPayload = (
+  order: NonNullable<KitchenOrder>,
+  item: NonNullable<KitchenOrder>["items"][number],
+  preparedCount: number,
+  totalCount: number,
+  allPrepared: boolean,
+) => ({
+  orderId: order.id,
+  orderItemId: item.id,
+  itemName: item.menuItem.name,
+  itemStatus: ItemPreparationStatus.PREPARED,
+  preparedAt: item.preparedAt,
+  preparedCount,
+  totalCount,
+  allPrepared,
+});
+
+const emitItemPrepared = (
+  io: Server,
+  order: NonNullable<KitchenOrder>,
+  item: NonNullable<KitchenOrder>["items"][number],
+  preparedCount: number,
+  totalCount: number,
+  allPrepared: boolean,
+) => {
+  const payload = itemPreparedPayload(order, item, preparedCount, totalCount, allPrepared);
+  const rooms = [ROOMS.kitchen, ROOMS.admin, ROOMS.session(order.session.id)];
+  if (order.assignedKitchenId) {
+    rooms.push(kitchenStaffRoom(order.assignedKitchenId));
+  }
+  if (order.session.assignedWaiterId) {
+    rooms.push(ROOMS.waiter(order.session.assignedWaiterId));
+  } else {
+    rooms.push(ROOMS.server);
+  }
+  io.to([...new Set(rooms)]).emit("orderItem:prepared", payload);
+};
+
+const emitOrderReady = (io: Server, order: NonNullable<KitchenOrder>) => {
+  const serializedOrder = serializeOrder(order);
+  const activeItems = serializedOrder.items.filter((item) => item.status === OrderItemStatus.ACTIVE);
+  const orderReadyPayload = {
+    orderId: order.id,
+    sessionId: order.session.id,
+    tableNumber: order.session.table.tableNumber,
+    status: OrderStatus.READY,
+    readyAt: order.readyAt,
+    assignedKitchenId: order.assignedKitchenId,
+    assignedKitchenName: order.assignedKitchenName,
+    items: activeItems.map((item) => ({
+      id: item.id,
+      name: item.menuItem.name,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      specialInstructions: item.specialInstructions,
+      status: item.status,
+      itemStatus: item.itemStatus,
+      preparedAt: item.preparedAt,
+      servedAt: item.servedAt,
+    })),
+  };
+
+  const kitchenReadyRooms: string[] = [ROOMS.kitchen, ROOMS.admin];
+  if (order.assignedKitchenId) {
+    kitchenReadyRooms.push(kitchenStaffRoom(order.assignedKitchenId));
+  }
+  io.to(kitchenReadyRooms).emit("order:status_updated", {
+    orderId: order.id,
+    status: OrderStatus.READY,
+    tableNumber: order.session.table.tableNumber,
+    readyAt: order.readyAt,
+  });
+
+  if (order.session.assignedWaiterId) {
+    io.to(ROOMS.waiter(order.session.assignedWaiterId)).emit("order:ready", orderReadyPayload);
+    io.to(ROOMS.admin).emit("order:ready", orderReadyPayload);
+  } else {
+    io.to(ROOMS.server).emit("order:ready", orderReadyPayload);
+  }
+  io.to(ROOMS.session(order.session.id)).emit("order:ready", {
+    orderId: order.id,
+    message: "Your order is ready and will be delivered to your table shortly.",
+    readyAt: order.readyAt,
+  });
+};
 
 export class KitchenService {
   private checkKitchenOwnership(order: { assignedKitchenId: string | null }, userId: string, role: string) {
@@ -436,6 +522,19 @@ export class KitchenService {
         throw new AppError("Only PREPARING orders can be marked as ready.", 400);
       }
 
+      await prisma.orderItem.updateMany({
+        where: {
+          orderId,
+          status: OrderItemStatus.ACTIVE,
+          itemStatus: { not: ItemPreparationStatus.PREPARED },
+        },
+        data: {
+          itemStatus: ItemPreparationStatus.PREPARED,
+          preparedAt: readyAt,
+          preparedById: userId,
+        },
+      });
+
       const updatedOrder =
         updateResult === undefined && process.env.NODE_ENV === "test"
           ? await prisma.order.update({
@@ -452,49 +551,13 @@ export class KitchenService {
       }
 
       const serializedOrder = serializeOrder(updatedOrder);
-      const activeItems = serializedOrder.items.filter((item) => item.status === OrderItemStatus.ACTIVE);
 
       const io = getIo();
-      const kitchenReadyPayload = {
-        orderId: updatedOrder.id,
-        status: OrderStatus.READY,
-        tableNumber: updatedOrder.session.table.tableNumber,
-        readyAt: updatedOrder.readyAt,
-      };
-      const kitchenReadyRooms: string[] = [ROOMS.kitchen, ROOMS.admin];
-      if (updatedOrder.assignedKitchenId) {
-        kitchenReadyRooms.push(kitchenStaffRoom(updatedOrder.assignedKitchenId));
-      }
-      io.to(kitchenReadyRooms).emit("order:status_updated", kitchenReadyPayload);
-
-      const orderReadyPayload = {
-        orderId: updatedOrder.id,
-        sessionId: updatedOrder.session.id,
-        tableNumber: updatedOrder.session.table.tableNumber,
-        status: OrderStatus.READY,
-        readyAt: updatedOrder.readyAt,
-        assignedKitchenId: updatedOrder.assignedKitchenId,
-        assignedKitchenName: updatedOrder.assignedKitchenName,
-        items: activeItems.map((item) => ({
-          id: item.id,
-          name: item.menuItem.name,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice.toNumber(),
-          specialInstructions: item.specialInstructions,
-          status: item.status,
-        })),
-      };
-      if (updatedOrder.session.assignedWaiterId) {
-        io.to(ROOMS.waiter(updatedOrder.session.assignedWaiterId)).emit("order:ready", orderReadyPayload);
-        io.to(ROOMS.admin).emit("order:ready", orderReadyPayload);
-      } else {
-        io.to(ROOMS.server).emit("order:ready", orderReadyPayload);
-      }
-      io.to(ROOMS.session(updatedOrder.session.id)).emit("order:ready", {
-        orderId: updatedOrder.id,
-        message: "Your order is ready and will be delivered to your table shortly.",
-        readyAt: updatedOrder.readyAt,
+      const activeItems = updatedOrder.items.filter((item) => item.status === OrderItemStatus.ACTIVE);
+      activeItems.forEach((item) => {
+        emitItemPrepared(io, updatedOrder, item, activeItems.length, activeItems.length, true);
       });
+      emitOrderReady(io, updatedOrder);
 
       return serializedOrder;
     } catch (error) {
@@ -523,6 +586,162 @@ export class KitchenService {
       }
 
       return serializeOrder(order);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async markItemPrepared(orderId: string, itemId: string, userId: string, role: string) {
+    try {
+      const order = await kitchenOrderById(orderId);
+      if (!order) {
+        throw new AppError("Order not found", 404);
+      }
+
+      this.checkKitchenOwnership(order, userId, role);
+
+      if (order.status !== OrderStatus.ACCEPTED && order.status !== OrderStatus.PREPARING) {
+        throw new AppError("Only ACCEPTED or PREPARING orders can have prepared items.", 400);
+      }
+
+      if (order.session.status !== "ACTIVE") {
+        throw new AppError("Cannot update order - the table session is already closed.", 409);
+      }
+
+      const targetItem = order.items.find((item) => item.id === itemId);
+      if (!targetItem || targetItem.status !== OrderItemStatus.ACTIVE) {
+        throw new AppError("Active order item not found", 404);
+      }
+
+      if (targetItem.itemStatus === ItemPreparationStatus.PREPARED || targetItem.itemStatus === ItemPreparationStatus.SERVED) {
+        throw new AppError("Item is already prepared", 409);
+      }
+
+      const preparedAt = new Date();
+      const { updatedOrder, allPrepared, preparedCount, totalCount } = await prisma.$transaction(async (tx) => {
+        const itemResult = await tx.orderItem.updateMany({
+          where: {
+            id: itemId,
+            orderId,
+            status: OrderItemStatus.ACTIVE,
+            itemStatus: { in: [ItemPreparationStatus.PENDING, ItemPreparationStatus.PREPARING] },
+          },
+          data: {
+            itemStatus: ItemPreparationStatus.PREPARED,
+            preparedAt,
+            preparedById: userId,
+          },
+        });
+
+        if (itemResult.count === 0) {
+          throw new AppError("Item is already prepared", 409);
+        }
+
+        if (order.status === OrderStatus.ACCEPTED) {
+          await tx.order.updateMany({
+            where: {
+              id: orderId,
+              status: OrderStatus.ACCEPTED,
+              assignedKitchenId: order.assignedKitchenId,
+              session: { status: "ACTIVE" },
+            },
+            data: { status: OrderStatus.PREPARING, preparingAt: order.preparingAt ?? preparedAt },
+          });
+        }
+
+        const totalCount = await tx.orderItem.count({
+          where: { orderId, status: OrderItemStatus.ACTIVE },
+        });
+        const remainingCount = await tx.orderItem.count({
+          where: {
+            orderId,
+            status: OrderItemStatus.ACTIVE,
+            itemStatus: { notIn: [ItemPreparationStatus.PREPARED, ItemPreparationStatus.SERVED] },
+          },
+        });
+        const preparedCount = totalCount - remainingCount;
+        const allPrepared = totalCount > 0 && remainingCount === 0;
+
+        if (allPrepared) {
+          await tx.order.updateMany({
+            where: {
+              id: orderId,
+              status: { in: [OrderStatus.ACCEPTED, OrderStatus.PREPARING] },
+              assignedKitchenId: order.assignedKitchenId,
+              session: { status: "ACTIVE" },
+            },
+            data: { status: OrderStatus.READY, readyAt: preparedAt },
+          });
+        }
+
+        const updatedOrder = await tx.order.findUniqueOrThrow({
+          where: { id: orderId },
+          include: {
+            session: {
+              include: {
+                table: {
+                  select: { tableNumber: true },
+                },
+              },
+            },
+            items: {
+              include: { menuItem: true },
+            },
+          },
+        });
+
+        return { updatedOrder, allPrepared, preparedCount, totalCount };
+      });
+
+      const updatedItem = updatedOrder.items.find((item) => item.id === itemId);
+      if (!updatedItem) {
+        throw new AppError("Reloading item failed", 500);
+      }
+
+      const io = getIo();
+      emitItemPrepared(io, updatedOrder, updatedItem, preparedCount, totalCount, allPrepared);
+
+      if (order.status === OrderStatus.ACCEPTED && updatedOrder.status === OrderStatus.PREPARING) {
+        const kitchenStatusPayload = {
+          orderId: updatedOrder.id,
+          status: OrderStatus.PREPARING,
+          tableNumber: updatedOrder.session.table.tableNumber,
+          preparingAt: updatedOrder.preparingAt,
+          assignedKitchenId: updatedOrder.assignedKitchenId,
+          assignedKitchenName: updatedOrder.assignedKitchenName,
+        };
+        const kitchenStatusRooms: string[] = [ROOMS.kitchen, ROOMS.admin];
+        if (updatedOrder.assignedKitchenId) {
+          kitchenStatusRooms.push(kitchenStaffRoom(updatedOrder.assignedKitchenId));
+        }
+        io.to(kitchenStatusRooms).emit("order:status_updated", kitchenStatusPayload);
+        io.to(ROOMS.session(updatedOrder.session.id)).emit("order:preparing", {
+          orderId: updatedOrder.id,
+          message: "Your order is being prepared.",
+          preparingAt: updatedOrder.preparingAt,
+        });
+        await notifyWaiter(updatedOrder.session.id, "order:status_updated", {
+          orderId: updatedOrder.id,
+          status: OrderStatus.PREPARING,
+        });
+      }
+
+      if (allPrepared) {
+        emitOrderReady(io, updatedOrder);
+      }
+
+      return {
+        orderItem: {
+          ...updatedItem,
+          unitPrice: updatedItem.unitPrice.toNumber(),
+          menuItem: {
+            ...updatedItem.menuItem,
+            price: updatedItem.menuItem.price.toNumber(),
+          },
+        },
+        order: serializeOrder(updatedOrder),
+        allPrepared,
+      };
     } catch (error) {
       throw error;
     }
@@ -901,6 +1120,19 @@ export class KitchenService {
         throw new AppError("Only ACCEPTED or PREPARING orders can be marked as prepared.", 400);
       }
 
+      await prisma.orderItem.updateMany({
+        where: {
+          orderId,
+          status: OrderItemStatus.ACTIVE,
+          itemStatus: { not: ItemPreparationStatus.PREPARED },
+        },
+        data: {
+          itemStatus: ItemPreparationStatus.PREPARED,
+          preparedAt: readyAt,
+          preparedById: userId,
+        },
+      });
+
       const updatedOrder =
         updateResult === undefined && process.env.NODE_ENV === "test"
           ? await prisma.order.update({
@@ -946,7 +1178,14 @@ export class KitchenService {
           unitPrice: item.unitPrice,
           specialInstructions: item.specialInstructions,
           status: item.status,
+          itemStatus: item.itemStatus,
+          preparedAt: item.preparedAt,
+          servedAt: item.servedAt,
         })),
+      });
+
+      activeItems.forEach((item) => {
+        emitItemPrepared(io, updatedOrder, item, activeItems.length, activeItems.length, true);
       });
 
       io.to(ROOMS.session(updatedOrder.session.id)).emit("order:ready", {

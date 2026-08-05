@@ -40,6 +40,13 @@ enum OrderItemStatus {
   CANCELLED_BY_ADMIN
 }
 
+enum ItemPreparationStatus {
+  PENDING
+  PREPARING
+  PREPARED
+  SERVED
+}
+
 enum PaymentMethod {
   CASH
   UPI
@@ -85,6 +92,8 @@ model User {
 
   paymentsVerified   Payment[]                @relation("VerifiedBy")
   orderItemsCancelled OrderItem[]             @relation("OrderItemCancelledBy")
+  orderItemsPrepared  OrderItem[]             @relation("OrderItemPreparedBy")
+  orderItemsServed    OrderItem[]             @relation("OrderItemServedBy")
   paymentAdjustments PaymentAdjustment[]      @relation("PaymentAdjustmentAdmin")
   auditLogs          AuditLog[]               @relation("AuditLogActor")
   assistanceResolved AssistanceRequest[]      @relation("ResolvedBy")
@@ -240,10 +249,17 @@ model OrderItem {
   cancellationReason  String?
   cancellationNotes   String?
   originalAmount      Decimal?        @db.Decimal(10, 2)
+  itemStatus          ItemPreparationStatus @default(PENDING) @map("item_status")
+  preparedAt          DateTime?       @map("prepared_at")
+  servedAt            DateTime?       @map("served_at")
+  preparedById        String?         @map("prepared_by_id")
+  servedById          String?         @map("served_by_id")
 
   order       Order    @relation(fields: [orderId], references: [id])
   menuItem    MenuItem @relation(fields: [menuItemId], references: [id])
   cancelledBy User?    @relation("OrderItemCancelledBy", fields: [cancelledById], references: [id])
+  preparedBy  User?    @relation("OrderItemPreparedBy", fields: [preparedById], references: [id])
+  servedBy    User?    @relation("OrderItemServedBy", fields: [servedById], references: [id])
   paymentAdjustments PaymentAdjustment[]
 
   @@index([orderId])
@@ -251,8 +267,12 @@ model OrderItem {
   @@index([status, createdAt])
   @@index([status])
   @@index([orderId, status])
+  @@index([orderId, itemStatus])
+  @@index([itemStatus])
   @@index([cancelledById])
   @@index([cancelledAt])
+  @@index([preparedById])
+  @@index([servedById])
   @@map("order_items")
 }
 

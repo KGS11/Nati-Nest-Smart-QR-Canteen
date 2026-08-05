@@ -18,6 +18,13 @@ export const serverService = {
     return response.data.data.order;
   },
 
+  async markItemServed(orderId: string, itemId: string) {
+    const response = await apiClient.patch<ApiResponse<{ order: Order }>>(
+      `/server/orders/${orderId}/items/${itemId}/serve`,
+    );
+    return response.data.data;
+  },
+
   async claimDelivery(orderId: string) {
     const response = await apiClient.patch<ApiResponse<{ order: Order }>>(
       `/server/orders/${orderId}/claim`,

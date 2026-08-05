@@ -20,6 +20,7 @@ router.patch("/orders/:orderId/ready", kitchenController.markReady.bind(kitchenC
 router.patch("/orders/:orderId/prepared", kitchenController.markPrepared.bind(kitchenController));
 router.patch("/orders/:orderId/release", kitchenController.releaseOrder.bind(kitchenController));
 router.patch("/orders/:orderId/reject", kitchenController.rejectOrder.bind(kitchenController));
+router.patch("/orders/:orderId/items/:itemId/prepare", kitchenController.markItemPrepared.bind(kitchenController));
 router.patch("/orders/:orderId/items/:itemId/reject", kitchenController.rejectOrderItem.bind(kitchenController));
 
 export default router;

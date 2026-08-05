@@ -5,11 +5,14 @@ export interface ReadyOrderItem {
   unitPrice: number
   specialInstructions: string | null
   status: 'ACTIVE' | 'REJECTED' | 'CANCELLED_BY_ADMIN'
+  itemStatus: 'PENDING' | 'PREPARING' | 'PREPARED' | 'SERVED'
+  preparedAt: string | null
+  servedAt: string | null
 }
 
 export interface ReadyOrder {
   id: string
-  status: 'READY' | 'PREPARED'
+  status: 'READY' | 'PREPARED' | 'DELIVERED'
   tableNumber: string
   sessionId: string
   readyAt: string
@@ -129,4 +132,26 @@ export interface InProgressOrder {
   items: ReadyOrderItem[]
   subtotal: number
   assignedKitchenName?: string | null
+}
+
+export interface OrderItemPreparedPayload {
+  orderId: string
+  orderItemId: string
+  itemName: string
+  itemStatus: 'PREPARED'
+  preparedAt: string
+  preparedCount: number
+  totalCount: number
+  allPrepared: boolean
+}
+
+export interface OrderItemServedPayload {
+  orderId: string
+  orderItemId: string
+  itemName: string
+  itemStatus: 'SERVED'
+  servedAt: string
+  servedCount: number
+  totalCount: number
+  allServed: boolean
 }

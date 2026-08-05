@@ -175,6 +175,24 @@ export class KitchenController {
     }
   }
 
+  async markItemPrepared(request: Request, response: Response, next: NextFunction) {
+    try {
+      const orderId = param(request, "orderId");
+      const itemId = param(request, "itemId");
+      if (!validateOrderId(orderId, response)) return;
+
+      const user = request.user!;
+      const result = await kitchenService.markItemPrepared(orderId, itemId, user.userId, user.role);
+      return response.status(200).json({
+        success: true,
+        message: "Order item prepared successfully.",
+        data: result,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async releaseOrder(request: Request, response: Response, next: NextFunction) {
     try {
       const orderId = param(request, "orderId");

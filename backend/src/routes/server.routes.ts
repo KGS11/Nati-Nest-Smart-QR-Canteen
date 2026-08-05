@@ -22,6 +22,7 @@ router.get("/orders/in-progress", serverController.getInProgressOrders.bind(serv
 router.patch("/orders/:orderId/claim", serverController.claimDelivery.bind(serverController));
 router.patch("/orders/:orderId/release", serverController.releaseDelivery.bind(serverController));
 router.patch("/orders/:orderId/deliver", serverController.markDelivered.bind(serverController));
+router.patch("/orders/:orderId/items/:itemId/serve", serverController.markItemServed.bind(serverController));
 router.patch("/orders/:orderId/notes", serverController.updateOrderNotes.bind(serverController));
 router.get("/assistance", serverController.getAssistanceRequests.bind(serverController));
 router.patch(

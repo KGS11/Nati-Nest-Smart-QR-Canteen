@@ -101,6 +101,31 @@ export default function CustomerTrackPage() {
       setMessage(text);
       loadOrders();
     };
+    const updateOrderItem = (
+      payload: { orderId: string; orderItemId: string; itemStatus: "PREPARED" | "SERVED"; preparedAt?: string; servedAt?: string },
+      text: string,
+    ) => {
+      setMessage(text);
+      setOrders((current) =>
+        current.map((order) =>
+          order.id !== payload.orderId
+            ? order
+            : {
+                ...order,
+                items: order.items.map((item) =>
+                  item.id === payload.orderItemId
+                    ? {
+                        ...item,
+                        itemStatus: payload.itemStatus as any,
+                        preparedAt: payload.preparedAt ?? item.preparedAt,
+                        servedAt: payload.servedAt ?? item.servedAt,
+                      }
+                    : item,
+                ),
+              },
+        ),
+      );
+    };
     const accepted = (payload: any) => updateOrderStatusWithMessage("Order accepted! Kitchen is on it.", payload, OrderStatus.ACCEPTED);
     const preparing = (payload: any) => updateOrderStatusWithMessage("Your order is being prepared.", payload, OrderStatus.PREPARING);
     const ready = (payload: any) => updateOrderStatusWithMessage("Order is ready!", payload, OrderStatus.READY);
@@ -108,6 +133,8 @@ export default function CustomerTrackPage() {
     const cancelled = (payload: any) => updateOrderStatusWithMessage(payload.reason ? `Order cancelled: ${payload.reason}` : "Your order was cancelled.", payload, OrderStatus.CANCELLED);
     const itemRejected = (payload: any) => refreshWithMessage(`Item unavailable: ${payload.name}.`);
     const itemCancelled = (payload: any) => refreshWithMessage(`Restaurant adjusted your bill: ${payload.name} cancelled.`);
+    const itemPrepared = (payload: any) => updateOrderItem(payload, `${payload.itemName} is ready.`);
+    const itemServed = (payload: any) => updateOrderItem(payload, `${payload.itemName} served.`);
 
     socket.on("order:accepted", accepted);
     socket.on("order:preparing", preparing);
@@ -116,6 +143,8 @@ export default function CustomerTrackPage() {
     socket.on("order:cancelled", cancelled);
     socket.on("order:item_rejected", itemRejected);
     socket.on("order:item_cancelled", itemCancelled);
+    socket.on("orderItem:prepared", itemPrepared);
+    socket.on("orderItem:served", itemServed);
 
     return () => {
       socket.off("order:accepted", accepted);
@@ -125,6 +154,8 @@ export default function CustomerTrackPage() {
       socket.off("order:cancelled", cancelled);
       socket.off("order:item_rejected", itemRejected);
       socket.off("order:item_cancelled", itemCancelled);
+      socket.off("orderItem:prepared", itemPrepared);
+      socket.off("orderItem:served", itemServed);
     };
   }, [loadOrders, socket]);
 

@@ -1,6 +1,7 @@
 import {
   AssistanceStatus,
   AssistanceType,
+  ItemPreparationStatus,
   OrderItemStatus,
   OrderStatus,
   Role,
@@ -74,6 +75,44 @@ const serializeReadyOrder = <T extends NonNullable<ServerOrder>>(order: T) => {
     })),
     subtotal: Math.round(subtotal * 100) / 100,
   };
+};
+
+const itemServedPayload = (
+  order: NonNullable<ServerOrder>,
+  item: NonNullable<ServerOrder>["items"][number],
+  servedCount: number,
+  totalCount: number,
+  allServed: boolean,
+) => ({
+  orderId: order.id,
+  orderItemId: item.id,
+  itemName: item.menuItem.name,
+  itemStatus: ItemPreparationStatus.SERVED,
+  servedAt: item.servedAt,
+  servedCount,
+  totalCount,
+  allServed,
+});
+
+const emitItemServed = (
+  io: Server,
+  order: NonNullable<ServerOrder>,
+  item: NonNullable<ServerOrder>["items"][number],
+  servedCount: number,
+  totalCount: number,
+  allServed: boolean,
+) => {
+  const payload = itemServedPayload(order, item, servedCount, totalCount, allServed);
+  const rooms = [ROOMS.server, ROOMS.admin, ROOMS.session(order.session.id)];
+  if (order.assignedWaiterId) {
+    rooms.push(ROOMS.waiter(order.assignedWaiterId));
+  }
+  if (order.assignedKitchenId) {
+    rooms.push(`kitchen:${order.assignedKitchenId}`);
+  } else {
+    rooms.push(ROOMS.kitchen);
+  }
+  io.to([...new Set(rooms)]).emit("orderItem:served", payload);
 };
 
 const requestMessage = (requestType: AssistanceType, tableNumber: string) => {
@@ -173,7 +212,7 @@ export class ServerService {
   async getReadyOrders(userId?: string, own: boolean = true) {
     try {
       const whereClause: any = {
-        status: { in: [OrderStatus.READY, OrderStatus.PREPARED] },
+        status: { in: [OrderStatus.READY, OrderStatus.PREPARED, OrderStatus.DELIVERED] },
       };
 
       if (userId && own) {
@@ -266,7 +305,10 @@ export class ServerService {
           throw new AppError("Order not found", 404);
         }
 
-        if (existingOrder.status !== OrderStatus.READY && existingOrder.status !== OrderStatus.PREPARED) {
+        if (
+          existingOrder.status !== OrderStatus.READY &&
+          existingOrder.status !== OrderStatus.PREPARED
+        ) {
           throw new AppError("Only READY or PREPARED orders can be claimed for delivery.", 400);
         }
 
@@ -312,7 +354,10 @@ export class ServerService {
         throw new AppError("Order not found", 404);
       }
 
-      if (order.status !== OrderStatus.READY && order.status !== OrderStatus.PREPARED) {
+      if (
+        order.status !== OrderStatus.READY &&
+        order.status !== OrderStatus.PREPARED
+      ) {
         throw new AppError("Only READY or PREPARED orders can be released.", 400);
       }
 
@@ -377,7 +422,10 @@ export class ServerService {
         throw new AppError("Order not found", 404);
       }
 
-      if (order.status !== OrderStatus.READY && order.status !== OrderStatus.PREPARED) {
+      if (
+        order.status !== OrderStatus.READY &&
+        order.status !== OrderStatus.PREPARED
+      ) {
         throw new AppError("Only READY or PREPARED orders can be marked as delivered.", 400);
       }
 
@@ -407,6 +455,19 @@ export class ServerService {
         throw new AppError("Only READY or PREPARED orders can be marked as delivered.", 400);
       }
 
+      await prisma.orderItem.updateMany({
+        where: {
+          orderId,
+          status: OrderItemStatus.ACTIVE,
+          itemStatus: { not: ItemPreparationStatus.SERVED },
+        },
+        data: {
+          itemStatus: ItemPreparationStatus.SERVED,
+          servedAt: deliveredAt,
+          servedById: staffId,
+        },
+      });
+
       const updatedOrder = await serverOrderById(orderId);
       if (!updatedOrder) {
         throw new AppError("Order not found", 404);
@@ -432,6 +493,10 @@ export class ServerService {
       };
       const emittedAt = new Date().toISOString();
       const socketEmitStart = Date.now();
+      const activeItems = updatedOrder.items.filter((item) => item.status === OrderItemStatus.ACTIVE);
+      activeItems.forEach((item) => {
+        emitItemServed(getIo(), updatedOrder, item, activeItems.length, activeItems.length, true);
+      });
       getIo().to(ROOMS.session(updatedOrder.session.id)).emit("order:delivered", {
         orderId: updatedOrder.id,
         message: "Your order has been delivered. Enjoy your meal!",
@@ -464,6 +529,150 @@ export class ServerService {
       });
 
       return serializeOrder(updatedOrder);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async markItemServed(orderId: string, itemId: string, staffId: string, staffName: string, role: string) {
+    try {
+      const order = await serverOrderById(orderId);
+      if (!order) {
+        throw new AppError("Order not found", 404);
+      }
+
+      if (order.status === OrderStatus.CANCELLED || order.status === OrderStatus.PAID) {
+        throw new AppError("This order cannot be updated.", 400);
+      }
+
+      const assignedWaiterId = order.assignedWaiterId ?? order.session.assignedWaiterId;
+      if (!assignedWaiterId) {
+        throw new AppError("You must claim this delivery or be assigned to this table first.", 400);
+      }
+
+      if (assignedWaiterId !== staffId && role !== "ADMIN") {
+        throw new AppError("This order is assigned to another waiter.", 403);
+      }
+
+      const targetItem = order.items.find((item) => item.id === itemId);
+      if (!targetItem || targetItem.status !== OrderItemStatus.ACTIVE) {
+        throw new AppError("Active order item not found", 404);
+      }
+
+      if (targetItem.itemStatus === ItemPreparationStatus.SERVED) {
+        throw new AppError("Item is already served", 409);
+      }
+
+      if (targetItem.itemStatus !== ItemPreparationStatus.PREPARED) {
+        throw new AppError("Only prepared items can be served.", 400);
+      }
+
+      const servedAt = new Date();
+      const { updatedOrder, allServed, servedCount, totalCount } = await prisma.$transaction(async (tx) => {
+        const itemResult = await tx.orderItem.updateMany({
+          where: {
+            id: itemId,
+            orderId,
+            status: OrderItemStatus.ACTIVE,
+            itemStatus: ItemPreparationStatus.PREPARED,
+          },
+          data: {
+            itemStatus: ItemPreparationStatus.SERVED,
+            servedAt,
+            servedById: staffId,
+          },
+        });
+
+        if (itemResult.count === 0) {
+          throw new AppError("Only prepared items can be served.", 400);
+        }
+
+        const totalCount = await tx.orderItem.count({
+          where: { orderId, status: OrderItemStatus.ACTIVE },
+        });
+        const servedCount = await tx.orderItem.count({
+          where: { orderId, status: OrderItemStatus.ACTIVE, itemStatus: ItemPreparationStatus.SERVED },
+        });
+        const allServed = totalCount > 0 && servedCount === totalCount;
+
+        if (allServed) {
+          await tx.order.updateMany({
+            where: {
+              id: orderId,
+              status: { in: [OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.PREPARED] },
+            },
+            data: {
+              status: OrderStatus.DELIVERED,
+              deliveredAt: servedAt,
+              deliveredBy: staffName,
+            },
+          });
+        }
+
+        const updatedOrder = await tx.order.findUniqueOrThrow({
+          where: { id: orderId },
+          include: {
+            session: {
+              include: {
+                table: {
+                  select: { tableNumber: true },
+                },
+              },
+            },
+            items: {
+              include: { menuItem: true },
+            },
+          },
+        });
+
+        return { updatedOrder, allServed, servedCount, totalCount };
+      });
+
+      const updatedItem = updatedOrder.items.find((item) => item.id === itemId);
+      if (!updatedItem) {
+        throw new AppError("Reloading item failed", 500);
+      }
+
+      const io = getIo();
+      emitItemServed(io, updatedOrder, updatedItem, servedCount, totalCount, allServed);
+
+      if (allServed) {
+        const payload = {
+          orderId: updatedOrder.id,
+          status: OrderStatus.DELIVERED,
+          tableNumber: updatedOrder.session.table.tableNumber,
+          deliveredAt: updatedOrder.deliveredAt,
+          assignedWaiterId: updatedOrder.assignedWaiterId,
+          assignedWaiterName: updatedOrder.assignedWaiterName,
+          deliveredBy: staffName,
+        };
+        const emittedAt = new Date().toISOString();
+        io.to(ROOMS.session(updatedOrder.session.id)).emit("order:delivered", {
+          orderId: updatedOrder.id,
+          message: "Your order has been delivered. Enjoy your meal!",
+          deliveredAt: updatedOrder.deliveredAt,
+          emittedAt,
+        });
+        await notifyWaiter(updatedOrder.session.id, "order:status_updated", { ...payload, emittedAt });
+        await notifyWaiter(updatedOrder.session.id, "order:delivered", {
+          orderId: updatedOrder.id,
+          deliveredBy: staffName,
+          emittedAt,
+        });
+      }
+
+      return {
+        orderItem: {
+          ...updatedItem,
+          unitPrice: updatedItem.unitPrice.toNumber(),
+          menuItem: {
+            ...updatedItem.menuItem,
+            price: updatedItem.menuItem.price.toNumber(),
+          },
+        },
+        order: serializeOrder(updatedOrder),
+        allServed,
+      };
     } catch (error) {
       throw error;
     }

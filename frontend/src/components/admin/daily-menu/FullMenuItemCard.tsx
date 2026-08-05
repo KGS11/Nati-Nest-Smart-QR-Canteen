@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { MenuItemWithStatus } from "@/types/daily-menu.types";
 import { getValidImageUrl } from "@/utils/imageUrl";
 
@@ -8,15 +9,18 @@ interface FullMenuItemCardProps {
 }
 
 export function FullMenuItemCard({ item, onAdd, isAdding }: FullMenuItemCardProps) {
+  const [imageError, setImageError] = useState(false);
   const imageUrl = getValidImageUrl(item.imageUrl);
+  const showPlaceholder = !imageUrl || imageError;
 
   return (
     <div className="flex items-center gap-4 bg-surface-raised border border-border-primary p-4 rounded-xl hover:border-border-secondary transition-all select-none group">
       <div className="w-16 h-16 rounded-xl overflow-hidden bg-surface-overlay shrink-0 flex items-center justify-center border border-border-primary relative">
-        {imageUrl ? (
+        {!showPlaceholder ? (
           <img
-            src={imageUrl}
+            src={imageUrl!}
             alt={item.name}
+            onError={() => setImageError(true)}
             className="w-full h-full object-cover"
           />
         ) : (

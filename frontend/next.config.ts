@@ -10,6 +10,7 @@ const backendBase = (isProduction ? productionApiUrl : (process.env.NEXT_PUBLIC_
   /\/api\/?$/,
   "",
 );
+const backendImageSource = new URL(backendBase).host;
 const devImageSources = isProduction ? [] : ["localhost:5000", "127.0.0.1:5000"];
 const devConnectSources = isProduction
   ? []
@@ -77,7 +78,7 @@ const nextConfig: NextConfig = {
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      `img-src 'self' data: blob: res.cloudinary.com images.unsplash.com lh3.googleusercontent.com ${devImageSources.join(" ")}`.trim(),
+      `img-src 'self' data: blob: res.cloudinary.com images.unsplash.com lh3.googleusercontent.com ${backendImageSource} ${devImageSources.join(" ")}`.trim(),
       "font-src 'self' data: https://fonts.gstatic.com",
       `connect-src 'self' ${[...productionConnectSources, ...devConnectSources].join(" ")}`.trim(),
       "object-src 'none'",

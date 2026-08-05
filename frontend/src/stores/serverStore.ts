@@ -27,11 +27,23 @@ interface ServerState {
   setReadyOrders: (orders: ReadyOrder[]) => void
   addReadyOrder: (order: ReadyOrder) => void
   updateReadyOrder: (orderId: string, fields: Partial<ReadyOrder>) => void
+  updateReadyOrderItem: (
+    orderId: string,
+    itemId: string,
+    itemStatus: ReadyOrder['items'][number]['itemStatus'],
+    fields?: Partial<ReadyOrder['items'][number]>
+  ) => void
   removeReadyOrder: (orderId: string) => void
 
   setInProgressOrders: (orders: InProgressOrder[]) => void
   addInProgressOrder: (order: InProgressOrder) => void
   updateInProgressOrder: (orderId: string, fields: Partial<InProgressOrder>) => void
+  updateInProgressOrderItem: (
+    orderId: string,
+    itemId: string,
+    itemStatus: InProgressOrder['items'][number]['itemStatus'],
+    fields?: Partial<InProgressOrder['items'][number]>
+  ) => void
   removeInProgressOrder: (orderId: string) => void
 
   setAssistanceRequests: (requests: AssistanceRequest[]) => void
@@ -83,6 +95,19 @@ export const useServerStore = create<ServerState>()(
           o.id === orderId ? { ...o, ...fields } : o
         )
       })),
+    updateReadyOrderItem: (orderId, itemId, itemStatus, fields) =>
+      set(state => ({
+        readyOrders: state.readyOrders.map(o =>
+          o.id !== orderId
+            ? o
+            : {
+                ...o,
+                items: o.items.map(item =>
+                  item.id === itemId ? { ...item, itemStatus, ...fields } : item
+                )
+              }
+        )
+      })),
     removeReadyOrder: (orderId) =>
       set(state => ({
         readyOrders: state.readyOrders.filter(
@@ -102,6 +127,19 @@ export const useServerStore = create<ServerState>()(
       set(state => ({
         inProgressOrders: state.inProgressOrders.map(o =>
           o.id === orderId ? { ...o, ...fields } : o
+        )
+      })),
+    updateInProgressOrderItem: (orderId, itemId, itemStatus, fields) =>
+      set(state => ({
+        inProgressOrders: state.inProgressOrders.map(o =>
+          o.id !== orderId
+            ? o
+            : {
+                ...o,
+                items: o.items.map(item =>
+                  item.id === itemId ? { ...item, itemStatus, ...fields } : item
+                )
+              }
         )
       })),
     removeInProgressOrder: (orderId) =>

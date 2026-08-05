@@ -9,10 +9,12 @@ interface OrderItemRowProps {
   item: KitchenOrderItem;
   orderStatus?: string;
   onReject?: (reason: string) => void;
+  onPrepare?: () => void;
 }
 
-export function OrderItemRow({ item, orderStatus, onReject }: OrderItemRowProps) {
+export function OrderItemRow({ item, orderStatus, onReject, onPrepare }: OrderItemRowProps) {
   const rejected = item.status === "REJECTED";
+  const prepared = item.itemStatus === "PREPARED" || item.itemStatus === "SERVED";
 
   const handleRejectClick = () => {
     if (!onReject) return;
@@ -45,6 +47,11 @@ export function OrderItemRow({ item, orderStatus, onReject }: OrderItemRowProps)
               Unavailable
             </Badge>
           ) : null}
+          {prepared ? (
+            <Badge variant="success">
+              Prepared
+            </Badge>
+          ) : null}
         </div>
         {item.specialInstructions ? (
           <p className="mt-1 text-body-sm italic text-warning-500 font-medium">
@@ -55,6 +62,18 @@ export function OrderItemRow({ item, orderStatus, onReject }: OrderItemRowProps)
 
       <div className="flex items-center gap-3 shrink-0">
         <span className="text-display-sm font-bold text-brand-500">x{item.quantity}</span>
+
+        {onPrepare && !rejected && !prepared ? (
+          <Button
+            variant="secondary"
+            size="icon"
+            onClick={onPrepare}
+            title="Mark prepared"
+            aria-label={`Mark ${item.name} prepared`}
+          >
+            <MaterialIcon name="check" className="text-lg" />
+          </Button>
+        ) : null}
         
         {onReject && !rejected && (
           <Button
