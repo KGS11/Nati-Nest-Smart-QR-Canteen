@@ -35,6 +35,7 @@ export default function DeliverOrderCard({
   const isAssignedToOther = !!(order.assignedWaiterId && order.assignedWaiterId !== user?.id)
   const isUnassigned = !order.assignedWaiterId
   const isDelivered = order.status === 'DELIVERED'
+  const canMarkDelivered = order.status === 'READY' || order.status === 'PREPARED'
 
   // Swipe gesture state
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
@@ -108,12 +109,12 @@ export default function DeliverOrderCard({
   }
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (!isAssignedToMe || isDelivered) return
+    if (!isAssignedToMe || isDelivered || !canMarkDelivered) return
     setTouchStartX(e.touches[0].clientX)
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isAssignedToMe || isDelivered || touchStartX === null) return
+    if (!isAssignedToMe || isDelivered || !canMarkDelivered || touchStartX === null) return
     const diffX = e.touches[0].clientX - touchStartX
     if (diffX > 0) {
       setSwipeTranslation(Math.min(120, diffX))
@@ -121,7 +122,7 @@ export default function DeliverOrderCard({
   }
 
   const handleTouchEnd = () => {
-    if (!isAssignedToMe || isDelivered) return
+    if (!isAssignedToMe || isDelivered || !canMarkDelivered) return
     if (swipeTranslation > 100 && !isDelivering) {
       handleDeliver()
       const nextCount = swipeCount + 1
@@ -269,7 +270,7 @@ export default function DeliverOrderCard({
         )}
       </div>
 
-      {isAssignedToMe && !isDelivered && swipeCount < 3 && (
+      {isAssignedToMe && !isDelivered && canMarkDelivered && swipeCount < 3 && (
         <div className="text-[10px] text-text-tertiary text-right animate-pulse select-none">
           → swipe right to deliver
         </div>
@@ -313,18 +314,20 @@ export default function DeliverOrderCard({
               {isReleasing ? <Loader className="scale-50" /> : 'Release'}
             </Button>
 
-            <Button
-              type="button"
-              onClick={handleDeliver}
-              disabled={isDelivering}
-              className="bg-semantic_success-500 text-surface-base hover:bg-semantic_success-400 min-h-[48px] px-4 rounded-xl font-semibold flex items-center justify-center gap-2 border-0 active:scale-95 transition-all text-sm"
-            >
-              {isDelivering ? (
-                <Loader className="!flex-row !gap-1" />
-              ) : (
-                'Mark Delivered'
-              )}
-            </Button>
+            {canMarkDelivered ? (
+              <Button
+                type="button"
+                onClick={handleDeliver}
+                disabled={isDelivering}
+                className="bg-semantic_success-500 text-surface-base hover:bg-semantic_success-400 min-h-[48px] px-4 rounded-xl font-semibold flex items-center justify-center gap-2 border-0 active:scale-95 transition-all text-sm"
+              >
+                {isDelivering ? (
+                  <Loader className="!flex-row !gap-1" />
+                ) : (
+                  'Mark Delivered'
+                )}
+              </Button>
+            ) : null}
           </div>
         )}
       </div>

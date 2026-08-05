@@ -62,9 +62,14 @@ const serializeReadyOrder = <T extends NonNullable<ServerOrder>>(order: T) => {
     (sum, item) => sum + item.unitPrice.toNumber() * item.quantity,
     0,
   );
+  const firstPreparedAt = activeItems
+    .filter((item) => item.preparedAt)
+    .sort((a, b) => a.preparedAt!.getTime() - b.preparedAt!.getTime())[0]?.preparedAt;
 
   return {
     ...order,
+    readyAt: order.readyAt ?? firstPreparedAt ?? order.preparingAt ?? order.placedAt,
+    assignedWaiterId: order.assignedWaiterId ?? order.session.assignedWaiterId,
     items: activeItems.map((item) => ({
       ...item,
       unitPrice: item.unitPrice.toNumber(),
@@ -212,7 +217,18 @@ export class ServerService {
   async getReadyOrders(userId?: string, own: boolean = true) {
     try {
       const whereClause: any = {
-        status: { in: [OrderStatus.READY, OrderStatus.PREPARED, OrderStatus.DELIVERED] },
+        OR: [
+          { status: { in: [OrderStatus.READY, OrderStatus.PREPARED, OrderStatus.DELIVERED] } },
+          {
+            status: OrderStatus.PREPARING,
+            items: {
+              some: {
+                status: OrderItemStatus.ACTIVE,
+                itemStatus: { in: [ItemPreparationStatus.PREPARED, ItemPreparationStatus.SERVED] },
+              },
+            },
+          },
+        ],
       };
 
       if (userId && own) {

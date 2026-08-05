@@ -12,7 +12,7 @@ export interface ReadyOrderItem {
 
 export interface ReadyOrder {
   id: string
-  status: 'READY' | 'PREPARED' | 'DELIVERED'
+  status: 'PREPARING' | 'READY' | 'PREPARED' | 'DELIVERED'
   tableNumber: string
   sessionId: string
   readyAt: string

@@ -63,9 +63,11 @@ interface BackendOrderItem {
 
 interface BackendReadyOrder {
   id: string
-  status: 'READY' | 'PREPARED' | 'DELIVERED'
+  status: 'PREPARING' | 'READY' | 'PREPARED' | 'DELIVERED'
   sessionId: string
-  readyAt: string
+  readyAt: string | null
+  preparingAt?: string | null
+  placedAt?: string
   subtotal?: number
   session: {
     table: {
@@ -150,13 +152,37 @@ const normalizeReadyOrder = (order: BackendReadyOrder): ReadyOrder => ({
   status: order.status,
   sessionId: order.sessionId,
   tableNumber: order.session.table.tableNumber,
-  readyAt: order.readyAt,
+  readyAt:
+    order.readyAt ??
+    order.items.find((item) => item.preparedAt)?.preparedAt ??
+    order.preparingAt ??
+    order.placedAt ??
+    new Date().toISOString(),
   items: order.items.map(normalizeItem),
   subtotal:
     order.subtotal ??
     order.items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0),
   assignedWaiterId: order.assignedWaiterId,
   assignedWaiterName: order.assignedWaiterName
+})
+
+const hasServeableItems = (order: { items: ReadyOrderItem[] }) =>
+  order.items.some((item) => item.itemStatus === 'PREPARED' || item.itemStatus === 'SERVED')
+
+const toReadyOrderFromInProgress = (
+  order: InProgressOrder,
+  readyAt: string,
+  user?: { id?: string; name?: string } | null
+): ReadyOrder => ({
+  id: order.id,
+  status: 'PREPARING',
+  sessionId: order.sessionId,
+  tableNumber: order.tableNumber,
+  readyAt,
+  items: order.items,
+  subtotal: order.subtotal,
+  assignedWaiterId: user?.id ?? null,
+  assignedWaiterName: user?.name ?? null
 })
 
 const normalizeAssistanceRequest = (
@@ -231,7 +257,11 @@ export default function ServerBoard() {
 
       const latestStore = useServerStore.getState()
       latestStore.setReadyOrders(orders.map(normalizeReadyOrder))
-      latestStore.setInProgressOrders(inProgress.map(normalizeInProgressOrder))
+      latestStore.setInProgressOrders(
+        inProgress
+          .map(normalizeInProgressOrder)
+          .filter((order) => !hasServeableItems(order))
+      )
       latestStore.setAssistanceRequests(requests.map(normalizeAssistanceRequest))
       latestStore.setPendingPayments(payments.map(normalizePendingPayment))
       latestStore.setMyTables(myTables)
@@ -449,6 +479,27 @@ export default function ServerBoard() {
       currentStore.updateReadyOrderItem(payload.orderId, payload.orderItemId, 'PREPARED', {
         preparedAt: payload.preparedAt
       })
+
+      const latestStore = useServerStore.getState()
+      const alreadyReady = latestStore.readyOrders.some((order) => order.id === payload.orderId)
+      if (!alreadyReady) {
+        const updatedInProgressOrder = latestStore.inProgressOrders.find((order) => order.id === payload.orderId)
+        if (updatedInProgressOrder && hasServeableItems(updatedInProgressOrder)) {
+          latestStore.addReadyOrder(
+            toReadyOrderFromInProgress(
+              updatedInProgressOrder,
+              payload.preparedAt ?? new Date().toISOString(),
+              user
+            )
+          )
+          latestStore.removeInProgressOrder(payload.orderId)
+          addToast(
+            `${payload.itemName} ready to serve`,
+            'ready',
+            `orderItem:prepared:serve:${payload.orderItemId}`
+          )
+        }
+      }
     }
 
     const handleItemServed = (payload: OrderItemServedPayload) => {
