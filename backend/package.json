@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "clear:test-data": "ts-node scripts/clear-test-data.ts --confirm",
+    "clear:transactions": "node dist/scripts/clearTransactionData.js",
     "test:coverage": "vitest run --coverage"
   },
   "keywords": [],
