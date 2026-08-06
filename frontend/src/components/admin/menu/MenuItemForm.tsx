@@ -76,7 +76,7 @@ export default function MenuItemForm({
 
       if (imageFile) {
         formData.append('image', imageFile)
-      } else if (currentImg === null) {
+      } else if (item && currentImg === null) {
         // If image was cleared, let backend know to remove it
         formData.append('removeImage', 'true')
       }

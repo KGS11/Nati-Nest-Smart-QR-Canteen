@@ -2,7 +2,7 @@ import { Role, SessionStatus } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NextFunction, Request, Response } from "express";
-import { createOrderSchema, orderIdParamSchema } from "../src/validators/order.validators";
+import { createOrderSchema, orderIdParamSchema, setTipSchema } from "../src/validators/order.validators";
 import { apiRateLimit, authRateLimit, securityHeaders } from "../src/middlewares/security";
 import { sessionSignOptions, staffSignOptions } from "../src/utils/jwt.utils";
 
@@ -105,6 +105,8 @@ describe("security middleware and validation", () => {
     ).toMatchObject({ items: [{ quantity: 2 }] });
 
     expect(() => orderIdParamSchema.parse({ orderId: "bad-id" })).toThrow();
+    expect(() => setTipSchema.parse({ tipAmount: 100001 })).toThrow();
+    expect(setTipSchema.parse({ tipAmount: 100 })).toEqual({ tipAmount: 100 });
   });
 });
 

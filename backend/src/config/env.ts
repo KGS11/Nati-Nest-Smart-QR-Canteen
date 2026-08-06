@@ -136,6 +136,10 @@ export const validateEnv = (): AppEnv => {
 
     const corsError = validateProductionOrigins(env.CORS_ORIGINS);
     if (corsError) errors.push(corsError);
+
+    if (!env.CLOUDINARY_CLOUD_NAME || !env.CLOUDINARY_API_KEY || !env.CLOUDINARY_API_SECRET) {
+      errors.push("CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET are required in production");
+    }
   }
 
   if (env.NODE_ENV !== "test" && !validateJwtExpiry(env.JWT_EXPIRES_IN)) {

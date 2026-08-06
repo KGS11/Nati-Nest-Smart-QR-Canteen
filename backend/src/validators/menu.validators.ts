@@ -40,6 +40,7 @@ export const updateMenuItemSchema = z.object({
     .optional(),
   categoryId: z.string().uuid("Category must be a valid UUID").optional(),
   isAvailable: optionalBoolean.optional(),
+  removeImage: optionalBoolean.optional(),
 }).strict();
 
 export const updateAvailabilitySchema = z.object({

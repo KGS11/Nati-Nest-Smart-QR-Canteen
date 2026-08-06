@@ -24,7 +24,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       hasHydrated: false,
       login: (token, user, refreshToken = null) =>
-        set({ token, refreshToken, user, isAuthenticated: true }),
+        set({ token, refreshToken: null, user, isAuthenticated: true }),
       logout: () => set({ token: null, refreshToken: null, user: null, isAuthenticated: false }),
       setHasHydrated: (hasHydrated) => set({ hasHydrated }),
     }),
@@ -34,7 +34,6 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
-        refreshToken: state.refreshToken,
       }),
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<AuthState> | undefined;
@@ -44,7 +43,7 @@ export const useAuthStore = create<AuthState>()(
           user: persisted?.user ?? null,
           isAuthenticated: Boolean(persisted?.isAuthenticated && persisted?.user),
           token: null,
-          refreshToken: persisted?.refreshToken ?? null,
+          refreshToken: null,
           hasHydrated: false,
         };
       },

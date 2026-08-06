@@ -10,6 +10,7 @@ RUN npm ci
 COPY prisma ./prisma
 COPY tsconfig.json ./
 COPY src ./src
+COPY scripts ./scripts
 
 RUN npx prisma generate
 RUN npm run build
@@ -26,6 +27,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=builder --chown=node:node /app/dist ./dist
 COPY --from=builder --chown=node:node /app/prisma ./prisma
+COPY --from=builder --chown=node:node /app/scripts ./scripts
 COPY --from=builder --chown=node:node /app/node_modules/.prisma ./node_modules/.prisma
 
 RUN mkdir -p /app/uploads /app/backups /app/logs && chown -R node:node /app

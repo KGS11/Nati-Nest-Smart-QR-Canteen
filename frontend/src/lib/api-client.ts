@@ -110,12 +110,10 @@ apiClient.interceptors.response.use(
     if (status === 401 && !originalRequest?._retry) {
       const authState = useAuthStore.getState();
 
-      if (authState.refreshToken || authState.isAuthenticated) {
+      if (authState.isAuthenticated) {
         originalRequest._retry = true;
         try {
-          const refreshResponse = await apiClient.post("/auth/refresh", {
-            refreshToken: authState.refreshToken,
-          });
+          const refreshResponse = await apiClient.post("/auth/refresh", {});
           const { token, refreshToken, user } = refreshResponse.data.data;
           authState.login(token, user, refreshToken);
           originalRequest.headers.Authorization = `Bearer ${token}`;

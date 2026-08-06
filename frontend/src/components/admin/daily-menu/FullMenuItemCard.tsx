@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MenuItemWithStatus } from "@/types/daily-menu.types";
 import { getValidImageUrl } from "@/utils/imageUrl";
 
@@ -12,6 +12,10 @@ export function FullMenuItemCard({ item, onAdd, isAdding }: FullMenuItemCardProp
   const [imageError, setImageError] = useState(false);
   const imageUrl = getValidImageUrl(item.imageUrl);
   const showPlaceholder = !imageUrl || imageError;
+
+  useEffect(() => {
+    setImageError(false);
+  }, [item.imageUrl]);
 
   return (
     <div className="flex items-center gap-4 bg-surface-raised border border-border-primary p-4 rounded-xl hover:border-border-secondary transition-all select-none group">

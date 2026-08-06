@@ -9,6 +9,7 @@ type MenuItemData = {
   price?: number;
   categoryId?: string;
   isAvailable?: boolean;
+  removeImage?: boolean;
 };
 
 const serializeItem = <T extends { price: Prisma.Decimal }>(item: T) => ({
@@ -108,7 +109,7 @@ export class MenuService {
         }
       }
 
-      const imageUrl = image ? await uploadImageBuffer(image.buffer) : item.imageUrl;
+      const imageUrl = image ? await uploadImageBuffer(image.buffer) : data.removeImage ? null : item.imageUrl;
       const updateData: Prisma.MenuItemUpdateInput = {};
       if (data.name !== undefined) updateData.name = data.name.trim();
       if (data.description !== undefined) updateData.description = data.description;

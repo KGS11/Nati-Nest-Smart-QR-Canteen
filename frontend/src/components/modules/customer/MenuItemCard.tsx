@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MenuItem } from "@/types/domain";
 import { cn } from "@/utils/cn";
 import { getValidImageUrl } from "@/utils/imageUrl";
@@ -27,6 +27,10 @@ export function MenuItemCard({
   const isAvailable = item.isAvailable;
   const isPopular = item.isPopular;
   const [imageSrc, setImageSrc] = useState(getValidImageUrl(item.imageUrl) || fallbackImage);
+
+  useEffect(() => {
+    setImageSrc(getValidImageUrl(item.imageUrl) || fallbackImage);
+  }, [item.imageUrl]);
 
   return (
     <div

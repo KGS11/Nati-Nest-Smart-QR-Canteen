@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MenuItem } from '@/types/menu.types'
 import AvailabilityToggle from './AvailabilityToggle'
 import { formatCurrency } from '@/utils/format'
@@ -21,6 +21,10 @@ export default function MenuItemCard({
 }: MenuItemCardProps) {
   const [imageError, setImageError] = useState(false)
   const imageUrl = getValidImageUrl(item.imageUrl)
+
+  useEffect(() => {
+    setImageError(false)
+  }, [item.imageUrl])
 
   const showPlaceholder = !imageUrl || imageError
 

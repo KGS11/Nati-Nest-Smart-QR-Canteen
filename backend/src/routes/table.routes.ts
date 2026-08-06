@@ -3,6 +3,7 @@ import { Router } from "express";
 import { tableController } from "../controllers/table.controller";
 import { authenticate } from "../middlewares/authenticate";
 import { authorize } from "../middlewares/authorize";
+import { validateUUID } from "../middlewares/validateUUID";
 import {
   createTableSchema,
   updateTableSchema,
@@ -18,7 +19,7 @@ const adminOnly = [authenticate, authorize(Role.ADMIN)];
 router.get("/by-number/:tableNumber", tableController.getTableByNumber.bind(tableController));
 
 router.get("/", adminOnly, tableController.getAllTables.bind(tableController));
-router.get("/:id", adminOnly, tableController.getTableById.bind(tableController));
+router.get("/:id", adminOnly, validateUUID("id"), tableController.getTableById.bind(tableController));
 router.post(
   "/",
   adminOnly,
@@ -28,16 +29,18 @@ router.post(
 router.put(
   "/:id",
   adminOnly,
+  validateUUID("id"),
   validateTableRequest(updateTableSchema),
   tableController.updateTable.bind(tableController),
 );
-router.patch("/:id/qr", adminOnly, tableController.regenerateQRCode.bind(tableController));
+router.patch("/:id/qr", adminOnly, validateUUID("id"), tableController.regenerateQRCode.bind(tableController));
 router.patch(
   "/:id/status",
   adminOnly,
+  validateUUID("id"),
   validateTableRequest(updateTableStatusSchema),
   tableController.updateTableStatus.bind(tableController),
 );
-router.delete("/:id", adminOnly, tableController.deleteTable.bind(tableController));
+router.delete("/:id", adminOnly, validateUUID("id"), tableController.deleteTable.bind(tableController));
 
 export default router;

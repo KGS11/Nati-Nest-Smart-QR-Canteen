@@ -119,7 +119,10 @@ export const adminCancelOrderItemValidator = validateRequest(adminCancelOrderIte
 export const verifyPaymentValidator = validateRequest(verifyPaymentSchema);
 
 export const setTipSchema = z.object({
-  tipAmount: z.number().min(0, "Tip amount cannot be negative"),
+  tipAmount: z
+    .number()
+    .min(0, "Tip amount cannot be negative")
+    .max(100000, "Tip amount is too large"),
 });
 export const setTipValidator = validateRequest(setTipSchema);
 

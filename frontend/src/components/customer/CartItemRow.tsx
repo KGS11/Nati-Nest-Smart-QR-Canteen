@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CartItem } from "@/stores/cartStore";
 import { SpecialInstructionsModal } from "./SpecialInstructionsModal";
 import { MaterialIcon } from "@/components/stitch/MaterialIcon";
@@ -22,6 +22,10 @@ export function CartItemRow({
 }: CartItemRowProps) {
   const [showNoteModal, setShowNoteModal] = useState(false);
   const [imageSrc, setImageSrc] = useState(getValidImageUrl(item.imageUrl));
+
+  useEffect(() => {
+    setImageSrc(getValidImageUrl(item.imageUrl));
+  }, [item.imageUrl]);
 
   return (
     <div className="flex gap-3 py-3 border-b border-border-default last:border-0">

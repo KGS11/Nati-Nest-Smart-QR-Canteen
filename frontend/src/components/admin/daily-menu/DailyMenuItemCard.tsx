@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DailyMenuItem } from "@/types/daily-menu.types";
 import { getValidImageUrl } from "@/utils/imageUrl";
 
@@ -12,6 +12,10 @@ export function DailyMenuItemCard({ item, onRemove, isRemoving }: DailyMenuItemC
   const [imageError, setImageError] = useState(false);
   const imageUrl = getValidImageUrl(item.imageUrl);
   const showPlaceholder = !imageUrl || imageError;
+
+  useEffect(() => {
+    setImageError(false);
+  }, [item.imageUrl]);
 
   return (
     <div className="flex items-center gap-4 bg-surface-raised border border-border-default p-4 rounded-xl hover:border-border-hover transition-all select-none group">

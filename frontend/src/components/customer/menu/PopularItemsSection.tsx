@@ -3,7 +3,7 @@
 import { MenuItem } from "@/types/domain";
 import { useCart } from "@/hooks/useCart";
 import { getValidImageUrl } from "@/utils/imageUrl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface PopularItemsSectionProps {
   items: MenuItem[];
@@ -92,6 +92,10 @@ export function PopularItemsSection({ items }: PopularItemsSectionProps) {
 
 function PopularItemImage({ item }: { item: MenuItem }) {
   const [imageSrc, setImageSrc] = useState(getValidImageUrl(item.imageUrl) || fallbackImage);
+
+  useEffect(() => {
+    setImageSrc(getValidImageUrl(item.imageUrl) || fallbackImage);
+  }, [item.imageUrl]);
 
   return (
     // eslint-disable-next-line @next/next/no-img-element

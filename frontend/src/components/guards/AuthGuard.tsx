@@ -13,7 +13,7 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
-  const { user, isAuthenticated, token, refreshToken, hasHydrated, login, logout } = useAuthStore();
+  const { user, isAuthenticated, token, hasHydrated, login, logout } = useAuthStore();
   const router = useRouter();
   const [isRestoringSession, setIsRestoringSession] = useState(false);
   const allowedRoleKey = useMemo(() => allowedRoles.join(","), [allowedRoles]);
@@ -26,7 +26,7 @@ export function AuthGuard({ children, allowedRoles }: AuthGuardProps) {
 
       setIsRestoringSession(true);
       apiClient
-        .post("/auth/refresh", { refreshToken })
+        .post("/auth/refresh", {})
         .then((response) => {
           if (!isActive) return;
           const { token: refreshedToken, refreshToken, user: refreshedUser } = response.data.data;

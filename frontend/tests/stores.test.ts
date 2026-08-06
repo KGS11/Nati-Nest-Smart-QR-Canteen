@@ -81,14 +81,14 @@ describe("Zustand stores", () => {
     expect(useCartStore.getState().items).toEqual([]);
   });
 
-  it("stores and clears staff access and refresh tokens", () => {
+  it("stores staff access token in memory but does not persist refresh token", () => {
     useAuthStore
       .getState()
       .login("access-token", { id: "admin-id", name: "Admin", role: Role.ADMIN, phone: "999", isActive: true }, "refresh-token");
 
     expect(useAuthStore.getState()).toMatchObject({
       token: "access-token",
-      refreshToken: "refresh-token",
+      refreshToken: null,
       isAuthenticated: true,
     });
 

@@ -1,6 +1,7 @@
 import { Role } from "@prisma/client";
 import { Server } from "socket.io";
 import { prisma } from "../config/db";
+import { logger } from "../config/logger";
 import { ROOMS } from "./rooms";
 
 const serverRoles: Role[] = [Role.SERVER, Role.ADMIN];
@@ -42,7 +43,7 @@ export const initializeServerSockets = (io: Server) => {
 
     socket.on("disconnect", () => {
       if (process.env.NODE_ENV === "development") {
-        console.log(`Server socket disconnected: ${socket.id}`);
+        logger.debug("socket:server_disconnect", { socketId: socket.id });
       }
     });
   });
