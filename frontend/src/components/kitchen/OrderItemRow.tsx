@@ -30,7 +30,7 @@ export function OrderItemRow({ item, orderStatus, onReject, onPrepare }: OrderIt
   };
 
   return (
-    <div className="py-4 flex items-center justify-between gap-3">
+    <div className="flex flex-col gap-3 py-4 md:flex-row md:items-center md:justify-between">
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span
@@ -60,31 +60,39 @@ export function OrderItemRow({ item, orderStatus, onReject, onPrepare }: OrderIt
         ) : null}
       </div>
 
-      <div className="flex items-center gap-3 shrink-0">
-        <span className="text-display-sm font-bold text-brand-500">x{item.quantity}</span>
+      <div className="flex w-full flex-wrap items-center justify-between gap-3 md:w-auto md:flex-nowrap md:justify-end md:gap-4">
+        <span className="min-w-12 rounded-lg bg-surface-base px-2.5 py-1 text-center text-display-sm font-bold text-brand-500">
+          x{item.quantity}
+        </span>
 
         {onPrepare && !rejected && !prepared ? (
-          <Button
-            variant="secondary"
-            size="icon"
-            onClick={onPrepare}
-            title="Mark prepared"
-            aria-label={`Mark ${item.name} prepared`}
-          >
-            <MaterialIcon name="check" className="text-lg" />
-          </Button>
+          <div className="flex min-w-[144px] flex-1 md:flex-none">
+            <Button
+              variant="brand"
+              onClick={onPrepare}
+              title="Mark prepared"
+              aria-label={`Mark ${item.name} prepared`}
+              className="min-h-11 w-full gap-2 rounded-lg bg-semantic_success-500 px-4 text-label-sm font-bold text-surface-base hover:bg-semantic_success-400 md:w-auto"
+            >
+              <MaterialIcon name="check" className="text-lg" />
+              Prepared
+            </Button>
+          </div>
         ) : null}
         
         {onReject && !rejected && (
-          <Button
-            variant="destructive"
-            size="icon"
-            onClick={handleRejectClick}
-            title="Reject item"
-            aria-label={`Reject ${item.name}`}
-          >
-            <MaterialIcon name="close" className="text-lg" />
-          </Button>
+          <div className="flex w-full items-center gap-3 border-t border-border-default pt-3 md:ml-2 md:w-auto md:border-l md:border-t-0 md:pl-4 md:pt-0">
+            <Button
+              variant="outline"
+              onClick={handleRejectClick}
+              title="Mark item unavailable"
+              aria-label={`Mark ${item.name} unavailable`}
+              className="min-h-11 w-full gap-2 rounded-lg border-semantic_error-500/30 bg-semantic_error-500/10 px-4 text-label-sm font-bold text-semantic_error-400 hover:bg-semantic_error-500/15 hover:text-semantic_error-300 md:w-auto"
+            >
+              <MaterialIcon name="block" className="text-lg" />
+              Unavailable
+            </Button>
+          </div>
         )}
       </div>
     </div>

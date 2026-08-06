@@ -18,6 +18,11 @@ import { OrderCard } from "@/components/customer/tracking/OrderCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/utils/cn";
 
+const shouldDebugCustomerPerf = () =>
+  process.env.NODE_ENV === "development" &&
+  typeof window !== "undefined" &&
+  window.localStorage.getItem("nati-nest-debug-perf") === "true";
+
 export default function CustomerTrackPage() {
   const router = useRouter();
   const tableNumber = useSessionStore((state) => state.tableNumber);
@@ -86,13 +91,15 @@ export default function CustomerTrackPage() {
               : order,
           ),
         );
-        requestAnimationFrame(() => {
-          console.debug("perf:customer:track_update", {
-            orderId: payload.orderId,
-            status,
-            socketReceiveToUiMs: Math.round(performance.now() - socketReceivedAt),
+        if (shouldDebugCustomerPerf()) {
+          requestAnimationFrame(() => {
+            console.debug("perf:customer:track_update", {
+              orderId: payload.orderId,
+              status,
+              socketReceiveToUiMs: Math.round(performance.now() - socketReceivedAt),
+            });
           });
-        });
+        }
       } else {
         loadOrders();
       }

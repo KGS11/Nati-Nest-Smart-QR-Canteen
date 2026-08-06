@@ -571,7 +571,7 @@ export default function ServerBoard() {
   // Actions Handlers
   const handleDeliver = async (orderId: string) => {
     const previousOrders = store.readyOrders
-    store.removeReadyOrder(orderId)
+    store.updateReadyOrder(orderId, { status: 'DELIVERED' })
     try {
       await apiClient.patch(`/server/orders/${orderId}/deliver`)
     } catch (err: any) {

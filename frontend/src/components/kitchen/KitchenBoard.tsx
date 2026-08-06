@@ -44,6 +44,11 @@ interface SocketErrorPayload {
   message?: string;
 }
 
+const shouldDebugKitchenPerf = () =>
+  process.env.NODE_ENV === "development" &&
+  typeof window !== "undefined" &&
+  window.localStorage.getItem("nati-nest-debug-perf") === "true";
+
 const toKitchenItem = (item: Order["items"][number]): KitchenOrderItem => ({
   id: item.id,
   menuItemId: item.menuItem.id,
@@ -173,14 +178,16 @@ export function KitchenBoard() {
       const kitchenOrder = toKitchenOrder(payload as unknown as Order);
       if (kitchenOrder) {
         addOrder(kitchenOrder);
-        requestAnimationFrame(() => {
-          const emittedAt = typeof payload.emittedAt === "string" ? Date.parse(payload.emittedAt) : null;
-          console.debug("perf:kitchen:order_new", {
-            orderId: payload.orderId,
-            socketReceiveToUiMs: Math.round(performance.now() - socketReceivedAt),
-            emitToReceiveMs: emittedAt ? Math.round(Date.now() - emittedAt) : null,
+        if (shouldDebugKitchenPerf()) {
+          requestAnimationFrame(() => {
+            const emittedAt = typeof payload.emittedAt === "string" ? Date.parse(payload.emittedAt) : null;
+            console.debug("perf:kitchen:order_new", {
+              orderId: payload.orderId,
+              socketReceiveToUiMs: Math.round(performance.now() - socketReceivedAt),
+              emitToReceiveMs: emittedAt ? Math.round(Date.now() - emittedAt) : null,
+            });
           });
-        });
+        }
       } else {
         fetchOrders();
       }

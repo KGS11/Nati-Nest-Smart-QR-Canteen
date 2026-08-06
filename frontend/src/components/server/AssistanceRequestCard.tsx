@@ -34,7 +34,7 @@ export default function AssistanceRequestCard({
   useEffect(() => {
     const update = () => setElapsed(getElapsedTime(request.createdAt))
     update()
-    const interval = setInterval(update, 10000)
+    const interval = setInterval(update, 60000)
     return () => clearInterval(interval)
   }, [request.createdAt])
 

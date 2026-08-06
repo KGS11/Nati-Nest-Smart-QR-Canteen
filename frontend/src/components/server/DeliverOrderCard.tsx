@@ -69,7 +69,7 @@ export default function DeliverOrderCard({
     }
 
     update()
-    const interval = setInterval(update, 10000)
+    const interval = setInterval(update, 60000)
     return () => clearInterval(interval)
   }, [order.readyAt])
 
@@ -154,7 +154,11 @@ export default function DeliverOrderCard({
       }}
       className={cn(
         "bg-surface-raised border border-border-primary border-l-4 rounded-2xl p-4 flex flex-col gap-3 shadow-md transition-all select-none",
-        isAssignedToOther ? "border-l-border-strong opacity-60 saturate-50" : "border-l-semantic_success-500",
+        isDelivered
+          ? "border-l-info-500"
+          : isAssignedToOther
+          ? "border-l-border-strong opacity-60 saturate-50"
+          : "border-l-semantic_success-500",
         swipeTranslation > 80 && "border-semantic_success-500/60 bg-semantic_success-500/5"
       )}
     >
@@ -164,13 +168,19 @@ export default function DeliverOrderCard({
             Table {order.tableNumber}
           </span>
           <span className={`text-xs font-semibold ${elapsedColor}`}>
-            {elapsedText}
+            {isDelivered ? 'Delivered - awaiting payment' : elapsedText}
           </span>
         </div>
         <span className="text-xs font-mono text-text-tertiary">
           #{shortId}
         </span>
       </div>
+
+      {isDelivered ? (
+        <div className="rounded-xl border border-info-500/20 bg-info-500/10 p-2.5 text-xs font-semibold text-info-400">
+          Delivery completed. Served item details stay here until table payment is verified.
+        </div>
+      ) : null}
 
       {order.assignedWaiterId && (
         <div className={cn(

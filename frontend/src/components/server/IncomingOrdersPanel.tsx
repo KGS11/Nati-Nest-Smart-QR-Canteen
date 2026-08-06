@@ -39,7 +39,7 @@ function ElapsedTime({ placedAt }: { placedAt: string }) {
     }
 
     update()
-    const interval = setInterval(update, 15000)
+    const interval = setInterval(update, 60000)
     return () => clearInterval(interval)
   }, [placedAt])
 

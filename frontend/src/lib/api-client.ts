@@ -10,6 +10,11 @@ type TimedRequestConfig = InternalAxiosRequestConfig & {
   };
 };
 
+const shouldDebugApi = () =>
+  process.env.NODE_ENV === "development" &&
+  typeof window !== "undefined" &&
+  window.localStorage.getItem("nati-nest-debug-api") === "true";
+
 export const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
@@ -73,7 +78,7 @@ apiClient.interceptors.response.use(
   (response) => {
     const config = response.config as TimedRequestConfig;
     const startedAt = config.metadata?.startedAt;
-    if (startedAt) {
+    if (startedAt && shouldDebugApi()) {
       console.debug("perf:api", {
         method: config.method?.toUpperCase(),
         url: config.url,
@@ -88,7 +93,7 @@ apiClient.interceptors.response.use(
   async (error: AxiosError<ApiErrorResponse>) => {
     const config = error.config as TimedRequestConfig | undefined;
     const startedAt = config?.metadata?.startedAt;
-    if (startedAt) {
+    if (startedAt && shouldDebugApi()) {
       console.debug("perf:api", {
         method: config?.method?.toUpperCase(),
         url: config?.url,
