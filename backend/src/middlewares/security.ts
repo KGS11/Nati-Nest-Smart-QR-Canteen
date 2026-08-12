@@ -7,6 +7,8 @@ const DEFAULT_AUTH_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 const DEFAULT_AUTH_RATE_LIMIT_MAX = process.env.NODE_ENV === "test" ? 100 : 10;
 const DEFAULT_API_RATE_LIMIT_WINDOW_MS = 60_000;
 const DEFAULT_API_RATE_LIMIT_MAX = 200;
+const DEFAULT_HEALTH_RATE_LIMIT_WINDOW_MS = 60_000;
+const DEFAULT_HEALTH_RATE_LIMIT_MAX = 120;
 
 const parseEnvInteger = (name: string, fallback: number) => {
   const parsed = Number.parseInt(process.env[name] ?? "", 10);
@@ -24,6 +26,14 @@ export const API_RATE_LIMIT_WINDOW_MS = parseEnvInteger(
 );
 export const API_RATE_LIMIT_MAX =
   process.env.NODE_ENV === "test" ? DEFAULT_API_RATE_LIMIT_MAX : parseEnvInteger("API_RATE_LIMIT_MAX", DEFAULT_API_RATE_LIMIT_MAX);
+export const HEALTH_RATE_LIMIT_WINDOW_MS = parseEnvInteger(
+  "HEALTH_RATE_LIMIT_WINDOW_MS",
+  DEFAULT_HEALTH_RATE_LIMIT_WINDOW_MS,
+);
+export const HEALTH_RATE_LIMIT_MAX =
+  process.env.NODE_ENV === "test"
+    ? DEFAULT_HEALTH_RATE_LIMIT_MAX
+    : parseEnvInteger("HEALTH_RATE_LIMIT_MAX", DEFAULT_HEALTH_RATE_LIMIT_MAX);
 
 type RequestWithId = Request & { requestId?: string };
 
@@ -103,5 +113,18 @@ export const apiRateLimit = rateLimit({
     "Too many requests. Please slow down.",
     API_RATE_LIMIT_WINDOW_MS,
     API_RATE_LIMIT_MAX,
+  ),
+});
+
+export const healthRateLimit = rateLimit({
+  windowMs: HEALTH_RATE_LIMIT_WINDOW_MS,
+  max: HEALTH_RATE_LIMIT_MAX,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: createRateLimitHandler(
+    "api",
+    "Too many health check requests. Please slow down.",
+    HEALTH_RATE_LIMIT_WINDOW_MS,
+    HEALTH_RATE_LIMIT_MAX,
   ),
 });

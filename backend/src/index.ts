@@ -10,7 +10,7 @@ import { prisma } from "./config/db";
 import { validateEnv } from "./config/env";
 import { errorHandler } from "./middlewares/errorHandler";
 import requestLogger from "./middlewares/requestLogger";
-import { apiRateLimit, authRateLimit, securityHeaders } from "./middlewares/security";
+import { apiRateLimit, authRateLimit, healthRateLimit, securityHeaders } from "./middlewares/security";
 import authRouter from "./routes/auth.routes";
 import cateringRouter from "./routes/catering.routes";
 import categoryRouter from "./routes/category.routes";
@@ -179,7 +179,7 @@ app.use(
   }),
 );
 
-app.get("/health", async (_request, response) => {
+app.get("/health", healthRateLimit, async (_request, response) => {
   try {
     const dbStart = Date.now();
     await prisma.$queryRaw`SELECT 1`;

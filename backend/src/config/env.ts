@@ -28,6 +28,8 @@ const baseEnvSchema = z.object({
   AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().optional(),
   API_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().optional(),
   API_RATE_LIMIT_MAX: z.coerce.number().int().positive().optional(),
+  HEALTH_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().optional(),
+  HEALTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().optional(),
   SOCKET_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().optional(),
   SOCKET_RATE_LIMIT_MAX: z.coerce.number().int().positive().optional(),
   SENTRY_DSN: optionalUrlSchema,

@@ -12,7 +12,8 @@
     "test:e2e": "playwright test"
   },
   "overrides": {
-    "postcss@8.4.31": "8.5.10"
+    "postcss@8.4.31": "8.5.26",
+    "sharp": "^0.35.3"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
