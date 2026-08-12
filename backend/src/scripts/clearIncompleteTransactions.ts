@@ -125,10 +125,11 @@ async function clearIncompleteTransactions() {
     };
   }
 
-  return prisma.$transaction(async (tx) => {
-    const report: CleanupReport = {
-      incompleteSessionsFound: sessionIds.length,
-    };
+  return prisma.$transaction(
+    async (tx) => {
+      const report: CleanupReport = {
+        incompleteSessionsFound: sessionIds.length,
+      };
 
     const orders = await tx.order.findMany({
       where: { sessionId: { in: sessionIds } },
@@ -212,8 +213,13 @@ async function clearIncompleteTransactions() {
         ).count
       : 0;
 
-    return report;
-  });
+      return report;
+    },
+    {
+      maxWait: 10_000,
+      timeout: 30_000,
+    },
+  );
 }
 
 async function main() {
